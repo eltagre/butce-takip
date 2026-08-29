@@ -1,0 +1,17 @@
+{
+  "name": "Bütçem - Kişisel Bütçe Takibi",
+  "short_name": "Bütçem",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f5f7fb",
+  "theme_color": "#111827",
+  "description": "Kişisel harcama, gelir ve bütçe takip uygulaması",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#111827" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Bütçem" />
+  <link rel="manifest" href="manifest.json" />
+  <title>Bütçem</title>
+  <style>
+    :root{
+      --bg:#f5f7fb;--card:#fff;--text:#111827;--muted:#6b7280;--line:#e5e7eb;
+      --accent:#2563eb;--good:#059669;--bad:#dc2626;--warn:#d97706;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--text)}
+    .app{max-width:760px;margin:auto;padding:18px 14px 90px}
+    .top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
+    h1{font-size:28px;margin:0}
+    .month{font-size:14px;color:var(--muted)}
+    .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px}
+    .card .label{font-size:13px;color:var(--muted)}
+    .card .value{font-size:22px;font-weight:700;margin-top:6px}
+    .good{color:var(--good)} .bad{color:var(--bad)}
+    .section{margin-top:14px}
+    .section h2{font-size:17px;margin:0 0 10px}
+    button,.btn{border:0;border-radius:14px;padding:12px 14px;font-size:16px;cursor:pointer}
+    .primary{background:var(--accent);color:white;font-weight:700}
+    .ghost{background:white;border:1px solid var(--line);color:var(--text)}
+    .fab{position:fixed;right:18px;bottom:20px;border-radius:999px;padding:16px 20px;box-shadow:0 12px 30px rgba(0,0,0,.18);z-index:20}
+    .toolbar{display:flex;gap:8px;flex-wrap:wrap}
+    .list{display:flex;flex-direction:column;gap:8px}
+    .item{background:white;border:1px solid var(--line);border-radius:16px;padding:12px;display:flex;justify-content:space-between;gap:10px;align-items:center}
+    .item .meta{font-size:12px;color:var(--muted);margin-top:3px}
+    .amount{font-weight:700;white-space:nowrap}
+    .barrow{display:grid;grid-template-columns:110px 1fr auto;align-items:center;gap:8px;margin:8px 0}
+    .bar{height:10px;background:#eef2f7;border-radius:999px;overflow:hidden}
+    .bar > span{display:block;height:100%;background:var(--accent)}
+    dialog{border:0;border-radius:22px;padding:0;width:min(94vw,520px);box-shadow:0 25px 70px rgba(0,0,0,.25)}
+    dialog::backdrop{background:rgba(0,0,0,.35)}
+    form{padding:18px}
+    form h3{margin-top:0}
+    label{display:block;font-size:13px;color:var(--muted);margin:10px 0 5px}
+    input,select,textarea{width:100%;padding:12px;border:1px solid var(--line);border-radius:12px;font-size:16px;background:white}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+    .pill{font-size:12px;padding:5px 8px;border-radius:999px;background:#eef2ff;color:#3730a3;display:inline-block}
+    .empty{color:var(--muted);font-size:14px;padding:12px 0}
+    .progress{height:12px;background:#e5e7eb;border-radius:999px;overflow:hidden;margin-top:8px}
+    .progress span{display:block;height:100%;background:var(--accent)}
+    .small{font-size:12px;color:var(--muted)}
+    @media (max-width:480px){h1{font-size:24px}.grid{grid-template-columns:1fr 1fr}.barrow{grid-template-columns:90px 1fr auto}.row{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<div class="app">
+  <div class="top">
+    <div>
+      <h1>Bütçem</h1>
+      <div id="monthLabel" class="month"></div>
+    </div>
+    <button id="settingsBtn" class="ghost">Ayarlar</button>
+  </div>
+
+  <div class="grid">
+    <div class="card"><div class="label">Bu ay harcama</div><div id="expenseTotal" class="value bad">₺0</div></div>
+    <div class="card"><div class="label">Bu ay gelir</div><div id="incomeTotal" class="value good">₺0</div></div>
+    <div class="card"><div class="label">Net durum</div><div id="netTotal" class="value">₺0</div></div>
+    <div class="card"><div class="label">Kalan bütçe</div><div id="remainingBudget" class="value">₺0</div></div>
+  </div>
+
+  <div class="section card">
+    <div style="display:flex;justify-content:space-between;gap:12px;align-items:center">
+      <div>
+        <div class="label">Aylık bütçe kullanımı</div>
+        <div id="budgetText" style="font-weight:700;margin-top:4px">Bütçe belirlenmedi</div>
+      </div>
+      <span id="budgetPct" class="pill">0%</span>
+    </div>
+    <div class="progress"><span id="budgetBar" style="width:0%"></span></div>
+  </div>
+
+  <div class="section">
+    <div class="toolbar">
+      <button id="addExpenseBtn" class="primary">+ Harcama</button>
+      <button id="addIncomeBtn" class="ghost">+ Gelir</button>
+      <button id="exportBtn" class="ghost">Dışa Aktar</button>
+      <button id="clearBtn" class="ghost">Tümünü Sil</button>
+    </div>
+  </div>
+
+  <div class="section card">
+    <h2>Kategori dağılımı</h2>
+    <div id="categoryChart"></div>
+  </div>
+
+  <div class="section card">
+    <h2>Ödeme yöntemleri</h2>
+    <div id="paymentSummary"></div>
+  </div>
+
+  <div class="section card">
+    <h2>Son işlemler</h2>
+    <div id="transactionList" class="list"></div>
+  </div>
+</div>
+
+<button id="fab" class="primary fab">+ Harcama</button>
+
+<dialog id="txnDialog">
+<form id="txnForm" method="dialog">
+  <h3 id="txnTitle">Harcama ekle</h3>
+  <input id="txnType" type="hidden" value="expense">
+  <label>Tutar</label>
+  <input id="amount" type="number" min="0.01" step="0.01" inputmode="decimal" required placeholder="Örn. 185">
+  <div class="row">
+    <div>
+      <label>Kategori</label>
+      <select id="category"></select>
+    </div>
+    <div>
+      <label>Ödeme yöntemi</label>
+      <select id="payment">
+        <option>Nakit</option>
+        <option>Kredi Kartı</option>
+        <option>Banka Kartı</option>
+        <option>Havale / EFT</option>
+      </select>
+    </div>
+  </div>
+  <div id="cardNameWrap">
+    <label>Kart adı</label>
+    <input id="cardName" placeholder="Örn. Bonus, Maximum">
+  </div>
+  <label>Açıklama</label>
+  <input id="description" maxlength="100" placeholder="Örn. Latte, benzin, market">
+  <div class="row">
+    <div>
+      <label>Tarih</label>
+      <input id="date" type="date" required>
+    </div>
+    <div>
+      <label>Not</label>
+      <input id="note" maxlength="120" placeholder="İsteğe bağlı">
+    </div>
+  </div>
+  <div class="actions">
+    <button type="button" id="cancelTxn" class="ghost">Vazgeç</button>
+    <button type="submit" class="primary">Kaydet</button>
+  </div>
+</form>
+</dialog>
+
+<dialog id="settingsDialog">
+<form id="settingsForm" method="dialog">
+  <h3>Ayarlar</h3>
+  <label>Aylık bütçe hedefi</label>
+  <input id="monthlyBudget" type="number" min="0" step="100" placeholder="Örn. 20000">
+  <label>Kategoriler</label>
+  <textarea id="categoriesText" rows="5"></textarea>
+  <div class="small">Virgülle ayırabilirsin.</div>
+  <div class="actions">
+    <button type="button" id="cancelSettings" class="ghost">Vazgeç</button>
+    <button type="submit" class="primary">Kaydet</button>
+  </div>
+</form>
+</dialog>
+
+<script src="app.js"></script>
+</body>
+</html>
