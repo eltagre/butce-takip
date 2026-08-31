@@ -282,5 +282,25 @@ function render(){
  let sums={};ex.forEach(t=>sums[t.category]=(sums[t.category]||0)+t.amount);let arr=Object.entries(sums).sort((a,b)=>b[1]-a[1]),cat=$("#categories");cat.innerHTML="";if(!arr.length)cat.innerHTML='<div class="small">Bu ay harcama yok.</div>';let max=arr[0]?.[1]||1;arr.forEach(([k,v])=>{let r=document.createElement("div");r.className="barrow";r.innerHTML=`<div>${k}</div><div class="bar"><span style="width:${v/max*100}%"></span></div><div class="small">${money(v)}</div>`;cat.appendChild(r)});
  let list=$("#transactions");list.innerHTML="";let recent=[...tx].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,30);if(!recent.length)list.innerHTML='<div class="small">Bu ay işlem yok.</div>';recent.forEach(t=>{let r=document.createElement("div");r.className="item";let l=document.createElement("div"),title=document.createElement("div"),meta=document.createElement("div");title.textContent=t.description||t.category;meta.className="meta";meta.textContent=`${t.category} • ${t.date} • ${t.payment}`;l.append(title,meta);let a=document.createElement("div");a.className="amount "+(t.type==="income"?"good":"bad");a.textContent=(t.type==="income"?"+":"-")+money(t.amount);r.append(l,a);list.appendChild(r)});
 }
-if("serviceWorker"in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
+if("serviceWorker"in navigator){
+  navigator.serviceWorker.register("sw.js?v=4.1").then(reg=>{
+    reg.update().catch(()=>{});
+    if(reg.waiting) reg.waiting.postMessage("SKIP_WAITING");
+    reg.addEventListener("updatefound",()=>{
+      const nw=reg.installing;
+      if(!nw)return;
+      nw.addEventListener("statechange",()=>{
+        if(nw.state==="installed"&&navigator.serviceWorker.controller){
+          nw.postMessage("SKIP_WAITING");
+        }
+      });
+    });
+  }).catch(()=>{});
+  let reloaded=false;
+  navigator.serviceWorker.addEventListener("controllerchange",()=>{
+    if(reloaded)return;
+    reloaded=true;
+    location.reload();
+  });
+}
 state.dataVersion=DATA_VERSION;localStorage.setItem(KEY,JSON.stringify(state));render();

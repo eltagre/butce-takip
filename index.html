@@ -22,6 +22,30 @@ dialog{border:0;border-radius:22px;padding:0;width:min(94vw,520px);box-shadow:0 
 label{display:block;font-size:13px;color:var(--muted);margin:10px 0 5px}input,select,textarea{width:100%;padding:12px;border:1px solid var(--line);border-radius:12px;font-size:16px;background:white}.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.actions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:16px}
 .backupbox{border:1px solid var(--line);border-radius:15px;padding:12px;margin-top:12px}.status{font-size:13px;margin-top:7px;color:var(--muted)}.fab{position:fixed;right:18px;bottom:20px;border-radius:999px;padding:15px 19px;box-shadow:0 12px 30px rgba(0,0,0,.18)}
 @media(max-width:480px){.row{grid-template-columns:1fr}.barrow{grid-template-columns:85px 1fr auto}}
+
+/* V4.1 iPhone safe-area düzeltmesi */
+body{
+  padding-top: max(10px, env(safe-area-inset-top));
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+header{
+  padding-top: max(12px, env(safe-area-inset-top));
+}
+#cloudBtn, #settingsBtn{
+  position: relative;
+  top: 10px;
+}
+@media (display-mode: standalone){
+  header{
+    padding-top: max(22px, env(safe-area-inset-top));
+  }
+  #cloudBtn, #settingsBtn{
+    top: 14px;
+  }
+}
+
 </style>
 </head>
 <body>
@@ -112,7 +136,7 @@ label{display:block;font-size:13px;color:var(--muted);margin:10px 0 5px}input,se
 </div>
 </form></dialog>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="supabase-config.js"></script>
+<script src="supabase-config.js?v=4.1"></script>
 
-<script src="app.js"></script>
+<script src="app.js?v=4.1"></script>
 </body></html>
