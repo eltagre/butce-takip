@@ -10,7 +10,7 @@ function normalize(raw){
 }
 function load(){try{return normalize(JSON.parse(localStorage.getItem(KEY)))}catch(e){return normalize(null)}}
 let state=load();
-function save(renderNow=true){state.dataVersion=DATA_VERSION;localStorage.setItem(KEY,JSON.stringify(state));if(renderNow)render();queueCloudSync()}
+function save(renderNow=true,queueSync=true){state.dataVersion=DATA_VERSION;localStorage.setItem(KEY,JSON.stringify(state));if(renderNow)render();if(queueSync)queueCloudSync()}
 function money(n){return new Intl.NumberFormat("tr-TR",{style:"currency",currency:"TRY",maximumFractionDigits:2}).format(n||0)}
 function today(){let d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`}
 function shift(mk,n){let [y,m]=mk.split("-").map(Number),d=new Date(y,m-1+n,1);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`}
@@ -185,7 +185,7 @@ async function pullCloud(){
      state.settingsUpdatedAt=remoteStamp;
    }
  }
- save(false);
+ save(false,false);
 }
 async function pushCloud(){
  if(!sb||!currentUser)return;
@@ -205,7 +205,8 @@ async function pushCloud(){
 }
 async function syncCloud(manual=false){
  if(!sb||!currentUser||cloudBusy)return;
- cloudBusy=true;setCloudUI("☁️ Senkronize ediliyor…","Cihaz ve hesabındaki veriler karşılaştırılıyor.");
+ cloudBusy=true;
+ if(manual) setCloudUI("☁️ Senkronize ediliyor…","Cihaz ve hesabındaki veriler karşılaştırılıyor.");
  try{
    // Önce buluttakini çek, birleştir; sonra birleşmiş sonucu geri gönder.
    await pullCloud();
@@ -225,7 +226,7 @@ async function syncCloud(manual=false){
 }
 function queueCloudSync(){
  if(!currentUser||!sb)return;
- clearTimeout(cloudTimer);cloudTimer=setTimeout(()=>syncCloud(false),800);
+ clearTimeout(cloudTimer);cloudTimer=setTimeout(()=>syncCloud(false),2500);
 }
 async function refreshSession(){
  if(!sb)return;
@@ -256,7 +257,7 @@ $("#signOutBtn").onclick=async()=>{if(sb)await sb.auth.signOut();currentUser=nul
 $("#syncNowBtn").onclick=()=>syncCloud(true);
 
 if(initCloudClient()){
- sb.auth.onAuthStateChange((_event,session)=>{currentUser=session?.user||null;updateAuthDialog();if(currentUser)setTimeout(()=>syncCloud(false),0);});
+ sb.auth.onAuthStateChange((_event,session)=>{currentUser=session?.user||null;updateAuthDialog();if(currentUser)setTimeout(()=>syncCloud(false),400);});
  refreshSession();
 }else{
  setCloudUI("📱 Bu cihazda kayıtlı","V4 hazır; Supabase bağlantısı yapıldığında hesap ve bulut aktif olacak.");
@@ -283,7 +284,7 @@ function render(){
  let list=$("#transactions");list.innerHTML="";let recent=[...tx].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,30);if(!recent.length)list.innerHTML='<div class="small">Bu ay işlem yok.</div>';recent.forEach(t=>{let r=document.createElement("div");r.className="item";let l=document.createElement("div"),title=document.createElement("div"),meta=document.createElement("div");title.textContent=t.description||t.category;meta.className="meta";meta.textContent=`${t.category} • ${t.date} • ${t.payment}`;l.append(title,meta);let a=document.createElement("div");a.className="amount "+(t.type==="income"?"good":"bad");a.textContent=(t.type==="income"?"+":"-")+money(t.amount);r.append(l,a);list.appendChild(r)});
 }
 if("serviceWorker"in navigator){
-  navigator.serviceWorker.register("sw.js?v=4.1").then(reg=>{
+  navigator.serviceWorker.register("sw.js?v=4.2").then(reg=>{
     reg.update().catch(()=>{});
     if(reg.waiting) reg.waiting.postMessage("SKIP_WAITING");
     reg.addEventListener("updatefound",()=>{
