@@ -26,7 +26,10 @@ label{display:block;font-size:13px;color:var(--muted);margin:10px 0 5px}input,se
 </head>
 <body>
 <div class="app">
-<div class="top"><div><h1>Bütçem</h1><div class="monthnav"><button id="prev" class="ghost">‹</button><div id="monthLabel" class="month"></div><button id="next" class="ghost">›</button></div></div><button id="settingsBtn" class="ghost">Ayarlar</button></div>
+<div class="top"><div><h1>Bütçem</h1><div class="monthnav"><button id="prev" class="ghost">‹</button><div id="monthLabel" class="month"></div><button id="next" class="ghost">›</button></div></div><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end">
+<button id="cloudBtn" class="ghost" type="button">☁️ Bulut</button>
+<button id="settingsBtn" class="ghost">Ayarlar</button>
+</div></div>
 
 <div class="grid">
 <div class="card"><div class="label">Harcama</div><div id="expenseTotal" class="value bad">₺0</div></div>
@@ -36,6 +39,16 @@ label{display:block;font-size:13px;color:var(--muted);margin:10px 0 5px}input,se
 </div>
 
 <div class="section card"><div style="display:flex;justify-content:space-between"><div><div class="label">Aylık bütçe</div><div id="budgetText" style="font-weight:700;margin-top:4px">Belirlenmedi</div></div><div id="budgetPct">0%</div></div><div class="progress"><span id="budgetBar" style="width:0%"></span></div></div>
+<div class="section card" id="cloudCard">
+  <div style="display:flex;justify-content:space-between;gap:10px;align-items:center">
+    <div>
+      <div class="label">Hesap & bulut</div>
+      <div id="cloudStatus" style="font-weight:700;margin-top:4px">Bu cihazda kayıtlı</div>
+      <div id="cloudDetail" class="small" style="margin-top:4px">Bulut hesabı henüz bağlı değil.</div>
+    </div>
+    <button id="cloudCardBtn" type="button" class="ghost">Hesap</button>
+  </div>
+</div>
 
 <div class="section card"><h2>Aylık karşılaştırma</h2><div id="compare" style="font-weight:700"></div><div id="insights" class="list" style="margin-top:10px"></div></div>
 
@@ -73,5 +86,33 @@ label{display:block;font-size:13px;color:var(--muted);margin:10px 0 5px}input,se
 </div>
 <div class="actions"><button type="button" id="cancelSettings" class="ghost">Vazgeç</button><button class="primary">Ayarları kaydet</button></div>
 </form></dialog>
+
+<dialog id="authDialog"><form id="authForm">
+<h3>Hesap & Bulut</h3>
+<div id="authLoggedOut">
+  <div class="small" style="margin-bottom:10px">Aynı hesabı başka cihazda açtığında bütçe verilerin senkronize edilir. Yerel kayıt ve manuel yedek sistemi çalışmaya devam eder.</div>
+  <label>E-posta</label><input id="authEmail" type="email" autocomplete="email" required>
+  <label>Şifre</label><input id="authPassword" type="password" autocomplete="current-password" minlength="6" required>
+  <div class="actions">
+    <button type="button" id="authCancel" class="ghost">Kapat</button>
+    <button type="button" id="signUpBtn" class="ghost">Hesap oluştur</button>
+    <button type="button" id="signInBtn" class="primary">Giriş yap</button>
+  </div>
+</div>
+<div id="authLoggedIn" style="display:none">
+  <div class="backupbox">
+    <strong id="accountEmail"></strong>
+    <div id="accountSyncInfo" class="status">Bulut durumu kontrol ediliyor…</div>
+  </div>
+  <div class="actions">
+    <button type="button" id="syncNowBtn" class="primary">Şimdi senkronize et</button>
+    <button type="button" id="signOutBtn" class="ghost">Çıkış yap</button>
+    <button type="button" id="authCancel2" class="ghost">Kapat</button>
+  </div>
+</div>
+</form></dialog>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-config.js"></script>
+
 <script src="app.js"></script>
 </body></html>

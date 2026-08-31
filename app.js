@@ -1,16 +1,16 @@
 const KEY="butcem_v1";
-const DATA_VERSION=3;
+const DATA_VERSION=4;
 const DEFAULT_CATS=["Kahve","Yemek","Market","Benzin","Alışveriş","Eğlence","Ulaşım","Fatura","Sağlık","Diğer"];
 const $=s=>document.querySelector(s);
 function currentMonth(){let d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`}
 let selectedMonth=currentMonth();
 function normalize(raw){
   const s=(raw&&typeof raw==="object")?raw:{};
-  return {dataVersion:DATA_VERSION,transactions:Array.isArray(s.transactions)?s.transactions:[],monthlyBudget:Number(s.monthlyBudget)||0,categories:Array.isArray(s.categories)&&s.categories.length?s.categories:DEFAULT_CATS,lastBackupAt:s.lastBackupAt||null};
+  return {dataVersion:DATA_VERSION,transactions:Array.isArray(s.transactions)?s.transactions:[],monthlyBudget:Number(s.monthlyBudget)||0,categories:Array.isArray(s.categories)&&s.categories.length?s.categories:DEFAULT_CATS,lastBackupAt:s.lastBackupAt||null,settingsUpdatedAt:s.settingsUpdatedAt||null,lastCloudSyncAt:s.lastCloudSyncAt||null};
 }
 function load(){try{return normalize(JSON.parse(localStorage.getItem(KEY)))}catch(e){return normalize(null)}}
 let state=load();
-function save(){state.dataVersion=DATA_VERSION;localStorage.setItem(KEY,JSON.stringify(state));render()}
+function save(renderNow=true){state.dataVersion=DATA_VERSION;localStorage.setItem(KEY,JSON.stringify(state));if(renderNow)render();queueCloudSync()}
 function money(n){return new Intl.NumberFormat("tr-TR",{style:"currency",currency:"TRY",maximumFractionDigits:2}).format(n||0)}
 function today(){let d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`}
 function shift(mk,n){let [y,m]=mk.split("-").map(Number),d=new Date(y,m-1+n,1);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`}
@@ -22,7 +22,7 @@ $("#expenseBtn").onclick=()=>openTxn("expense");$("#fab").onclick=()=>openTxn("e
 $("#txnForm").onsubmit=e=>{e.preventDefault();let amount=Number($("#amount").value);if(!(amount>0))return;state.transactions.push({id:(crypto.randomUUID?crypto.randomUUID():Date.now()+""+Math.random()),type:$("#txnType").value,amount,category:$("#category").value,payment:$("#txnType").value==="income"?"Gelir":$("#payment").value,description:$("#description").value.trim(),date:$("#date").value});save();$("#txnDialog").close()};
 $("#prev").onclick=()=>{selectedMonth=shift(selectedMonth,-1);render()};$("#next").onclick=()=>{let n=shift(selectedMonth,1);if(n<=currentMonth()){selectedMonth=n;render()}};
 $("#settingsBtn").onclick=()=>{$("#monthlyBudget").value=state.monthlyBudget||"";$("#categoriesText").value=state.categories.join(", ");updateBackupStatus();$("#settingsDialog").showModal()};$("#cancelSettings").onclick=()=>$("#settingsDialog").close();
-$("#settingsForm").onsubmit=e=>{e.preventDefault();state.monthlyBudget=Math.max(0,Number($("#monthlyBudget").value)||0);let c=$("#categoriesText").value.split(",").map(x=>x.trim()).filter(Boolean);if(c.length)state.categories=[...new Set(c)];save();$("#settingsDialog").close()};
+$("#settingsForm").onsubmit=e=>{e.preventDefault();state.monthlyBudget=Math.max(0,Number($("#monthlyBudget").value)||0);let c=$("#categoriesText").value.split(",").map(x=>x.trim()).filter(Boolean);if(c.length)state.categories=[...new Set(c)];state.settingsUpdatedAt=new Date().toISOString();save();$("#settingsDialog").close()};
 
 function backupObject(){return {app:"Butcem",format:"butcem-backup",backupVersion:1,createdAt:new Date().toISOString(),data:normalize(state)}}
 $("#fullBackupBtn").onclick=()=>{let obj=backupObject();state.lastBackupAt=obj.createdAt;localStorage.setItem(KEY,JSON.stringify(state));download(`butcem-tam-yedek-${today()}.json`,JSON.stringify(obj,null,2),"application/json;charset=utf-8");updateBackupStatus()};
@@ -113,6 +113,155 @@ $("#csvImportFile").onchange=async e=>{
 $("#csvBtn").onclick=()=>{let rows=[["Tarih","Tür","Kategori","Tutar","Ödeme","Açıklama"]];state.transactions.forEach(t=>rows.push([t.date,t.type,t.category,t.amount,t.payment,t.description||""]));let csv=rows.map(r=>r.map(v=>`"${String(v).replaceAll('"','""')}"`).join(",")).join("\n");download(`butcem-${today()}.csv`,"\ufeff"+csv,"text/csv;charset=utf-8")};
 function updateBackupStatus(){let el=$("#backupStatus");if(!el)return;if(state.lastBackupAt){let d=new Date(state.lastBackupAt);el.textContent=`Son manuel tam yedek: ${d.toLocaleString("tr-TR")}. Yerel kayıtlar ayrıca cihazda tutuluyor.`}else el.textContent="Henüz tam yedek alınmadı. Kayıtların şu anda bu cihazda saklanıyor."}
 
+
+// ---------- V4 Hesap & Bulut ----------
+let sb=null, currentUser=null, cloudTimer=null, cloudBusy=false, cloudReady=false;
+
+function cloudConfigured(){
+  const c=window.BUTCEM_SUPABASE||{};
+  return !!(c.url&&c.key&&!c.url.includes("BURAYA_")&&!c.key.includes("BURAYA_"));
+}
+function initCloudClient(){
+  if(!cloudConfigured() || !window.supabase?.createClient) return false;
+  try{
+    sb=window.supabase.createClient(window.BUTCEM_SUPABASE.url,window.BUTCEM_SUPABASE.key,{
+      auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}
+    });
+    cloudReady=true; return true;
+  }catch(e){console.warn("Supabase başlatılamadı",e);return false}
+}
+function setCloudUI(main,detail){
+  if($("#cloudStatus"))$("#cloudStatus").textContent=main;
+  if($("#cloudDetail"))$("#cloudDetail").textContent=detail||"";
+  if($("#accountSyncInfo"))$("#accountSyncInfo").textContent=detail||main;
+}
+function updateAuthDialog(){
+  const logged=!!currentUser;
+  $("#authLoggedOut").style.display=logged?"none":"block";
+  $("#authLoggedIn").style.display=logged?"block":"none";
+  if(logged)$("#accountEmail").textContent=currentUser.email||"Hesabım";
+}
+function openAuth(){updateAuthDialog();$("#authDialog").showModal()}
+$("#cloudBtn").onclick=openAuth;$("#cloudCardBtn").onclick=openAuth;
+$("#authCancel").onclick=()=>$("#authDialog").close();$("#authCancel2").onclick=()=>$("#authDialog").close();
+
+function txToCloud(t,userId){return {
+ user_id:userId,id:String(t.id),type:t.type,amount:Number(t.amount||0),category:t.category||null,
+ payment:t.payment||null,card_name:t.cardName||null,description:t.description||null,note:t.note||null,
+ txn_date:t.date,updated_at:t.updatedAt||new Date().toISOString()
+}}
+function txFromCloud(t){return {
+ id:String(t.id),type:t.type,amount:Number(t.amount||0),category:t.category||"",
+ payment:t.payment||"",cardName:t.card_name||"",description:t.description||"",note:t.note||"",
+ date:t.txn_date,updatedAt:t.updated_at||null
+}}
+function txKey(t){
+ return String(t.id||[t.date,t.type,Number(t.amount),t.category,t.payment,t.description||""].join("|"));
+}
+function mergeTransactions(local,remote){
+ const m=new Map();
+ for(const t of remote)m.set(txKey(t),t);
+ for(const t of local){
+   const k=txKey(t), old=m.get(k);
+   if(!old || String(t.updatedAt||"")>=String(old.updatedAt||""))m.set(k,t);
+ }
+ return [...m.values()];
+}
+async function pullCloud(){
+ if(!sb||!currentUser)return;
+ const [{data:txs,error:txErr},{data:settings,error:setErr}]=await Promise.all([
+   sb.from("butcem_transactions").select("*").eq("user_id",currentUser.id),
+   sb.from("butcem_settings").select("*").eq("user_id",currentUser.id).maybeSingle()
+ ]);
+ if(txErr)throw txErr;if(setErr)throw setErr;
+ const remote=(txs||[]).map(txFromCloud);
+ state.transactions=mergeTransactions(state.transactions,remote);
+ if(settings){
+   const remoteStamp=settings.settings_updated_at||settings.updated_at||"";
+   const localStamp=state.settingsUpdatedAt||"";
+   if(!localStamp || remoteStamp>localStamp){
+     state.monthlyBudget=Number(settings.monthly_budget)||0;
+     if(Array.isArray(settings.categories)&&settings.categories.length)state.categories=settings.categories;
+     state.settingsUpdatedAt=remoteStamp;
+   }
+ }
+ save(false);
+}
+async function pushCloud(){
+ if(!sb||!currentUser)return;
+ if(state.transactions.length){
+   const rows=state.transactions.map(t=>txToCloud(t,currentUser.id));
+   // Küçük kişisel bütçe uygulaması için tüm yerel kayıtları idempotent upsert ediyoruz.
+   for(let i=0;i<rows.length;i+=500){
+     const {error}=await sb.from("butcem_transactions").upsert(rows.slice(i,i+500),{onConflict:"user_id,id"});
+     if(error)throw error;
+   }
+ }
+ const {error:sErr}=await sb.from("butcem_settings").upsert({
+   user_id:currentUser.id,monthly_budget:Number(state.monthlyBudget)||0,categories:state.categories,
+   settings_updated_at:state.settingsUpdatedAt||new Date().toISOString(),updated_at:new Date().toISOString()
+ },{onConflict:"user_id"});
+ if(sErr)throw sErr;
+}
+async function syncCloud(manual=false){
+ if(!sb||!currentUser||cloudBusy)return;
+ cloudBusy=true;setCloudUI("☁️ Senkronize ediliyor…","Cihaz ve hesabındaki veriler karşılaştırılıyor.");
+ try{
+   // Önce buluttakini çek, birleştir; sonra birleşmiş sonucu geri gönder.
+   await pullCloud();
+   await pushCloud();
+   await pullCloud();
+   state.lastCloudSyncAt=new Date().toISOString();
+   localStorage.setItem(KEY,JSON.stringify(state));
+   const when=new Date(state.lastCloudSyncAt).toLocaleString("tr-TR");
+   setCloudUI("☁️ Senkronize edildi",`Son senkronizasyon: ${when}`);
+   render();
+   if(manual)alert("Bulut senkronizasyonu tamamlandı.");
+ }catch(e){
+   console.error(e);
+   setCloudUI("📱 Cihazda kaydedildi","Buluta bağlanılamadı. Verilerin cihazda duruyor; bağlantı gelince tekrar deneyebilirsin.");
+   if(manual)alert("Bulut senkronizasyonu yapılamadı: "+(e.message||"Bağlantı hatası"));
+ }finally{cloudBusy=false}
+}
+function queueCloudSync(){
+ if(!currentUser||!sb)return;
+ clearTimeout(cloudTimer);cloudTimer=setTimeout(()=>syncCloud(false),800);
+}
+async function refreshSession(){
+ if(!sb)return;
+ const {data}=await sb.auth.getSession();
+ currentUser=data.session?.user||null;
+ updateAuthDialog();
+ if(currentUser){
+   setCloudUI("☁️ Hesap bağlı",currentUser.email||"Giriş yapıldı");
+   await syncCloud(false);
+ }else setCloudUI("📱 Bu cihazda kayıtlı","Bulut hesabı bağlı değil.");
+}
+$("#signInBtn").onclick=async()=>{
+ if(!sb){alert("Bulut bağlantısı henüz yapılandırılmadı.");return}
+ const email=$("#authEmail").value.trim(),password=$("#authPassword").value;
+ const {data,error}=await sb.auth.signInWithPassword({email,password});
+ if(error){alert(error.message);return}
+ currentUser=data.user;updateAuthDialog();await syncCloud(true);
+};
+$("#signUpBtn").onclick=async()=>{
+ if(!sb){alert("Bulut bağlantısı henüz yapılandırılmadı.");return}
+ const email=$("#authEmail").value.trim(),password=$("#authPassword").value;
+ const {data,error}=await sb.auth.signUp({email,password});
+ if(error){alert(error.message);return}
+ if(data.session){currentUser=data.user;updateAuthDialog();await syncCloud(true);alert("Hesabın oluşturuldu ve bu cihazdaki veriler hesabına aktarılıyor.");}
+ else alert("Hesap oluşturuldu. Supabase e-posta doğrulaması açıksa gelen kutundaki bağlantıya basıp sonra giriş yap.");
+};
+$("#signOutBtn").onclick=async()=>{if(sb)await sb.auth.signOut();currentUser=null;updateAuthDialog();setCloudUI("📱 Bu cihazda kayıtlı","Hesaptan çıkıldı. Yerel verilerin cihazda kalır.");};
+$("#syncNowBtn").onclick=()=>syncCloud(true);
+
+if(initCloudClient()){
+ sb.auth.onAuthStateChange((_event,session)=>{currentUser=session?.user||null;updateAuthDialog();if(currentUser)setTimeout(()=>syncCloud(false),0);});
+ refreshSession();
+}else{
+ setCloudUI("📱 Bu cihazda kayıtlı","V4 hazır; Supabase bağlantısı yapıldığında hesap ve bulut aktif olacak.");
+}
+
 function render(){
  $("#monthLabel").textContent=mname(selectedMonth);$("#next").disabled=selectedMonth>=currentMonth();
  let tx=state.transactions.filter(t=>t.date&&t.date.startsWith(selectedMonth)),ex=tx.filter(t=>t.type==="expense"),inc=tx.filter(t=>t.type==="income");
@@ -134,4 +283,4 @@ function render(){
  let list=$("#transactions");list.innerHTML="";let recent=[...tx].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,30);if(!recent.length)list.innerHTML='<div class="small">Bu ay işlem yok.</div>';recent.forEach(t=>{let r=document.createElement("div");r.className="item";let l=document.createElement("div"),title=document.createElement("div"),meta=document.createElement("div");title.textContent=t.description||t.category;meta.className="meta";meta.textContent=`${t.category} • ${t.date} • ${t.payment}`;l.append(title,meta);let a=document.createElement("div");a.className="amount "+(t.type==="income"?"good":"bad");a.textContent=(t.type==="income"?"+":"-")+money(t.amount);r.append(l,a);list.appendChild(r)});
 }
 if("serviceWorker"in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
-save();
+state.dataVersion=DATA_VERSION;localStorage.setItem(KEY,JSON.stringify(state));render();
