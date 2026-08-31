@@ -65,9 +65,11 @@ label{display:block;font-size:13px;color:var(--muted);margin:10px 0 5px}input,se
 <div class="toolbar" style="margin-top:10px">
 <button type="button" id="fullBackupBtn" class="primary">Tam yedek indir</button>
 <button type="button" id="restoreBtn" class="ghost">Yedeği geri yükle</button>
+<button type="button" id="csvImportBtn" class="ghost">Eski CSV’yi içe aktar</button>
 <button type="button" id="csvBtn" class="ghost">CSV dışa aktar</button>
 </div>
 <input id="restoreFile" type="file" accept=".json,application/json" style="display:none">
+<input id="csvImportFile" type="file" accept=".csv,text/csv" style="display:none">
 </div>
 <div class="actions"><button type="button" id="cancelSettings" class="ghost">Vazgeç</button><button class="primary">Ayarları kaydet</button></div>
 </form></dialog>

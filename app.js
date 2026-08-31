@@ -39,6 +39,77 @@ $("#restoreFile").onchange=async e=>{
  }catch(err){alert("Bu dosya geçerli bir Bütçem tam yedeği değil.");}
  e.target.value="";
 };
+
+$("#csvImportBtn").onclick=()=>$("#csvImportFile").click();
+
+function parseCSV(text){
+  text=text.replace(/^\ufeff/,"");
+  const rows=[]; let row=[], field="", quoted=false;
+  for(let i=0;i<text.length;i++){
+    const c=text[i], n=text[i+1];
+    if(c==='"'){
+      if(quoted && n==='"'){field+='"';i++;}
+      else quoted=!quoted;
+    }else if(c===',' && !quoted){row.push(field);field="";}
+    else if((c==='\n'||c==='\r') && !quoted){
+      if(c==='\r'&&n==='\n')i++;
+      row.push(field); field="";
+      if(row.some(x=>x!==""))rows.push(row);
+      row=[];
+    }else field+=c;
+  }
+  if(field!==""||row.length){row.push(field);rows.push(row)}
+  return rows;
+}
+function normHeader(s){return String(s||"").trim().toLocaleLowerCase("tr-TR").replace(/\s+/g," ")}
+function parseAmount(v){
+  let s=String(v??"").trim().replace(/[₺\s]/g,"");
+  if(s.includes(",") && s.includes(".")) s=s.replace(/\./g,"").replace(",",".");
+  else if(s.includes(",")) s=s.replace(",",".");
+  return Number(s);
+}
+$("#csvImportFile").onchange=async e=>{
+  const f=e.target.files[0]; if(!f)return;
+  try{
+    const rows=parseCSV(await f.text());
+    if(rows.length<2)throw new Error("CSV boş");
+    const headers=rows[0].map(normHeader);
+    const idx=(...names)=>{for(const n of names){let i=headers.indexOf(normHeader(n));if(i>=0)return i}return -1};
+    const di=idx("Tarih","Date"), ti=idx("Tür","Tip","Type"), ci=idx("Kategori","Category"),
+          ai=idx("Tutar","Amount"), pi=idx("Ödeme","Ödeme Yöntemi","Payment"),
+          xi=idx("Açıklama","Description"), ni=idx("Not","Note"), cardi=idx("Kart","Kart Adı","Card Name");
+    if(di<0||ai<0)throw new Error("Tarih/Tutar sütunu bulunamadı");
+    const imported=[];
+    for(const r of rows.slice(1)){
+      const date=String(r[di]||"").trim(), amount=parseAmount(r[ai]);
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||!(amount>0))continue;
+      let rawType=ti>=0?normHeader(r[ti]):"expense";
+      let type=(rawType.includes("gelir")||rawType==="income")?"income":"expense";
+      imported.push({
+        id:(crypto.randomUUID?crypto.randomUUID():Date.now()+""+Math.random()),
+        type, amount,
+        category:(ci>=0&&r[ci])?String(r[ci]).trim():(type==="income"?"Diğer Gelir":"Diğer"),
+        payment:type==="income"?"Gelir":((pi>=0&&r[pi])?String(r[pi]).trim():"Nakit"),
+        cardName:(cardi>=0&&r[cardi])?String(r[cardi]).trim():"",
+        description:(xi>=0&&r[xi])?String(r[xi]).trim():"",
+        note:(ni>=0&&r[ni])?String(r[ni]).trim():"",
+        date
+      });
+    }
+    if(!imported.length)throw new Error("Aktarılabilir işlem bulunamadı");
+    const existingKeys=new Set(state.transactions.map(t=>[t.date,t.type,Number(t.amount),t.category,t.payment,t.description||""].join("|")));
+    const fresh=imported.filter(t=>!existingKeys.has([t.date,t.type,Number(t.amount),t.category,t.payment,t.description||""].join("|")));
+    if(!confirm(`CSV'de ${imported.length} geçerli işlem bulundu. ${fresh.length} tanesi mevcut kayıtlarda yok ve eklenecek. Devam edilsin mi?`)){e.target.value="";return}
+    const safety=backupObject();
+    download(`butcem-csv-aktarim-oncesi-${today()}.json`,JSON.stringify(safety,null,2),"application/json;charset=utf-8");
+    state.transactions.push(...fresh);
+    state.categories=[...new Set([...state.categories,...fresh.filter(t=>t.type==="expense").map(t=>t.category)])];
+    save(); updateBackupStatus();
+    alert(`${fresh.length} işlem başarıyla içe aktarıldı. Şimdi eski uygulamayla toplamları karşılaştır.`);
+  }catch(err){alert("CSV içe aktarılamadı: "+err.message)}
+  e.target.value="";
+};
+
 $("#csvBtn").onclick=()=>{let rows=[["Tarih","Tür","Kategori","Tutar","Ödeme","Açıklama"]];state.transactions.forEach(t=>rows.push([t.date,t.type,t.category,t.amount,t.payment,t.description||""]));let csv=rows.map(r=>r.map(v=>`"${String(v).replaceAll('"','""')}"`).join(",")).join("\n");download(`butcem-${today()}.csv`,"\ufeff"+csv,"text/csv;charset=utf-8")};
 function updateBackupStatus(){let el=$("#backupStatus");if(!el)return;if(state.lastBackupAt){let d=new Date(state.lastBackupAt);el.textContent=`Son manuel tam yedek: ${d.toLocaleString("tr-TR")}. Yerel kayıtlar ayrıca cihazda tutuluyor.`}else el.textContent="Henüz tam yedek alınmadı. Kayıtların şu anda bu cihazda saklanıyor."}
 
