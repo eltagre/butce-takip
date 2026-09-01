@@ -28,7 +28,7 @@ function fillCategoryOptions(type,selected=""){
  cats.forEach(c=>{let o=document.createElement("option");o.value=c;o.textContent=c;if(c===selected)o.selected=true;$("#category").appendChild(o)});
 }
 function updateAccountSuggestions(){
- const vals=[...new Set(state.transactions.flatMap(t=>[t.cardName,t.payment]).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"tr"));
+ const vals=[...new Set([...state.transactions.flatMap(t=>[t.cardName,t.payment]),...(typeof v7!=="undefined"?v7.accounts.map(a=>a.name):[])].filter(Boolean))].sort((a,b)=>a.localeCompare(b,"tr"));
  const dl=$("#accountSuggestions");if(dl)dl.innerHTML=vals.map(v=>`<option value="${v51Esc(v)}"></option>`).join("");
 }
 function openTxn(type,txn=null){
@@ -364,7 +364,7 @@ function render(){
  filtered.forEach(t=>{let r=document.createElement("div");r.className="item v52-item v6-tappable";r.onclick=e=>{if(!e.target.closest("button"))openTxn(t.type,t)};let l=document.createElement("div");l.className="v52-item-main";let title=document.createElement("div"),meta=document.createElement("div");title.className="v52-item-title";title.textContent=t.description||t.category;meta.className="meta";meta.textContent=`${t.category} • ${t.date} • ${t.payment}`;l.append(title,meta);if(t.cardName){let pill=document.createElement("span");pill.className="v6-account-pill";pill.textContent=t.cardName;l.appendChild(pill)}let side=document.createElement("div");side.className="v52-item-side";let a=document.createElement("div");a.className="amount "+(t.type==="income"?"good":"bad");a.textContent=(t.type==="income"?"+":"-")+money(t.amount);let acts=document.createElement("div");acts.className="v52-actions";let edit=document.createElement("button");edit.className="ghost";edit.type="button";edit.textContent="Düzenle";edit.onclick=()=>openTxn(t.type,t);let del=document.createElement("button");del.className="ghost v52-delete";del.type="button";del.textContent="Sil";del.onclick=()=>deleteTransaction(t.id);acts.append(edit,del);side.append(a,acts);r.append(l,side);list.appendChild(r)});
 }
 if("serviceWorker"in navigator){
-  navigator.serviceWorker.register("sw.js?v=6.0").then(reg=>{
+  navigator.serviceWorker.register("sw.js?v=7.0").then(reg=>{
     reg.update().catch(()=>{});
     if(reg.waiting) reg.waiting.postMessage("SKIP_WAITING");
     reg.addEventListener("updatefound",()=>{
@@ -390,6 +390,67 @@ $("#v6ExportFiltered").onclick=()=>v6ExportCurrentFilter();
 
 
 
+
+
+// ===== V7 Personal Finance data =====
+// V7 yapılandırma verileri ayrı tutulur; mevcut butcem_v1 işlem verisini ve Supabase şemasını bozmaz.
+const V7_KEY="butcem_v7_finance";
+function v7Defaults(){return {accounts:[],transfers:[],recurring:[],categoryBudgets:{},goals:[]}}
+function v7Load(){try{const x=JSON.parse(localStorage.getItem(V7_KEY)||"{}");return {...v7Defaults(),...x,accounts:Array.isArray(x.accounts)?x.accounts:[],transfers:Array.isArray(x.transfers)?x.transfers:[],recurring:Array.isArray(x.recurring)?x.recurring:[],categoryBudgets:x.categoryBudgets&&typeof x.categoryBudgets==="object"?x.categoryBudgets:{},goals:Array.isArray(x.goals)?x.goals:[]}}catch(e){return v7Defaults()}}
+let v7=v7Load();
+function v7Save(){localStorage.setItem(V7_KEY,JSON.stringify(v7));v7Render();updateAccountSuggestions();v6Toast("Kaydedildi")}
+function v7Id(){return crypto.randomUUID?crypto.randomUUID():Date.now()+""+Math.random()}
+function v7AccountName(id){return v7.accounts.find(a=>a.id===id)?.name||""}
+function v7AccountBalance(a){
+ let b=Number(a.opening||0);
+ state.transactions.forEach(t=>{if((t.cardName||"")!==a.name)return;b+=t.type==="income"?Number(t.amount||0):-Number(t.amount||0)});
+ v7.transfers.forEach(t=>{if(t.from===a.id)b-=Number(t.amount||0);if(t.to===a.id)b+=Number(t.amount||0)});
+ return b;
+}
+function v7DaysLabel(day){return `Her ayın ${day}. günü`}
+function v7OpenTab(tab){
+ document.querySelectorAll("[data-v7tab]").forEach(b=>b.classList.toggle("active",b.dataset.v7tab===tab));
+ document.querySelectorAll(".v7-panel").forEach(p=>p.classList.remove("active"));
+ $("#v7"+tab.charAt(0).toUpperCase()+tab.slice(1)+"Panel")?.classList.add("active");
+}
+function v7AccountOptions(selected=""){
+ return '<option value="">Seç</option>'+v7.accounts.map(a=>`<option value="${v51Esc(a.id)}" ${a.id===selected?"selected":""}>${v51Esc(a.name)}</option>`).join("");
+}
+function v7Render(){
+ if(!$("#v7AccountsList"))return;
+ const balances=v7.accounts.map(a=>({a,b:v7AccountBalance(a)})),total=balances.reduce((s,x)=>s+x.b,0);
+ $("#v7AccountSummary").innerHTML=`<div class="v7-summarybox"><span>Hesap sayısı</span><strong>${v7.accounts.length}</strong></div><div class="v7-summarybox"><span>Toplam bakiye*</span><strong>${money(total)}</strong></div><div class="v7-summarybox"><span>Transfer</span><strong>${v7.transfers.length}</strong></div>`;
+ $("#v7AccountsList").innerHTML=balances.length?balances.map(({a,b})=>`<div class="v7-account" data-account="${v51Esc(a.id)}"><div class="name">${v51Esc(a.name)}</div><div class="kind">${v51Esc(a.type)}</div><div class="balance ${b<0?"bad":""}">${money(b)}</div><div class="flow">Başlangıç ${money(a.opening||0)}</div></div>`).join(""):`<div class="v7-empty">Henüz hesap yok. Enpara, nakit, kredi kartı gibi kullandığın hesapları ekleyebilirsin.</div>`;
+ $("#v7AccountsList").querySelectorAll("[data-account]").forEach(el=>el.onclick=()=>v7OpenAccount(el.dataset.account));
+ $("#v7TransferFrom").innerHTML=v7AccountOptions($("#v7TransferFrom").value);$("#v7TransferTo").innerHTML=v7AccountOptions($("#v7TransferTo").value);
+
+ $("#v7RecurringList").innerHTML=v7.recurring.length?v7.recurring.map(r=>`<div class="v7-row"><div class="v7-rowmain"><div class="v7-rowtitle">${v51Esc(r.description)}</div><div class="v7-rowmeta">${r.type==="income"?"Gelir":"Harcama"} · ${money(r.amount)} · ${v51Esc(r.category||"Diğer")} · ${v51Esc(r.account||"Hesap yok")}</div><span class="v7-recurring-badge">${v7DaysLabel(r.day)}</span></div><div class="v7-rowactions"><button class="ghost" data-rec-edit="${v51Esc(r.id)}">Düzenle</button><button class="primary" data-rec-add="${v51Esc(r.id)}">Bu aya ekle</button></div></div>`).join(""):`<div class="v7-empty">Kira, abonelik, maaş, burs gibi her ay tekrarlanan işlemleri burada saklayabilirsin.</div>`;
+ $("#v7RecurringList").querySelectorAll("[data-rec-edit]").forEach(b=>b.onclick=()=>v7OpenRecurring(b.dataset.recEdit));
+ $("#v7RecurringList").querySelectorAll("[data-rec-add]").forEach(b=>b.onclick=()=>v7ApplyRecurring(b.dataset.recAdd));
+
+ const monthTx=state.transactions.filter(t=>t.date&&t.date.startsWith(selectedMonth)&&t.type==="expense");
+ $("#v7CategoryBudgets").innerHTML=state.categories.map(cat=>{const lim=Number(v7.categoryBudgets[cat]||0),spent=monthTx.filter(t=>t.category===cat).reduce((s,t)=>s+Number(t.amount||0),0),pct=lim?Math.min(100,spent/lim*100):0;return `<div class="v7-budgetrow"><div class="v7-budgettop"><div><strong>${v51Esc(cat)}</strong><div class="v7-rowmeta">${money(spent)} harcandı${lim?` · ${money(Math.max(0,lim-spent))} kaldı`:""}</div></div><input data-catbudget="${v51Esc(cat)}" type="number" min="0" step="100" value="${lim||""}" placeholder="Limit" style="width:110px;margin:0"></div>${lim?`<div class="v7-progress"><span style="width:${pct}%"></span></div>`:""}</div>`}).join("");
+ $("#v7CategoryBudgets").querySelectorAll("[data-catbudget]").forEach(i=>i.onchange=()=>{const v=Math.max(0,Number(i.value)||0);if(v)v7.categoryBudgets[i.dataset.catbudget]=v;else delete v7.categoryBudgets[i.dataset.catbudget];localStorage.setItem(V7_KEY,JSON.stringify(v7));v7Render()});
+
+ $("#v7GoalsList").innerHTML=v7.goals.length?v7.goals.map(g=>{const target=Number(g.target||0),cur=Number(g.current||0),pct=target?Math.min(100,cur/target*100):0;return `<div class="v7-goal"><strong>${v51Esc(g.name)}</strong><div class="amount">${money(cur)} <span style="font-size:11px;color:var(--muted)">/ ${money(target)}</span></div><div class="v7-progress"><span style="width:${pct}%"></span></div><div class="meta">%${Math.round(pct)}${g.date?` · ${v51Esc(g.date)}`:""}</div><div class="v7-goal-actions"><button class="primary" data-goal-add="${v51Esc(g.id)}">+ Para ekle</button><button class="ghost" data-goal-edit="${v51Esc(g.id)}">Düzenle</button></div></div>`}).join(""):`<div class="v7-empty">Tatil, acil durum fonu, araba veya başka bir hedef oluşturabilirsin.</div>`;
+ $("#v7GoalsList").querySelectorAll("[data-goal-edit]").forEach(b=>b.onclick=()=>v7OpenGoal(b.dataset.goalEdit));
+ $("#v7GoalsList").querySelectorAll("[data-goal-add]").forEach(b=>b.onclick=()=>{$("#v7GoalAddId").value=b.dataset.goalAdd;$("#v7GoalAddAmount").value="";$("#v7GoalAddDialog").showModal()});
+}
+function v7OpenAccount(id=""){
+ const a=v7.accounts.find(x=>x.id===id);$("#v7AccountId").value=a?.id||"";$("#v7AccountTitle").textContent=a?"Hesabı düzenle":"Hesap ekle";$("#v7AccountName").value=a?.name||"";$("#v7AccountType").value=a?.type||"Banka Hesabı";$("#v7AccountOpening").value=a?.opening??0;$("#v7DeleteAccount").style.display=a?"inline-block":"none";$("#v7AccountDialog").showModal();
+}
+function v7OpenRecurring(id=""){
+ const r=v7.recurring.find(x=>x.id===id);$("#v7RecurringId").value=r?.id||"";$("#v7RecurringTitle").textContent=r?"Düzenli işlemi düzenle":"Düzenli işlem ekle";$("#v7RecurringType").value=r?.type||"expense";$("#v7RecurringAmount").value=r?.amount||"";$("#v7RecurringDesc").value=r?.description||"";$("#v7RecurringCategory").value=r?.category||"";$("#v7RecurringAccount").value=r?.account||"";$("#v7RecurringDay").value=r?.day||1;$("#v7RecurringStart").value=r?.start||today();$("#v7DeleteRecurring").style.display=r?"inline-block":"none";$("#v7RecurringDialog").showModal();
+}
+function v7OpenGoal(id=""){
+ const g=v7.goals.find(x=>x.id===id);$("#v7GoalId").value=g?.id||"";$("#v7GoalTitle").textContent=g?"Hedefi düzenle":"Hedef ekle";$("#v7GoalName").value=g?.name||"";$("#v7GoalTarget").value=g?.target||"";$("#v7GoalCurrent").value=g?.current??0;$("#v7GoalDate").value=g?.date||"";$("#v7DeleteGoal").style.display=g?"inline-block":"none";$("#v7GoalDialog").showModal();
+}
+function v7ApplyRecurring(id){
+ const r=v7.recurring.find(x=>x.id===id);if(!r)return;
+ const [y,m]=selectedMonth.split("-").map(Number),day=Math.min(Number(r.day||1),new Date(y,m,0).getDate()),date=`${selectedMonth}-${String(day).padStart(2,"0")}`;
+ const marker=`recurring:${r.id}:${selectedMonth}`;if(state.transactions.some(t=>t.note===marker)){v6Toast("Bu düzenli işlem bu aya zaten eklendi");return}
+ state.transactions.push({id:v7Id(),type:r.type,amount:Number(r.amount),category:r.category||(r.type==="income"?"Diğer Gelir":"Diğer"),payment:"Havale / EFT",cardName:r.account||"",description:r.description,note:marker,date,updatedAt:new Date().toISOString()});save();v7Render();v5Refresh();v6Toast(`${r.description} ${v51MonthLabel(selectedMonth)} ayına eklendi`);
+}
 
 // ===== V6 yardımcıları =====
 let v6ToastTimer=null;
@@ -417,7 +478,7 @@ function v6ElapsedDays(key){if(key!==currentMonth())return v6DaysInMonth(key);re
 const V5_PREF_KEY="butcem_v5_preferences";
 function v5GetPrefs(){try{return JSON.parse(localStorage.getItem(V5_PREF_KEY))}catch(e){return null}}
 function v5SetPrefs(p){localStorage.setItem(V5_PREF_KEY,JSON.stringify(p))}
-function v5Theme(t){document.documentElement.dataset.theme=t;let p=v5GetPrefs()||{modules:["budget"],startView:"summary"};p.theme=t;v5SetPrefs(p);const icon=t==="dark"?"☀":"◐";if($("#v5Theme")){$("#v5Theme").textContent=icon;$("#v5Theme").title=t==="dark"?"Açık tema":"Koyu tema"}if($("#v6ThemeTop")){$("#v6ThemeTop").textContent=icon;$("#v6ThemeTop").title=t==="dark"?"Açık tema":"Koyu tema"}if($("#v6AssetsTheme")){$("#v6AssetsTheme").textContent=icon;$("#v6AssetsTheme").title=t==="dark"?"Açık tema":"Koyu tema"}if($("#v6ThemeSelect"))$("#v6ThemeSelect").value=t}
+function v5Theme(t){document.documentElement.dataset.theme=t;let p=v5GetPrefs()||{modules:["budget"],startView:"summary"};p.theme=t;v5SetPrefs(p);const icon=t==="dark"?"☀":"◐";if($("#v5Theme")){$("#v5Theme").textContent=icon;$("#v5Theme").title=t==="dark"?"Açık tema":"Koyu tema"}if($("#v6ThemeTop")){$("#v6ThemeTop").textContent=icon;$("#v6ThemeTop").title=t==="dark"?"Açık tema":"Koyu tema"}if($("#v6AssetsTheme")){$("#v6AssetsTheme").textContent=icon;$("#v6AssetsTheme").title=t==="dark"?"Açık tema":"Koyu tema"}if($("#v7Theme")){$("#v7Theme").textContent=icon;$("#v7Theme").title=t==="dark"?"Açık tema":"Koyu tema"}if($("#v6ThemeSelect"))$("#v6ThemeSelect").value=t}
 function v51MonthKey(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`}
 function v51MonthLabel(key){let [y,m]=key.split("-").map(Number);return new Date(y,m-1,1).toLocaleDateString("tr-TR",{month:"long",year:"numeric"})}
 function v51Esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
@@ -522,12 +583,14 @@ function v5Refresh(){
  q("#v51Recent").querySelectorAll("[data-id]").forEach(row=>row.onclick=()=>{const t=findTxn(row.dataset.id);if(t)openTxn(t.type,t)});
 }
 function v5Show(view){
- let sum=$("#v5Summary"),app=document.querySelector(".app"),assets=$("#v6Assets");
+ let sum=$("#v5Summary"),app=document.querySelector(".app"),assets=$("#v6Assets"),finance=$("#v7Finance");
  document.body.dataset.view=view;
  sum.classList.toggle("v5-hide",view!=="summary");
  app.classList.toggle("v5-hide",!(view==="budget"||view==="transactions"));
  assets.classList.toggle("v5-hide",view!=="assets");
+ finance.classList.toggle("v5-hide",view!=="finance");
  if(view==="summary")v5Refresh();
+ if(view==="finance")v7Render();
  if(view==="budget"||view==="transactions"){render();window.scrollTo({top:0,behavior:"smooth"})}
  document.querySelectorAll("#v5Nav button").forEach(b=>b.classList.toggle("active",b.dataset.view===view));
  let p=v5GetPrefs()||{modules:["budget"]};p.lastView=view;v5SetPrefs(p);
@@ -546,6 +609,22 @@ function v5Init(){
  document.querySelector("#v6AssetsCloud").onclick=openAuth;
  document.querySelector("#v6SummarySettings").onclick=()=>$("#settingsBtn").click();
  document.querySelector("#v6AssetsSettings").onclick=()=>$("#settingsBtn").click();
+ document.querySelector("#v7Theme").onclick=()=>v5Theme(document.documentElement.dataset.theme==="dark"?"light":"dark");
+ document.querySelector("#v7Cloud").onclick=openAuth;document.querySelector("#v7Settings").onclick=()=>$("#settingsBtn").click();
+ document.querySelectorAll("[data-v7tab]").forEach(b=>b.onclick=()=>v7OpenTab(b.dataset.v7tab));
+ $("#v7AddAccount").onclick=()=>v7OpenAccount();$("#v7AddRecurring").onclick=()=>v7OpenRecurring();$("#v7AddGoal").onclick=()=>v7OpenGoal();
+ $("#v7TransferDate").value=today();
+ $("#v7AccountForm").onsubmit=e=>{e.preventDefault();const id=$("#v7AccountId").value,a={id:id||v7Id(),name:$("#v7AccountName").value.trim(),type:$("#v7AccountType").value,opening:Number($("#v7AccountOpening").value)||0};if(!a.name)return;const i=v7.accounts.findIndex(x=>x.id===id);if(i>=0){const oldName=v7.accounts[i].name;v7.accounts[i]=a;if(oldName!==a.name)state.transactions.forEach(t=>{if(t.cardName===oldName)t.cardName=a.name});save()}else v7.accounts.push(a);$("#v7AccountDialog").close();v7Save()};
+ $("#v7DeleteAccount").onclick=()=>{const id=$("#v7AccountId").value,a=v7.accounts.find(x=>x.id===id);if(!a||!confirm(`"${a.name}" hesabı silinsin mi? İşlem kayıtları silinmez.`))return;v7.accounts=v7.accounts.filter(x=>x.id!==id);v7.transfers=v7.transfers.filter(t=>t.from!==id&&t.to!==id);$("#v7AccountDialog").close();v7Save()};
+ $("#v7DoTransfer").onclick=()=>{const from=$("#v7TransferFrom").value,to=$("#v7TransferTo").value,amount=Number($("#v7TransferAmount").value),date=$("#v7TransferDate").value||today();if(!from||!to||from===to||!(amount>0)){v6Toast("Gönderen, alan ve tutarı kontrol et");return}v7.transfers.push({id:v7Id(),from,to,amount,date,description:$("#v7TransferDesc").value.trim()});$("#v7TransferAmount").value="";$("#v7TransferDesc").value="";v7Save()};
+ $("#v7RecurringForm").onsubmit=e=>{e.preventDefault();const id=$("#v7RecurringId").value,r={id:id||v7Id(),type:$("#v7RecurringType").value,amount:Number($("#v7RecurringAmount").value),description:$("#v7RecurringDesc").value.trim(),category:$("#v7RecurringCategory").value.trim(),account:$("#v7RecurringAccount").value.trim(),day:Math.min(31,Math.max(1,Number($("#v7RecurringDay").value)||1)),start:$("#v7RecurringStart").value||today()};const i=v7.recurring.findIndex(x=>x.id===id);if(i>=0)v7.recurring[i]=r;else v7.recurring.push(r);$("#v7RecurringDialog").close();v7Save()};
+ $("#v7DeleteRecurring").onclick=()=>{const id=$("#v7RecurringId").value;if(!id||!confirm("Bu düzenli işlem silinsin mi? Daha önce oluşturulan işlemler kalır."))return;v7.recurring=v7.recurring.filter(x=>x.id!==id);$("#v7RecurringDialog").close();v7Save()};
+ $("#v7GoalForm").onsubmit=e=>{e.preventDefault();const id=$("#v7GoalId").value,g={id:id||v7Id(),name:$("#v7GoalName").value.trim(),target:Number($("#v7GoalTarget").value),current:Number($("#v7GoalCurrent").value)||0,date:$("#v7GoalDate").value};const i=v7.goals.findIndex(x=>x.id===id);if(i>=0)v7.goals[i]=g;else v7.goals.push(g);$("#v7GoalDialog").close();v7Save()};
+ $("#v7DeleteGoal").onclick=()=>{const id=$("#v7GoalId").value;if(!id||!confirm("Bu hedef silinsin mi?"))return;v7.goals=v7.goals.filter(x=>x.id!==id);$("#v7GoalDialog").close();v7Save()};
+ $("#v7GoalAddForm").onsubmit=e=>{e.preventDefault();const g=v7.goals.find(x=>x.id===$("#v7GoalAddId").value),amt=Number($("#v7GoalAddAmount").value);if(g&&amt>0){g.current=Number(g.current||0)+amt;$("#v7GoalAddDialog").close();v7Save()}};
+ v7Render();
+ $("#v7FinanceBackup").onclick=()=>download(`butcem-finans-v7-${today()}.json`,JSON.stringify({app:"Bütçem",version:7,exportedAt:new Date().toISOString(),finance:v7},null,2),"application/json");
+ $("#v7FinanceRestore").onchange=async e=>{const f=e.target.files?.[0];if(!f)return;try{const x=JSON.parse(await f.text()),data=x.finance||x;if(!data||!Array.isArray(data.accounts))throw new Error();if(!confirm("V7 finans verisi bu yedekle değiştirilsin mi? Ana işlemler etkilenmez."))return;v7={...v7Defaults(),...data};v7Save()}catch(err){alert("Finans yedeği okunamadı.")}finally{e.target.value=""}};
  document.querySelector("#v51AllTx").onclick=()=>v5Show("transactions");
  document.querySelector("#v53NextMonth").onclick=()=>{const n=shift(selectedMonth,1);if(n<=currentMonth()){selectedMonth=n;v5Refresh();v6SummaryPulse()}};
  document.querySelector("#v53PrevMonth").onclick=()=>{selectedMonth=shift(selectedMonth,-1);v5Refresh();v6SummaryPulse()};
