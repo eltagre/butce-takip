@@ -119,6 +119,32 @@ html[data-theme="dark"] .item{background:var(--card)}
 html[data-theme="dark"] dialog{background:var(--card);color:var(--text)}
 @media(max-width:560px){.v52-filter{grid-template-columns:1fr 1fr}.v52-filter input{grid-column:1/-1}.v52-item-side{max-width:44%}}
 
+
+/* ===== V5.3 Etkileşimli Özet ===== */
+.v53-monthnav{display:flex;align-items:center;gap:7px}
+.v53-monthnav button{width:34px;height:34px;padding:0;border-radius:11px}
+.v53-monthnav button:disabled{opacity:.35}
+.v53-monthtitle{min-width:115px;text-align:center;font-size:13px;color:var(--muted);font-weight:700;text-transform:capitalize}
+.v53-period-tag{font-size:11px;color:var(--muted);margin-top:4px}
+.v51-chart{position:relative;overflow:visible;padding-top:30px}
+.v51-monthcol{cursor:pointer;position:relative;border-radius:10px;padding:2px 2px 0;transition:background .15s ease,transform .15s ease}
+.v51-monthcol:hover,.v51-monthcol.active{background:var(--surface2);transform:translateY(-2px)}
+.v51-bars{position:relative;overflow:visible}
+.v53-barwrap{height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;min-width:0}
+.v53-barvalue{font-size:9px;color:var(--muted);line-height:1;margin-bottom:4px;white-space:nowrap;font-weight:700}
+.v53-tooltip{position:absolute;z-index:20;top:-3px;left:50%;transform:translate(-50%,-100%);min-width:170px;padding:11px 12px;border:1px solid var(--line);border-radius:14px;background:var(--card);box-shadow:var(--shadow);pointer-events:none;opacity:0;transition:opacity .12s ease;color:var(--text)}
+.v53-tooltip.show{opacity:1}
+.v53-tooltip strong{display:block;font-size:13px;margin-bottom:7px;text-transform:capitalize}
+.v53-tooltip-row{display:flex;justify-content:space-between;gap:14px;font-size:11px;margin-top:4px}
+.v53-chart-note{font-size:10px;color:var(--muted);margin-top:7px}
+@media(max-width:430px){
+ .v53-monthtitle{min-width:94px;font-size:12px}
+ .v53-barvalue{font-size:8px;transform:rotate(-30deg);transform-origin:center;margin-bottom:7px}
+ .v51-chart{gap:4px;padding-top:36px}
+ .v51-bars{gap:2px}
+ .v53-tooltip{min-width:155px}
+}
+
 </style>
 </head>
 <body>
@@ -220,7 +246,10 @@ html[data-theme="dark"] dialog{background:var(--card);color:var(--text)}
 
 <section id="v5Summary" class="v5-summary v5-hide">
  <div class="v5-hero">
-  <div class="v51-topline"><div><div class="v5-kicker">BU AY KALAN</div><div id="v5MainValue" class="v5-hero-value">₺0</div></div><div id="v51Month" class="v51-month"></div></div>
+  <div class="v51-topline">
+  <div><div id="v53HeroKicker" class="v5-kicker">BU AY KALAN</div><div id="v5MainValue" class="v5-hero-value">₺0</div><div id="v53PeriodTag" class="v53-period-tag">Seçili ay özeti</div></div>
+  <div class="v53-monthnav"><button id="v53PrevMonth" class="ghost" type="button" aria-label="Önceki ay">‹</button><div id="v51Month" class="v53-monthtitle"></div><button id="v53NextMonth" class="ghost" type="button" aria-label="Sonraki ay">›</button></div>
+ </div>
   <div id="v5MainSub" class="v5-sub">Aylık bütçeni belirlediğinde kalan tutarı burada göreceksin.</div>
   <div class="v51-budget-track"><span id="v51BudgetBar" style="width:0%"></span></div>
  </div>
@@ -242,6 +271,7 @@ html[data-theme="dark"] dialog{background:var(--card);color:var(--text)}
  <div class="v51-panel">
   <div class="v51-panel-head"><div class="v51-panel-title">6 aylık görünüm</div><span class="v51-soon">Gelir / Gider</span></div>
   <div id="v51Chart" class="v51-chart"></div>
+  <div class="v53-chart-note">Masaüstünde üzerine gel, telefonda aya dokun: detaylar anında görünür.</div>
   <div class="v51-chart-legend"><span>● Gelir</span><span>● Harcama</span></div>
  </div>
 
@@ -261,7 +291,7 @@ html[data-theme="dark"] dialog{background:var(--card);color:var(--text)}
 <label>Başlangıç ekranı</label><select id="v5Start"><option value="summary">Finansal Özet</option><option value="budget">Bütçe</option><option value="assets">Varlıklar</option></select>
 <button id="v5Done" class="primary" style="width:100%;margin-top:16px">Bütçem'i aç</button></div></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="supabase-config.js?v=5.2"></script>
+<script src="supabase-config.js?v=5.3"></script>
 
-<script src="app.js?v=5.2"></script>
+<script src="app.js?v=5.3"></script>
 </body></html>

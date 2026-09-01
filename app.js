@@ -65,7 +65,7 @@ setQuickTxnMode("expense");
 $("#cancelTxn").onclick=()=>$("#txnDialog").close();
 $("#txnForm").onsubmit=e=>{e.preventDefault();let amount=Number($("#amount").value);if(!(amount>0))return;const editId=$("#txnEditId").value,type=$("#txnType").value;const obj={id:editId||(crypto.randomUUID?crypto.randomUUID():Date.now()+""+Math.random()),type,amount,category:$("#category").value,payment:$("#payment").value,description:$("#description").value.trim(),date:$("#date").value,updatedAt:new Date().toISOString()};if(editId){const i=state.transactions.findIndex(t=>String(t.id)===String(editId));if(i>=0)state.transactions[i]={...state.transactions[i],...obj};else state.transactions.push(obj)}else state.transactions.push(obj);save();$("#txnDialog").close();if(typeof v5Refresh==="function")v5Refresh()};
 $("#deleteTxnBtn").onclick=()=>{const id=$("#txnEditId").value;if(id)deleteTransaction(id)};
-$("#prev").onclick=()=>{selectedMonth=shift(selectedMonth,-1);render()};$("#next").onclick=()=>{let n=shift(selectedMonth,1);if(n<=currentMonth()){selectedMonth=n;render()}};
+$("#prev").onclick=()=>{selectedMonth=shift(selectedMonth,-1);render();if(typeof v5Refresh==="function")v5Refresh()};$("#next").onclick=()=>{let n=shift(selectedMonth,1);if(n<=currentMonth()){selectedMonth=n;render();if(typeof v5Refresh==="function")v5Refresh()}};
 $("#settingsBtn").onclick=()=>{$("#monthlyBudget").value=state.monthlyBudget||"";$("#categoriesText").value=state.categories.join(", ");updateBackupStatus();$("#settingsDialog").showModal()};$("#cancelSettings").onclick=()=>$("#settingsDialog").close();
 $("#settingsForm").onsubmit=e=>{e.preventDefault();state.monthlyBudget=Math.max(0,Number($("#monthlyBudget").value)||0);let c=$("#categoriesText").value.split(",").map(x=>x.trim()).filter(Boolean);if(c.length)state.categories=[...new Set(c)];state.settingsUpdatedAt=new Date().toISOString();save();$("#settingsDialog").close()};
 
@@ -345,7 +345,7 @@ function render(){
  filtered.forEach(t=>{let r=document.createElement("div");r.className="item v52-item";let l=document.createElement("div");l.className="v52-item-main";let title=document.createElement("div"),meta=document.createElement("div");title.className="v52-item-title";title.textContent=t.description||t.category;meta.className="meta";meta.textContent=`${t.category} • ${t.date} • ${t.payment}`;l.append(title,meta);let side=document.createElement("div");side.className="v52-item-side";let a=document.createElement("div");a.className="amount "+(t.type==="income"?"good":"bad");a.textContent=(t.type==="income"?"+":"-")+money(t.amount);let acts=document.createElement("div");acts.className="v52-actions";let edit=document.createElement("button");edit.className="ghost";edit.type="button";edit.textContent="Düzenle";edit.onclick=()=>openTxn(t.type,t);let del=document.createElement("button");del.className="ghost v52-delete";del.type="button";del.textContent="Sil";del.onclick=()=>deleteTransaction(t.id);acts.append(edit,del);side.append(a,acts);r.append(l,side);list.appendChild(r)});
 }
 if("serviceWorker"in navigator){
-  navigator.serviceWorker.register("sw.js?v=5.2").then(reg=>{
+  navigator.serviceWorker.register("sw.js?v=5.3").then(reg=>{
     reg.update().catch(()=>{});
     if(reg.waiting) reg.waiting.postMessage("SKIP_WAITING");
     reg.addEventListener("updatefound",()=>{
@@ -381,14 +381,19 @@ function v51Esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":
 function v51RecentDate(s){if(!s)return "";let [y,m,d]=s.split("-").map(Number);return new Date(y,m-1,d).toLocaleDateString("tr-TR",{day:"numeric",month:"short"})}
 
 function v5Refresh(){
- const key=currentMonth(), tx=state.transactions.filter(t=>t.date&&t.date.startsWith(key));
+ const key=selectedMonth, tx=state.transactions.filter(t=>t.date&&t.date.startsWith(key));
  const inc=tx.filter(t=>t.type==="income").reduce((a,t)=>a+Number(t.amount||0),0);
  const ex=tx.filter(t=>t.type==="expense").reduce((a,t)=>a+Number(t.amount||0),0);
  const net=inc-ex, budget=Number(state.monthlyBudget||0), remaining=budget?budget-ex:null;
  const q=s=>document.querySelector(s);
  q("#v5Income").textContent=money(inc);q("#v5Expense").textContent=money(ex);q("#v5Net").textContent=money(net);
  q("#v5Net").className=net>=0?"good":"bad";q("#v5Saving").textContent=inc>0?`%${Math.round(net/inc*100)}`:"—";
+ document.querySelectorAll(".v51-stat-delta").forEach((el,i)=>{if(i<2)el.textContent=key===currentMonth()?"Bu ay":"Seçili ay"});
  q("#v51Month").textContent=v51MonthLabel(key);
+ const isCurrent=key===currentMonth();
+ q("#v53HeroKicker").textContent=isCurrent?"BU AY KALAN":"SEÇİLİ AY KALAN";
+ q("#v53PeriodTag").textContent=isCurrent?"Güncel ay özeti":"Geçmiş ay özeti";
+ q("#v53NextMonth").disabled=key>=currentMonth();
  if(budget){
    q("#v5MainValue").textContent=money(remaining);
    q("#v5MainValue").className="v5-hero-value "+(remaining<0?"bad":"");
@@ -411,11 +416,43 @@ function v5Refresh(){
  q("#v51DonutTotal").textContent=money(ex);
  q("#v51Legend").innerHTML=rows.length?rows.map(([name,v],i)=>`<div class="v51-legend-row"><span class="v51-dot" style="background:${palette[i]}"></span><span class="v51-legend-name">${v51Esc(name)}</span><strong>${Math.round(v/ex*100)}%</strong></div>`).join(""):`<div class="v51-empty">Henüz harcama yok.</div>`;
 
- // Six-month chart
- const now=new Date(), months=[];
- for(let i=5;i>=0;i--){let d=new Date(now.getFullYear(),now.getMonth()-i,1),k=v51MonthKey(d);let mts=state.transactions.filter(t=>t.date&&t.date.startsWith(k));months.push({k,label:d.toLocaleDateString("tr-TR",{month:"short"}),inc:mts.filter(t=>t.type==="income").reduce((a,t)=>a+Number(t.amount||0),0),ex:mts.filter(t=>t.type==="expense").reduce((a,t)=>a+Number(t.amount||0),0)})}
+ // Six-month chart — seçili ayda biter
+ const [sy,sm]=key.split("-").map(Number), anchorDate=new Date(sy,sm-1,1), months=[];
+ for(let i=5;i>=0;i--){
+   let d=new Date(anchorDate.getFullYear(),anchorDate.getMonth()-i,1),k=v51MonthKey(d);
+   let mts=state.transactions.filter(t=>t.date&&t.date.startsWith(k));
+   months.push({
+     k,
+     label:d.toLocaleDateString("tr-TR",{month:"short"}),
+     full:d.toLocaleDateString("tr-TR",{month:"long",year:"numeric"}),
+     inc:mts.filter(t=>t.type==="income").reduce((a,t)=>a+Number(t.amount||0),0),
+     ex:mts.filter(t=>t.type==="expense").reduce((a,t)=>a+Number(t.amount||0),0)
+   });
+ }
  const max=Math.max(1,...months.flatMap(x=>[x.inc,x.ex]));
- q("#v51Chart").innerHTML=months.map(x=>`<div class="v51-monthcol"><div class="v51-bars"><span class="v51-bar income" title="Gelir ${money(x.inc)}" style="height:${Math.max(x.inc?3:0,x.inc/max*100)}%"></span><span class="v51-bar expense" title="Harcama ${money(x.ex)}" style="height:${Math.max(x.ex?3:0,x.ex/max*100)}%"></span></div><div class="v51-monthname">${v51Esc(x.label)}</div></div>`).join("");
+ const compact=n=>new Intl.NumberFormat("tr-TR",{notation:"compact",maximumFractionDigits:1}).format(n||0);
+ q("#v51Chart").innerHTML=months.map(x=>`
+   <div class="v51-monthcol" data-month="${x.k}" tabindex="0">
+     <div class="v53-tooltip">
+       <strong>${v51Esc(x.full)}</strong>
+       <div class="v53-tooltip-row"><span>Gelir</span><b class="good">${money(x.inc)}</b></div>
+       <div class="v53-tooltip-row"><span>Harcama</span><b class="bad">${money(x.ex)}</b></div>
+       <div class="v53-tooltip-row"><span>Net</span><b class="${x.inc-x.ex>=0?"good":"bad"}">${money(x.inc-x.ex)}</b></div>
+     </div>
+     <div class="v51-bars">
+       <div class="v53-barwrap"><span class="v53-barvalue">${x.inc?compact(x.inc):""}</span><span class="v51-bar income" title="Gelir ${money(x.inc)}" style="height:${Math.max(x.inc?3:0,x.inc/max*100)}%"></span></div>
+       <div class="v53-barwrap"><span class="v53-barvalue">${x.ex?compact(x.ex):""}</span><span class="v51-bar expense" title="Harcama ${money(x.ex)}" style="height:${Math.max(x.ex?3:0,x.ex/max*100)}%"></span></div>
+     </div>
+     <div class="v51-monthname">${v51Esc(x.label)}</div>
+   </div>`).join("");
+ q("#v51Chart").querySelectorAll(".v51-monthcol").forEach(col=>{
+   const tip=col.querySelector(".v53-tooltip");
+   const show=()=>{q("#v51Chart").querySelectorAll(".v51-monthcol").forEach(c=>{if(c!==col){c.classList.remove("active");c.querySelector(".v53-tooltip")?.classList.remove("show")}});col.classList.add("active");tip.classList.add("show")};
+   const hide=()=>{col.classList.remove("active");tip.classList.remove("show")};
+   col.addEventListener("mouseenter",show);col.addEventListener("mouseleave",hide);
+   col.addEventListener("focus",show);col.addEventListener("blur",hide);
+   col.addEventListener("click",e=>{e.stopPropagation();show()});
+ });
 
  // Recent transactions
  const recent=[...state.transactions].sort((a,b)=>String(b.date).localeCompare(String(a.date))).slice(0,5);
@@ -435,5 +472,8 @@ function v5Init(){
  document.querySelectorAll("#v5Nav button").forEach(b=>b.onclick=()=>v5Show(b.dataset.view));
  document.querySelector("#v5Theme").onclick=()=>v5Theme(document.documentElement.dataset.theme==="dark"?"light":"dark");
  document.querySelector("#v51AllTx").onclick=()=>v5Show("transactions");
+ document.querySelector("#v53PrevMonth").onclick=()=>{selectedMonth=shift(selectedMonth,-1);v5Refresh()};
+ document.querySelector("#v53NextMonth").onclick=()=>{const n=shift(selectedMonth,1);if(n<=currentMonth()){selectedMonth=n;v5Refresh()}};
+ document.addEventListener("click",e=>{if(!e.target.closest(".v51-monthcol"))document.querySelectorAll(".v51-monthcol.active").forEach(c=>{c.classList.remove("active");c.querySelector(".v53-tooltip")?.classList.remove("show")})});
 }
 setTimeout(v5Init,0);
