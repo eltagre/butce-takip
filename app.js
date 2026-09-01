@@ -284,7 +284,7 @@ function render(){
  let list=$("#transactions");list.innerHTML="";let recent=[...tx].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,30);if(!recent.length)list.innerHTML='<div class="small">Bu ay işlem yok.</div>';recent.forEach(t=>{let r=document.createElement("div");r.className="item";let l=document.createElement("div"),title=document.createElement("div"),meta=document.createElement("div");title.textContent=t.description||t.category;meta.className="meta";meta.textContent=`${t.category} • ${t.date} • ${t.payment}`;l.append(title,meta);let a=document.createElement("div");a.className="amount "+(t.type==="income"?"good":"bad");a.textContent=(t.type==="income"?"+":"-")+money(t.amount);r.append(l,a);list.appendChild(r)});
 }
 if("serviceWorker"in navigator){
-  navigator.serviceWorker.register("sw.js?v=4.2").then(reg=>{
+  navigator.serviceWorker.register("sw.js?v=5.0").then(reg=>{
     reg.update().catch(()=>{});
     if(reg.waiting) reg.waiting.postMessage("SKIP_WAITING");
     reg.addEventListener("updatefound",()=>{
@@ -305,3 +305,13 @@ if("serviceWorker"in navigator){
   });
 }
 state.dataVersion=DATA_VERSION;localStorage.setItem(KEY,JSON.stringify(state));render();
+
+// ===== V5 kişiselleştirme / navigasyon =====
+const V5_PREF_KEY="butcem_v5_preferences";
+function v5GetPrefs(){try{return JSON.parse(localStorage.getItem(V5_PREF_KEY))}catch(e){return null}}
+function v5SetPrefs(p){localStorage.setItem(V5_PREF_KEY,JSON.stringify(p))}
+function v5Theme(t){document.documentElement.dataset.theme=t;let p=v5GetPrefs()||{modules:["budget"],startView:"summary"};p.theme=t;v5SetPrefs(p)}
+function v5Refresh(){let tx=state.transactions.filter(t=>t.date&&t.date.startsWith(currentMonth())),inc=tx.filter(t=>t.type==="income").reduce((a,t)=>a+Number(t.amount||0),0),ex=tx.filter(t=>t.type==="expense").reduce((a,t)=>a+Number(t.amount||0),0),net=inc-ex;let q=s=>document.querySelector(s);q("#v5Income").textContent=money(inc);q("#v5Expense").textContent=money(ex);q("#v5Net").textContent=money(net);q("#v5Net").className=net>=0?"good":"bad";q("#v5Saving").textContent=inc>0?`%${Math.round(net/inc*100)}`:"—";q("#v5MainValue").textContent=money(net);q("#v5MainSub").textContent="Bu ay gelir eksi harcama"}
+function v5Show(view){let sum=document.querySelector("#v5Summary"),app=document.querySelector(".app");if(view==="summary"){sum.classList.remove("v5-hide");app.classList.add("v5-hide");v5Refresh()}else{sum.classList.add("v5-hide");app.classList.remove("v5-hide");if(view==="assets")alert("Varlıklar modülünün yeri hazır. Net Servet/Yatırım motorunu sonraki aşamada ekleyeceğiz.")}document.querySelectorAll("#v5Nav button").forEach(b=>b.classList.toggle("active",b.dataset.view===view))}
+function v5Init(){let p=v5GetPrefs();if(!p){document.querySelector("#v5Onboarding").classList.remove("v5-hide")}else{v5Theme(p.theme||"light");v5Show(p.startView||"summary")}document.querySelector("#v5Done").onclick=()=>{let modules=[...document.querySelectorAll("#v5Onboarding input:checked")].map(x=>x.value),startView=document.querySelector("#v5Start").value;p={modules:modules.length?modules:["budget"],startView,theme:"light"};v5SetPrefs(p);document.querySelector("#v5Onboarding").classList.add("v5-hide");v5Show(startView)};document.querySelectorAll("#v5Nav button").forEach(b=>b.onclick=()=>v5Show(b.dataset.view));document.querySelector("#v5Theme").onclick=()=>v5Theme(document.documentElement.dataset.theme==="dark"?"light":"dark")}
+setTimeout(v5Init,0);
