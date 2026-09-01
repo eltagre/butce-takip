@@ -145,24 +145,98 @@ html[data-theme="dark"] dialog{background:var(--card);color:var(--text)}
  .v53-tooltip{min-width:155px}
 }
 
+
+/* ===== V6 Pro Finance ===== */
+:root{--soft:#eef2f7;--warning:#b45309}
+html[data-theme="dark"]{--soft:#1a1f27;--warning:#f59e0b}
+body[data-view="transactions"] .v6-budget-only,
+body[data-view="budget"] .v6-transactions-only{display:none!important}
+body[data-view="transactions"] .v6-transactions-only,
+body[data-view="budget"] .v6-budget-only{display:block}
+.v6-shell-top{position:relative}
+.v6-top-actions{display:flex;gap:7px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.v6-iconbtn{width:42px;height:42px;padding:0;display:grid;place-items:center;font-size:17px}
+.v6-page-title{font-size:12px;color:var(--muted);font-weight:750;letter-spacing:.06em;text-transform:uppercase;margin-top:3px}
+.v6-tappable{cursor:pointer}
+.v6-tappable:active{opacity:.72}
+.v6-quick-dialog form{padding:18px}
+.v6-quick-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+.v6-quick{padding:18px 12px;border:1px solid var(--line);background:var(--card);color:var(--text);font-weight:760}
+.v6-quick strong{font-size:25px;display:block;margin-bottom:5px}
+.v6-details{margin-top:10px;border:1px solid var(--line);border-radius:14px;padding:0 12px;background:var(--surface2)}
+.v6-details summary{cursor:pointer;padding:12px 0;font-size:13px;font-weight:700;color:var(--muted)}
+.v6-details[open] summary{color:var(--text)}
+.v6-filter-wrap{display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
+.v6-filter-grid{display:grid;grid-template-columns:minmax(0,1.4fr) repeat(3,minmax(105px,.75fr));gap:8px}
+.v6-filter-grid input,.v6-filter-grid select{margin:0}
+.v6-filter-actions{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.v6-filter-summary{font-size:12px;color:var(--muted)}
+.v6-compactbtn{padding:8px 10px;font-size:12px}
+.v6-account-pill{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line);background:var(--surface2);padding:3px 7px;border-radius:999px;font-size:10px;color:var(--muted);margin-top:5px}
+.v6-insights{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.v6-insight{border:1px solid var(--line);background:var(--surface2);border-radius:16px;padding:13px;min-width:0}
+.v6-insight span{font-size:11px;color:var(--muted);display:block}
+.v6-insight strong{font-size:17px;display:block;margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.v6-insight small{font-size:10px;color:var(--muted);display:block;margin-top:4px}
+.v6-alert{margin-top:10px;border-radius:14px;padding:11px 12px;background:var(--surface2);border:1px solid var(--line);font-size:12px;line-height:1.45}
+.v6-alert.warn{border-color:color-mix(in srgb,var(--warning) 35%,var(--line));color:var(--warning)}
+.v6-payments{display:flex;flex-direction:column;gap:8px}
+.v6-payment-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line)}
+.v6-payment-row:last-child{border-bottom:0}
+.v6-payment-name{font-size:13px;font-weight:690;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.v6-payment-meta{font-size:10px;color:var(--muted);margin-top:3px}
+.v6-month-picker{position:absolute;opacity:0;width:1px;height:1px;pointer-events:none}
+#v51Month{border:0;background:transparent;padding:6px 4px;color:var(--muted)}
+.v6-thismonth{padding:6px 8px;font-size:10px;margin-top:6px}
+.v6-summary-motion{animation:v6fade .18s ease}
+@keyframes v6fade{from{opacity:.55;transform:translateY(3px)}to{opacity:1;transform:none}}
+.v6-assets{max-width:760px;margin:auto;padding:14px 14px 110px}
+.v6-assets-hero{background:var(--card);border:1px solid var(--line);border-radius:24px;padding:20px;box-shadow:var(--shadow)}
+.v6-assets-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.v6-assets-card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:15px}
+.v6-assets-card strong{display:block;font-size:15px;margin-bottom:4px}.v6-assets-card span{font-size:12px;color:var(--muted);line-height:1.4}
+.v6-coming{display:inline-block;padding:5px 8px;border:1px solid var(--line);background:var(--surface2);border-radius:999px;font-size:10px;color:var(--muted);margin-bottom:10px}
+.v6-toast{position:fixed;left:50%;bottom:calc(91px + env(safe-area-inset-bottom));transform:translate(-50%,20px);z-index:150;background:var(--text);color:var(--bg);border-radius:14px;padding:11px 13px;display:flex;gap:13px;align-items:center;box-shadow:0 16px 40px rgba(0,0,0,.24);opacity:0;pointer-events:none;transition:.2s;max-width:min(92vw,420px);font-size:12px}
+.v6-toast.show{opacity:1;transform:translate(-50%,0);pointer-events:auto}.v6-toast button{background:transparent;color:inherit;padding:4px;font-weight:800;font-size:12px}
+.v6-fab-label{font-size:0}.v6-fab-label::after{content:"+";font-size:28px}
+.v51-recent-row{cursor:pointer;border-radius:10px;padding-left:5px;padding-right:5px}.v51-recent-row:hover{background:var(--surface2)}
+.v53-monthnav{flex-wrap:wrap;justify-content:flex-end}
+@media(max-width:650px){
+ .v6-filter-grid{grid-template-columns:1fr 1fr}.v6-filter-grid input{grid-column:1/-1}
+ .v6-top-actions button:not(.v6-iconbtn){font-size:12px;padding:9px}
+}
+@media(max-width:430px){
+ .v6-insights,.v6-assets-grid{grid-template-columns:1fr 1fr}
+ .v6-payment-row{padding:8px 0}
+ .v6-quick-grid{grid-template-columns:1fr 1fr}
+ .v6-shell-top h1{font-size:25px}
+}
+
+
+.v6-page-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:2px 0 12px}
+.v6-page-head h1{margin:0;font-size:27px}
+.v6-page-head .v6-top-actions{flex-wrap:nowrap}
+.v5-theme{position:static!important}
+
 </style>
 </head>
 <body>
 <div class="app">
-<div class="top"><div><h1>Bütçem</h1><div class="monthnav"><button id="prev" class="ghost">‹</button><div id="monthLabel" class="month"></div><button id="next" class="ghost">›</button></div></div><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end">
+<div class="top v6-shell-top"><div><h1>Bütçem</h1><div class="monthnav"><button id="prev" class="ghost">‹</button><div id="monthLabel" class="month"></div><button id="next" class="ghost">›</button></div></div><div class="v6-top-actions">
+<button id="v6ThemeTop" class="ghost v6-iconbtn" type="button" aria-label="Tema" title="Tema">◐</button>
 <button id="cloudBtn" class="ghost" type="button">☁️ Bulut</button>
 <button id="settingsBtn" class="ghost">Ayarlar</button>
 </div></div>
 
-<div class="grid">
+<div class="grid v6-budget-only">
 <div class="card"><div class="label">Harcama</div><div id="expenseTotal" class="value bad">₺0</div></div>
 <div class="card"><div class="label">Gelir</div><div id="incomeTotal" class="value good">₺0</div></div>
 <div class="card"><div class="label">Net durum</div><div id="netTotal" class="value">₺0</div></div>
 <div class="card"><div class="label">Kalan bütçe</div><div id="remaining" class="value">—</div></div>
 </div>
 
-<div class="section card"><div style="display:flex;justify-content:space-between"><div><div class="label">Aylık bütçe</div><div id="budgetText" style="font-weight:700;margin-top:4px">Belirlenmedi</div></div><div id="budgetPct">0%</div></div><div class="progress"><span id="budgetBar" style="width:0%"></span></div></div>
-<div class="section card" id="cloudCard">
+<div class="section card v6-budget-only"><div style="display:flex;justify-content:space-between"><div><div class="label">Aylık bütçe</div><div id="budgetText" style="font-weight:700;margin-top:4px">Belirlenmedi</div></div><div id="budgetPct">0%</div></div><div class="progress"><span id="budgetBar" style="width:0%"></span></div></div>
+<div class="section card v6-budget-only" id="cloudCard">
   <div style="display:flex;justify-content:space-between;gap:10px;align-items:center">
     <div>
       <div class="label">Hesap & bulut</div>
@@ -173,35 +247,48 @@ html[data-theme="dark"] dialog{background:var(--card);color:var(--text)}
   </div>
 </div>
 
-<div class="section card"><h2>Aylık karşılaştırma</h2><div id="compare" style="font-weight:700"></div><div id="insights" class="list" style="margin-top:10px"></div></div>
+<div class="section card v6-budget-only"><h2>Aylık karşılaştırma</h2><div id="compare" style="font-weight:700"></div><div id="insights" class="list" style="margin-top:10px"></div></div>
 
 <div class="section toolbar"><button id="expenseBtn" class="primary">+ Harcama</button><button id="incomeBtn" class="ghost">+ Gelir</button></div>
 
-<div class="section card"><h2>Kategoriler</h2><div id="categories"></div></div>
-<div class="section card" id="transactionsCard">
+<div class="section card v6-budget-only"><h2>Kategoriler</h2><div id="categories"></div></div>
+<div class="section card v6-transactions-only" id="transactionsCard">
 <div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><h2 style="margin-bottom:10px">İşlemler</h2><span id="txnCount" class="small"></span></div>
-<div class="v52-filter">
-<input id="txnSearch" type="search" placeholder="İşlem ara…">
-<select id="txnFilterType"><option value="all">Tümü</option><option value="expense">Harcamalar</option><option value="income">Gelirler</option></select>
+<div class="v6-filter-wrap">
+<div class="v6-filter-grid">
+<input id="txnSearch" type="search" placeholder="Açıklama, kategori, hesap ara…">
+<select id="txnScope"><option value="month">Seçili ay</option><option value="all">Tüm zamanlar</option></select>
+<select id="txnFilterType"><option value="all">Gelir + Harcama</option><option value="expense">Harcamalar</option><option value="income">Gelirler</option></select>
 <select id="txnFilterCategory"><option value="all">Tüm kategoriler</option></select>
+<select id="txnFilterPayment"><option value="all">Tüm hesaplar</option></select>
+<select id="txnSort"><option value="date_desc">En yeni</option><option value="date_asc">En eski</option><option value="amount_desc">Tutar ↓</option><option value="amount_asc">Tutar ↑</option></select>
+</div>
+<div class="v6-filter-actions"><div id="txnFilterSummary" class="v6-filter-summary"></div><button id="v6ExportFiltered" class="ghost v6-compactbtn" type="button">Filtreyi CSV indir</button></div>
 </div>
 <div id="transactions" class="list"></div>
 </div>
 </div>
-<button id="fab" class="primary fab v5-fab">+ Harcama</button>
+<button id="fab" class="primary fab v5-fab v6-fab-label" aria-label="Yeni işlem">+</button>
 
 <dialog id="txnDialog"><form id="txnForm">
 <h3 id="txnTitle">Harcama ekle</h3><input id="txnType" type="hidden"><input id="txnEditId" type="hidden">
 <label>Tutar</label><input id="amount" type="number" min="0.01" step="0.01" required inputmode="decimal">
-<div class="row"><div><label>Kategori</label><select id="category"></select></div><div><label>Ödeme</label><select id="payment"><option>Nakit</option><option>Kredi Kartı</option><option>Banka Kartı</option><option>Havale / EFT</option></select></div></div>
-<label>Açıklama</label><input id="description" maxlength="100">
+<div class="row"><div><label>Kategori</label><select id="category"></select></div><div><label>Ödeme yöntemi</label><select id="payment"><option>Nakit</option><option>Kredi Kartı</option><option>Banka Kartı</option><option>Havale / EFT</option></select></div></div>
+<label>Açıklama</label><input id="description" maxlength="100" placeholder="Örn. Akşam yemeği">
 <label>Tarih</label><input id="date" type="date" required>
-<div class="actions"><button type="button" id="deleteTxnBtn" class="ghost v52-dialog-delete" style="display:none">Sil</button><button type="button" id="cancelTxn" class="ghost">Vazgeç</button><button class="primary">Kaydet</button></div>
+<details class="v6-details">
+<summary>Ek detaylar</summary>
+<label>Hesap / kart adı</label><input id="cardName" maxlength="60" list="accountSuggestions" placeholder="Örn. Enpara, Bonus, Nakit">
+<datalist id="accountSuggestions"></datalist>
+<label>Not</label><textarea id="txnNote" rows="3" maxlength="300" placeholder="İsteğe bağlı not"></textarea>
+</details>
+<div class="actions"><button type="button" id="duplicateTxnBtn" class="ghost" style="display:none">Kopyala</button><button type="button" id="deleteTxnBtn" class="ghost v52-dialog-delete" style="display:none">Sil</button><button type="button" id="cancelTxn" class="ghost">Vazgeç</button><button class="primary">Kaydet</button></div>
 </form></dialog>
 
 <dialog id="settingsDialog"><form id="settingsForm">
 <h3>Ayarlar ve verilerim</h3>
 <label>Aylık bütçe</label><input id="monthlyBudget" type="number" min="0" step="100">
+<div class="row"><div><label>Başlangıç ekranı</label><select id="v6StartView"><option value="summary">Finansal Özet</option><option value="transactions">İşlemler</option><option value="budget">Bütçe</option><option value="assets">Varlıklar</option></select></div><div><label>Tema</label><select id="v6ThemeSelect"><option value="light">Açık</option><option value="dark">Koyu</option></select></div></div>
 <label>Harcama kategorileri</label><textarea id="categoriesText" rows="5"></textarea>
 <div class="v52-helper">Virgülle ayırabilirsin. Örn: Yemek, Kahve, Market, Benzin, Araç, Faturalar, Abonelikler, Sağlık, Eğitim, Seyahat, Hediye, Kişisel Bakım.</div>
 <div class="backupbox">
@@ -245,10 +332,11 @@ html[data-theme="dark"] dialog{background:var(--card);color:var(--text)}
 </form></dialog>
 
 <section id="v5Summary" class="v5-summary v5-hide">
+ <div class="v6-page-head"><div><h1>Bütçem</h1><div class="v6-page-title">Finansal özet</div></div><div class="v6-top-actions"><button id="v6SummaryCloud" class="ghost v6-iconbtn" type="button" aria-label="Bulut" title="Hesap ve bulut">☁</button><button id="v6SummarySettings" class="ghost v6-iconbtn" type="button" aria-label="Ayarlar" title="Ayarlar">⚙</button><button id="v5Theme" class="ghost v6-iconbtn" type="button" aria-label="Tema" title="Tema">◐</button></div></div>
  <div class="v5-hero">
   <div class="v51-topline">
   <div><div id="v53HeroKicker" class="v5-kicker">BU AY KALAN</div><div id="v5MainValue" class="v5-hero-value">₺0</div><div id="v53PeriodTag" class="v53-period-tag">Seçili ay özeti</div></div>
-  <div class="v53-monthnav"><button id="v53PrevMonth" class="ghost" type="button" aria-label="Önceki ay">‹</button><div id="v51Month" class="v53-monthtitle"></div><button id="v53NextMonth" class="ghost" type="button" aria-label="Sonraki ay">›</button></div>
+  <div class="v53-monthnav"><button id="v53PrevMonth" class="ghost" type="button" aria-label="Önceki ay">‹</button><button id="v51Month" class="v53-monthtitle v6-tappable" type="button" title="Ay seç"></button><button id="v53NextMonth" class="ghost" type="button" aria-label="Sonraki ay">›</button><input id="v6MonthPicker" class="v6-month-picker" type="month"><button id="v6ThisMonth" class="ghost v6-thismonth" type="button">Bu aya dön</button></div>
  </div>
   <div id="v5MainSub" class="v5-sub">Aylık bütçeni belirlediğinde kalan tutarı burada göreceksin.</div>
   <div class="v51-budget-track"><span id="v51BudgetBar" style="width:0%"></span></div>
@@ -276,11 +364,43 @@ html[data-theme="dark"] dialog{background:var(--card);color:var(--text)}
  </div>
 
  <div class="v51-panel">
+  <div class="v51-panel-head"><div class="v51-panel-title">Akıllı görünüm</div><span class="v51-soon">Otomatik</span></div>
+  <div class="v6-insights">
+   <div class="v6-insight"><span>Günlük ortalama</span><strong id="v6DailyAvg">₺0</strong><small>Harcama temposu</small></div>
+   <div class="v6-insight"><span>Ay sonu tahmini</span><strong id="v6Projection">₺0</strong><small id="v6ProjectionMeta">Mevcut tempoya göre</small></div>
+   <div class="v6-insight"><span>En büyük harcama</span><strong id="v6Largest">—</strong><small id="v6LargestMeta">Henüz işlem yok</small></div>
+   <div class="v6-insight"><span>Harcamamasız gün</span><strong id="v6NoSpend">0 gün</strong><small>Seçili dönem</small></div>
+  </div>
+  <div id="v6BudgetAlert" class="v6-alert"></div>
+ </div>
+
+ <div class="v51-panel">
+  <div class="v51-panel-head"><div class="v51-panel-title">Hesap / ödeme dağılımı</div><span class="v51-soon">Harcama</span></div>
+  <div id="v6Payments" class="v6-payments"></div>
+ </div>
+
+ <div class="v51-panel">
   <div class="v51-panel-head"><div class="v51-panel-title">Son işlemler</div><button id="v51AllTx" class="ghost" type="button" style="padding:7px 9px;font-size:12px">Tümünü gör</button></div>
   <div id="v51Recent" class="v51-recent"></div>
  </div>
 </section>
-<button id="v5Theme" class="v5-theme" type="button">◐</button>
+
+<section id="v6Assets" class="v6-assets v5-hide">
+ <div class="v6-page-head"><div><h1>Bütçem</h1><div class="v6-page-title">Varlıklar</div></div><div class="v6-top-actions"><button id="v6AssetsCloud" class="ghost v6-iconbtn" type="button" aria-label="Bulut" title="Hesap ve bulut">☁</button><button id="v6AssetsSettings" class="ghost v6-iconbtn" type="button" aria-label="Ayarlar" title="Ayarlar">⚙</button><button id="v6AssetsTheme" class="ghost v6-iconbtn" type="button" aria-label="Tema" title="Tema">◐</button></div></div>
+ <div class="v6-assets-hero">
+   <span class="v6-coming">V8 altyapısı hazır</span>
+   <div class="v5-kicker">VARLIKLAR</div>
+   <div class="v5-hero-value" style="font-size:29px">Net Servet & Yatırımlar</div>
+   <div class="v5-sub">Bütçe modülünü bozmadan; hisse, ETF, altın, kripto, nakit ve manuel varlıkların aynı merkezde toplanacağı alan.</div>
+ </div>
+ <div class="v6-assets-grid">
+  <div class="v6-assets-card"><strong>Net servet</strong><span>TL, USD ve gram altın bazında toplam değer ve değişim.</span></div>
+  <div class="v6-assets-card"><strong>Yatırımlar</strong><span>İstediğin sembolü arayıp portföyüne ekleyebileceğin serbest yapı.</span></div>
+  <div class="v6-assets-card"><strong>Performans</strong><span>Günlük / toplam kâr-zarar ve varlık bazlı katkı analizi.</span></div>
+  <div class="v6-assets-card"><strong>Karşılaştırma</strong><span>“Hepsi altın / QQQ / seçtiğim hisse olsaydı?” geçmiş fiyat simülasyonu.</span></div>
+ </div>
+</section>
+
 <nav class="v5-nav" id="v5Nav"><button data-view="summary"><i>⌂</i>Özet</button><button data-view="transactions"><i>⇄</i>İşlemler</button><button data-view="budget"><i>◎</i>Bütçe</button><button data-view="assets"><i>◇</i>Varlıklar</button></nav>
 <div id="v5Onboarding" class="v5-onboarding v5-hide"><div><div class="v5-kicker">BÜTÇEM V5</div><h2>Bütçem'i ne için kullanacaksın?</h2><p class="v5-sub">Birden fazla seçebilirsin. Tercihlerini daha sonra değiştirebileceksin.</p>
 <label class="v5-choice"><input type="checkbox" value="budget" checked>💳 Harcama ve bütçe takibi</label>
@@ -288,10 +408,18 @@ html[data-theme="dark"] dialog{background:var(--card);color:var(--text)}
 <label class="v5-choice"><input type="checkbox" value="investments">📈 Yatırım takibi</label>
 <label class="v5-choice"><input type="checkbox" value="compare">⚖️ Portföy karşılaştırma / backtest</label>
 <label class="v5-choice"><input type="checkbox" value="goals">🎯 Birikim hedefleri</label>
-<label>Başlangıç ekranı</label><select id="v5Start"><option value="summary">Finansal Özet</option><option value="budget">Bütçe</option><option value="assets">Varlıklar</option></select>
+<label>Başlangıç ekranı</label><select id="v5Start"><option value="summary">Finansal Özet</option><option value="transactions">İşlemler</option><option value="budget">Bütçe</option><option value="assets">Varlıklar</option></select>
 <button id="v5Done" class="primary" style="width:100%;margin-top:16px">Bütçem'i aç</button></div></div>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="supabase-config.js?v=5.3"></script>
 
-<script src="app.js?v=5.3"></script>
+<dialog id="v6QuickDialog" class="v6-quick-dialog"><form method="dialog">
+<h3 style="margin:0">Yeni işlem</h3><div class="v5-sub" style="margin-top:5px">Ne eklemek istiyorsun?</div>
+<div class="v6-quick-grid"><button id="v6QuickExpense" type="button" class="v6-quick"><strong>−</strong>Harcama</button><button id="v6QuickIncome" type="button" class="v6-quick"><strong>+</strong>Gelir</button></div>
+<div class="actions"><button class="ghost">Kapat</button></div>
+</form></dialog>
+<div id="v6Toast" class="v6-toast"><span id="v6ToastText">Kaydedildi</span><button id="v6ToastAction" type="button" style="display:none">Geri al</button></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-config.js?v=6.0"></script>
+
+<script src="app.js?v=6.0"></script>
 </body></html>
