@@ -286,6 +286,11 @@ body[data-view="budget"] .v6-budget-only{display:block}
 .v81-status{font-size:9px;color:var(--muted);line-height:1.4}.v81-refresh{display:flex;gap:7px;align-items:center}.v81-agegrid{display:grid;grid-template-columns:1fr 1fr;gap:9px}.v81-agegrid .wide{grid-column:1/-1}
 .v81-badge{display:inline-flex;padding:4px 7px;border:1px solid var(--line);border-radius:999px;font-size:9px;color:var(--muted)}
 
+
+/* ===== V8.2 Shared Market / FX / Gold ===== */
+.v82-marketgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin:10px 0 12px}.v82-rate{border:1px solid var(--line);border-radius:14px;padding:11px;background:var(--surface2)}.v82-rate span{display:block;font-size:9px;color:var(--muted);margin-bottom:4px}.v82-rate strong{font-size:15px;letter-spacing:-.02em}.v82-rate small{display:block;margin-top:4px;font-size:9px}.v82-attribution{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}.v82-attribution span{font-size:9px;padding:5px 8px;border:1px solid var(--line);border-radius:999px;color:var(--muted)}.v82-server{font-size:9px;color:var(--muted);margin-top:6px}.v82-server b{color:var(--text)}
+@media(max-width:700px){.v82-marketgrid{grid-template-columns:1fr}.v82-rate{display:grid;grid-template-columns:1fr auto;align-items:center}.v82-rate span,.v82-rate small{grid-column:1}.v82-rate strong{grid-column:2;grid-row:1/3}}
+
 </style>
 </head>
 <body>
@@ -505,7 +510,7 @@ body[data-view="budget"] .v6-budget-only{display:block}
  <div id="v8OverviewPanel" class="v8-panel active">
   <div class="v8-card v8-hero">
    <div><div class="v5-kicker">NET SERVET</div><div id="v8NetWorth" class="v8-net">₺0</div><div id="v8NetMeta" class="v8-subvalue">Varlıklar yükleniyor…</div><div id="v8Measure" class="v8-measure" style="margin-top:12px"><button class="ghost active" data-measure="TRY">TL</button><button class="ghost" data-measure="USD">USD</button><button class="ghost" data-measure="GOLD">Gram Altın</button></div></div>
-   <div id="v8Metrics" class="v8-metrics"></div>
+   <div><div id="v8Metrics" class="v8-metrics"></div><div id="v82Attribution" class="v82-attribution"></div></div>
   </div>
   <div class="v8-card"><div class="v8-cardhead"><strong>Varlık dağılımı</strong><span id="v8AssetCount" class="v7-chip">0 varlık</span></div><div id="v8Allocation" class="v8-allocation"></div><div id="v8AllocationLegend" class="v8-legend"></div></div>
   <div class="v8-card"><div class="v8-cardhead"><strong>Servet anlık görüntüleri</strong><button id="v8TakeSnapshot" class="ghost v6-compactbtn" type="button">Bugünü kaydet</button></div><div id="v8Snapshots" class="v8-snapshot"></div><div class="v8-source">Anlık görüntüler net servetin zaman içindeki değişimini cihazda saklar.</div></div>
@@ -513,7 +518,7 @@ body[data-view="budget"] .v6-budget-only{display:block}
 
  <div id="v8PortfolioPanel" class="v8-panel">
   <div class="v8-card"><div class="v8-cardhead"><div><strong>Portföy & varlıklar</strong><div id="v81MarketStatus" class="v81-live"><i></i> Otomatik piyasa verisi</div></div><div class="v81-refresh"><span id="v81LastRefresh" class="v81-status"></span><button id="v81RefreshAll" class="ghost v6-compactbtn" type="button">↻ Fiyatları yenile</button><button id="v8AddAsset" class="primary v6-compactbtn" type="button">+ Varlık</button></div></div><div id="v8AssetsList" class="v8-assets"></div></div>
-  <div class="v8-card"><div class="v8-cardhead"><strong>Değerleme ayarları</strong><span class="v7-chip">API + fallback</span></div><div class="v8-formgrid"><div><label>USD / TRY</label><input id="v8UsdTry" type="number" min="0.01" step="0.0001"></div><div><label>Gram altın (TRY)</label><input id="v8GramGold" type="number" min="0.01" step="0.01"></div></div><div class="actions"><button id="v8SaveRates" class="primary" type="button">Kurları kaydet</button></div><div class="v8-source">Hisse/ETF/kripto fiyatları market-data Edge Function üzerinden otomatik yenilenir. USD/TRY ve gram altın alanları API verisi bulunamadığında güvenli fallback olarak kullanılır.</div></div>
+  <div class="v8-card"><div class="v8-cardhead"><strong>Canlı kur & altın</strong><span class="v7-chip">V8.2 · ortak cache</span></div><div class="v82-marketgrid"><div class="v82-rate"><span>USD / TRY</span><strong id="v82UsdTryLive">—</strong><small id="v82UsdTryChange">—</small></div><div class="v82-rate"><span>XAU / USD · ons</span><strong id="v82XauUsdLive">—</strong><small id="v82XauUsdChange">—</small></div><div class="v82-rate"><span>Gram altın · türetilmiş</span><strong id="v82GramGoldLive">—</strong><small id="v82GramGoldChange">—</small></div></div><div id="v82ServerCache" class="v82-server">Piyasa verisi hazırlanıyor…</div><details style="margin-top:12px"><summary style="cursor:pointer">Gelişmiş: API kesilirse manuel fallback</summary><div class="v8-formgrid" style="margin-top:10px"><div><label>USD / TRY</label><input id="v8UsdTry" type="number" min="0.01" step="0.0001"></div><div><label>Gram altın (TRY)</label><input id="v8GramGold" type="number" min="0.01" step="0.01"></div></div><div class="actions"><button id="v8SaveRates" class="primary" type="button">Fallback değerlerini kaydet</button></div></details><div class="v8-source">USD/TRY ve XAU/USD otomatik çekilir. Gram altın = XAU/USD × USD/TRY ÷ 31,1034768. Altın türündeki TRY varlıklarda miktar gram kabul edilir ve fiyat otomatik güncellenir. API erişilemezse son başarılı değer/fallback kullanılır.</div></div>
  </div>
 
  <div id="v8WealthPanel" class="v8-panel">
@@ -523,7 +528,7 @@ body[data-view="budget"] .v6-budget-only{display:block}
  </div>
 
  <div id="v8BacktestPanel" class="v8-panel">
-  <div class="v8-card"><div class="v8-cardhead"><strong>Backtest laboratuvarı</strong><span class="v7-chip">CSV fiyat motoru</span></div>
+  <div class="v8-card"><div class="v8-cardhead"><strong>Backtest laboratuvarı</strong><span class="v7-chip">Otomatik piyasa geçmişi</span></div>
    <div class="v8-btgrid">
     <div><div class="v8-import"><strong>Otomatik geçmiş veri</strong><br>Sembolü yazıp backtest çalıştırman yeterli. Bütçem geçmiş günlük fiyatları API üzerinden çeker ve cihazda cache'ler.<div id="v81HistoryStatus" class="v81-status" style="margin-top:7px"></div><details style="margin-top:10px"><summary style="cursor:pointer">Gelişmiş: manuel CSV</summary><div style="margin-top:8px"><strong>Fiyat geçmişi yükle</strong><br>CSV formatı: <code>date,symbol,close</code><br>Örnek: <code>2025-01-02,QQQ,521.31</code><br>Aynı dosyada birden fazla sembol olabilir.<div class="actions" style="justify-content:flex-start"><label class="ghost" style="cursor:pointer;padding:9px 11px;border-radius:11px">CSV yükle<input id="v8PriceCsv" type="file" accept=".csv,text/csv" hidden></label><button id="v8ClearPrices" class="ghost" type="button">Veriyi temizle</button></div><div id="v8PriceInfo" class="v8-hint"></div></div></details></div></div>
     <div class="v8-formgrid"><div><label>Başlangıç</label><input id="v8BtStart" type="date"></div><div><label>Bitiş</label><input id="v8BtEnd" type="date"></div><div><label>Başlangıç sermayesi</label><input id="v8BtCapital" type="number" min="1" step="100" value="100000"></div><div><label>Periyodik ekleme</label><input id="v8BtContribution" type="number" min="0" step="100" value="0"></div><div><label>Ekleme sıklığı</label><select id="v8BtFrequency"><option value="none">Yok</option><option value="monthly">Aylık</option></select></div><div><label>Rebalance</label><select id="v8BtRebalance"><option value="none">Yok</option><option value="monthly">Aylık</option><option value="yearly">Yıllık</option></select></div></div>
@@ -531,7 +536,7 @@ body[data-view="budget"] .v6-budget-only{display:block}
    <div style="margin-top:12px"><div class="v8-cardhead"><strong>Backtest portföyü</strong><button id="v8AddBtRow" class="ghost v6-compactbtn" type="button">+ Sembol</button></div><div id="v8BtRows" class="v8-hypo"></div></div>
    <div class="actions"><button id="v8RunBacktest" class="primary" type="button">Backtest çalıştır</button></div>
   </div>
-  <div class="v8-card"><div class="v8-cardhead"><strong>Sonuç</strong><span id="v8BtRange" class="v7-chip">—</span></div><div id="v8BtStats" class="v8-statgrid"></div><div id="v8BtChart" class="v8-chart" style="margin-top:12px"><div class="v8-chart-empty">CSV fiyat geçmişi yükleyip portföy ağırlıklarını belirle.</div></div></div>
+  <div class="v8-card"><div class="v8-cardhead"><strong>Sonuç</strong><span id="v8BtRange" class="v7-chip">—</span></div><div id="v8BtStats" class="v8-statgrid"></div><div id="v8BtChart" class="v8-chart" style="margin-top:12px"><div class="v8-chart-empty">Sembol ve tarih aralığını belirleyip backtest çalıştır.</div></div></div>
  </div>
 
  <div id="v8ComparePanel" class="v8-panel">
@@ -595,7 +600,7 @@ body[data-view="budget"] .v6-budget-only{display:block}
 <div id="v6Toast" class="v6-toast"><span id="v6ToastText">Kaydedildi</span><button id="v6ToastAction" type="button" style="display:none">Geri al</button></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="supabase-config.js?v=8.1.1"></script>
+<script src="supabase-config.js?v=8.2"></script>
 
-<script src="app.js?v=8.1.1"></script>
+<script src="app.js?v=8.2"></script>
 </body></html>
