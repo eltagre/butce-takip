@@ -364,7 +364,7 @@ function render(){
  filtered.forEach(t=>{let r=document.createElement("div");r.className="item v52-item v6-tappable";r.onclick=e=>{if(!e.target.closest("button"))openTxn(t.type,t)};let l=document.createElement("div");l.className="v52-item-main";let title=document.createElement("div"),meta=document.createElement("div");title.className="v52-item-title";title.textContent=t.description||t.category;meta.className="meta";meta.textContent=`${t.category} • ${t.date} • ${t.payment}`;l.append(title,meta);if(t.cardName){let pill=document.createElement("span");pill.className="v6-account-pill";pill.textContent=t.cardName;l.appendChild(pill)}let side=document.createElement("div");side.className="v52-item-side";let a=document.createElement("div");a.className="amount "+(t.type==="income"?"good":"bad");a.textContent=(t.type==="income"?"+":"-")+money(t.amount);let acts=document.createElement("div");acts.className="v52-actions";let edit=document.createElement("button");edit.className="ghost";edit.type="button";edit.textContent="Düzenle";edit.onclick=()=>openTxn(t.type,t);let del=document.createElement("button");del.className="ghost v52-delete";del.type="button";del.textContent="Sil";del.onclick=()=>deleteTransaction(t.id);acts.append(edit,del);side.append(a,acts);r.append(l,side);list.appendChild(r)});
 }
 if("serviceWorker"in navigator){
-  navigator.serviceWorker.register("sw.js?v=7.0").then(reg=>{
+  navigator.serviceWorker.register("sw.js?v=8.0").then(reg=>{
     reg.update().catch(()=>{});
     if(reg.waiting) reg.waiting.postMessage("SKIP_WAITING");
     reg.addEventListener("updatefound",()=>{
@@ -391,6 +391,104 @@ $("#v6ExportFiltered").onclick=()=>v6ExportCurrentFilter();
 
 
 
+
+
+// ===== V8 Wealth & Backtest =====
+const V8_KEY="butcem_v8_wealth";
+const V8_PRICE_KEY="butcem_v8_prices";
+function v8Defaults(){return {assets:[],rates:{usdtry:40,gramGold:4000},measure:"TRY",snapshots:[],btRows:[{symbol:"QQQ",weight:60},{symbol:"BTC",weight:20},{symbol:"GLD",weight:20}],compare:[{name:"Hepsi QQQ",symbol:"QQQ"},{name:"Hepsi BTC",symbol:"BTC"},{name:"Hepsi Altın",symbol:"GLD"}]}}
+function v8Load(){try{const x=JSON.parse(localStorage.getItem(V8_KEY)||"{}");return {...v8Defaults(),...x,assets:Array.isArray(x.assets)?x.assets:[],rates:{...v8Defaults().rates,...(x.rates||{})},snapshots:Array.isArray(x.snapshots)?x.snapshots:[],btRows:Array.isArray(x.btRows)&&x.btRows.length?x.btRows:v8Defaults().btRows,compare:Array.isArray(x.compare)?x.compare:v8Defaults().compare}}catch(e){return v8Defaults()}}
+function v8LoadPrices(){try{return JSON.parse(localStorage.getItem(V8_PRICE_KEY)||"{}")}catch(e){return {}}}
+let v8=v8Load(),v8Prices=v8LoadPrices(),v8LastBacktest=null;
+function v8Save(show=true){localStorage.setItem(V8_KEY,JSON.stringify(v8));v8Render();if(show)v6Toast("Kaydedildi")}
+function v8TypeName(t){return ({stock:"Hisse",etf:"ETF",crypto:"Kripto",gold:"Altın",cash:"Nakit / Döviz",realestate:"Gayrimenkul",vehicle:"Araç",other:"Diğer"})[t]||t}
+function v8Fx(a){return a.currency==="USD"?Number(v8.rates.usdtry||0):1}
+function v8AssetValueTry(a){return Number(a.qty||0)*Number(a.price||0)*v8Fx(a)}
+function v8AssetCostTry(a){return Number(a.qty||0)*Number(a.cost||0)*v8Fx(a)}
+function v8TotalTry(){return v8.assets.reduce((s,a)=>s+v8AssetValueTry(a),0)}
+function v8FormatTryValue(val,measure=v8.measure){
+ if(measure==="USD")return "$"+new Intl.NumberFormat("en-US",{maximumFractionDigits:0}).format(val/Math.max(.0001,Number(v8.rates.usdtry||1)));
+ if(measure==="GOLD")return new Intl.NumberFormat("tr-TR",{maximumFractionDigits:1}).format(val/Math.max(.0001,Number(v8.rates.gramGold||1)))+" gr";
+ return money(val);
+}
+function v8OpenTab(tab){document.querySelectorAll("[data-v8tab]").forEach(b=>b.classList.toggle("active",b.dataset.v8tab===tab));document.querySelectorAll(".v8-panel").forEach(p=>p.classList.remove("active"));$("#v8"+tab.charAt(0).toUpperCase()+tab.slice(1)+"Panel")?.classList.add("active");}
+function v8OpenAsset(id=""){const a=v8.assets.find(x=>x.id===id);$("#v8AssetId").value=a?.id||"";$("#v8AssetTitle").textContent=a?"Varlığı düzenle":"Varlık ekle";$("#v8AssetName").value=a?.name||"";$("#v8AssetType").value=a?.type||"stock";$("#v8AssetSymbol").value=a?.symbol||"";$("#v8AssetQty").value=a?.qty??1;$("#v8AssetPrice").value=a?.price??"";$("#v8AssetCurrency").value=a?.currency||"TRY";$("#v8AssetCost").value=a?.cost??"";$("#v8AssetPrev").value=a?.prev??"";$("#v8AssetNote").value=a?.note||"";$("#v8DeleteAsset").style.display=a?"inline-block":"none";$("#v8AssetDialog").showModal()}
+function v8Color(i){return `hsl(${(210+i*53)%360} 65% 55%)`}
+function v8WealthEstimateUSD(usd,scope){
+ // Broad, deliberately approximate anchors. Global calibrated to UBS wealth bands.
+ const global=[[0,5],[10000,40.7],[100000,82],[1000000,98.4],[5000000,99.7],[10000000,99.9]];
+ // Experimental Türkiye anchors: broad distribution positioning, not literal WID percentile thresholds.
+ const tr=[[0,5],[5000,35],[25000,55],[75000,75],[200000,90],[750000,99],[2500000,99.8]];
+ const arr=scope==="tr"?tr:global;
+ if(usd<=0)return {pct:0,top:100};
+ let pct=arr[0][1];
+ for(let i=1;i<arr.length;i++){if(usd<=arr[i][0]){let [x0,y0]=arr[i-1],[x1,y1]=arr[i];let lx=Math.log10(Math.max(1,usd)),l0=Math.log10(Math.max(1,x0)),l1=Math.log10(Math.max(1,x1));pct=y0+(y1-y0)*Math.max(0,Math.min(1,(lx-l0)/Math.max(.0001,l1-l0)));return {pct,top:100-pct}}pct=arr[i][1]}
+ return {pct:Math.min(99.99,pct),top:Math.max(.01,100-pct)};
+}
+function v8Render(){
+ if(!$("#v8NetWorth"))return;
+ const total=v8TotalTry(),usd=total/Math.max(.0001,Number(v8.rates.usdtry||1)),cost=v8.assets.reduce((s,a)=>s+v8AssetCostTry(a),0),pl=total-cost;
+ const prev=v8.assets.reduce((s,a)=>s+Number(a.qty||0)*Number(a.prev||a.price||0)*v8Fx(a),0),day=total-prev,dayPct=prev?day/prev*100:0;
+ $("#v8NetWorth").textContent=v8FormatTryValue(total);$("#v8NetMeta").textContent=`${v8.assets.length} varlık · Maliyet bazlı ${pl>=0?"+":""}${v8FormatTryValue(pl,"TRY")}`;
+ $("#v8Metrics").innerHTML=`<div class="v8-metric"><span>Bugün</span><strong class="${day>=0?"good":"bad"}">${day>=0?"+":""}${money(day)}</strong></div><div class="v8-metric"><span>Günlük %</span><strong class="${dayPct>=0?"good":"bad"}">${dayPct>=0?"+":""}${dayPct.toFixed(2)}%</strong></div><div class="v8-metric"><span>Toplam P/L</span><strong class="${pl>=0?"good":"bad"}">${pl>=0?"+":""}${money(pl)}</strong></div>`;
+ document.querySelectorAll("[data-measure]").forEach(b=>b.classList.toggle("active",b.dataset.measure===v8.measure));$("#v8AssetCount").textContent=`${v8.assets.length} varlık`;
+ const typeTotals={};v8.assets.forEach(a=>typeTotals[a.type]=(typeTotals[a.type]||0)+v8AssetValueTry(a));const alloc=Object.entries(typeTotals).sort((a,b)=>b[1]-a[1]);
+ $("#v8Allocation").innerHTML=alloc.map(([t,val],i)=>`<span style="width:${total?val/total*100:0}%;background:${v8Color(i)}"></span>`).join("");
+ $("#v8AllocationLegend").innerHTML=alloc.length?alloc.map(([t,val],i)=>`<div class="v8-legendrow"><span><i class="v8-dot" style="background:${v8Color(i)}"></i>${v8TypeName(t)}</span><strong>%${total?(val/total*100).toFixed(1):0}</strong></div>`).join(""):`<div class="v7-empty">Henüz varlık eklenmedi.</div>`;
+ $("#v8Snapshots").innerHTML=v8.snapshots.length?v8.snapshots.slice(-4).reverse().map(s=>`<div class="v8-snap"><span>${v51RecentDate(s.date)}</span><strong>${v8FormatTryValue(s.total,"TRY")}</strong></div>`).join(""):`<div class="v7-empty">Henüz anlık görüntü yok.</div>`;
+
+ $("#v8AssetsList").innerHTML=v8.assets.length?[...v8.assets].sort((a,b)=>v8AssetValueTry(b)-v8AssetValueTry(a)).map(a=>{const val=v8AssetValueTry(a),c=v8AssetCostTry(a),p=c?(val-c)/c*100:0;return `<div class="v8-asset"><div><div class="v8-assetname">${v51Esc(a.name)}</div><div class="v8-assetmeta">${v51Esc(v8TypeName(a.type))}${a.symbol?` · ${v51Esc(a.symbol.toUpperCase())}`:""} · ${a.qty} × ${a.currency} ${a.price}</div></div><div class="v8-assetval"><span>Değer</span><strong>${money(val)}</strong></div><div class="v8-assetval v8-hide-mobile"><span>P/L</span><strong class="${p>=0?"good":"bad"}">${p>=0?"+":""}${p.toFixed(1)}%</strong></div><div class="v8-assetval v8-hide-mobile"><span>Ağırlık</span><strong>%${total?(val/total*100).toFixed(1):0}</strong></div><div class="v8-asset-actions"><button class="ghost" data-v8edit="${v51Esc(a.id)}">Düzenle</button></div></div>`}).join(""):`<div class="v7-empty">Altın, hisse, ETF, kripto, nakit, ev, araç veya başka bir varlık ekleyebilirsin.</div>`;
+ $("#v8AssetsList").querySelectorAll("[data-v8edit]").forEach(b=>b.onclick=()=>v8OpenAsset(b.dataset.v8edit));
+ $("#v8UsdTry").value=v8.rates.usdtry;$("#v8GramGold").value=v8.rates.gramGold;
+
+ const gr=v8WealthEstimateUSD(usd,"global"),tr=v8WealthEstimateUSD(usd,"tr"),fmtTop=x=>x<.1?`ilk %${x.toFixed(2)}`:x<1?`ilk %${x.toFixed(1)}`:`ilk %${Math.round(x)}`;
+ $("#v8WealthRanks").innerHTML=`<div class="v8-rank"><div class="flag">🇹🇷</div><div class="rankbig">${fmtTop(tr.top)}</div><div class="rankmeta">Türkiye’de tahmini servet konumu · deneysel interpolasyon</div></div><div class="v8-rank"><div class="flag">🌍</div><div class="rankbig">${fmtTop(gr.top)}</div><div class="rankmeta">Dünya yetişkin servet dağılımında yaklaşık konum</div></div>`;
+ const ladd=[["Alt %50",50],["%50–75",75],["%75–90",90],["%90–99",99],["İlk %1",100]];
+ $("#v8WealthLadder").innerHTML=ladd.map(([label,p])=>`<div class="v8-ladderrow"><span>${label}</span><div class="v8-ladderbar">${gr.pct<=p&&gr.pct>(p===50?0:(p===75?50:p===90?75:p===99?90:99))?`<i style="left:${Math.max(2,Math.min(98,(gr.pct-(p===50?0:(p===75?50:p===90?75:p===99?90:99)))/(p-(p===50?0:(p===75?50:p===90?75:p===99?90:99)))*100))}%"></i>`:""}</div><strong>${p}%</strong></div>`).join("");
+
+ v8RenderBtRows();v8RenderCompareRows();v8PriceInfo();
+}
+function v8RenderBtRows(){
+ $("#v8BtRows").innerHTML=v8.btRows.map((r,i)=>`<div class="v8-hyporow"><input data-btsym="${i}" value="${v51Esc(r.symbol||"")}" placeholder="Sembol"><input data-btweight="${i}" type="number" min="0" max="100" step="1" value="${Number(r.weight||0)}"><button class="ghost" data-btdel="${i}" type="button">Sil</button></div>`).join("");
+ $("#v8BtRows").querySelectorAll("[data-btsym]").forEach(e=>e.onchange=()=>{v8.btRows[+e.dataset.btsym].symbol=e.value.trim().toUpperCase();v8Save(false)});
+ $("#v8BtRows").querySelectorAll("[data-btweight]").forEach(e=>e.onchange=()=>{v8.btRows[+e.dataset.btweight].weight=Math.max(0,Number(e.value)||0);v8Save(false)});
+ $("#v8BtRows").querySelectorAll("[data-btdel]").forEach(e=>e.onclick=()=>{v8.btRows.splice(+e.dataset.btdel,1);v8Save(false)});
+}
+function v8RenderCompareRows(){
+ $("#v8CompareRows").innerHTML=v8.compare.map((r,i)=>`<div class="v8-benchmark"><input data-cname="${i}" value="${v51Esc(r.name||"")}" placeholder="Senaryo adı"><input data-csym="${i}" value="${v51Esc(r.symbol||"")}" placeholder="Sembol"><span class="v8-bench-cost"></span><button class="ghost" data-cdel="${i}" type="button">Sil</button></div>`).join("");
+ $("#v8CompareRows").querySelectorAll("[data-cname]").forEach(e=>e.onchange=()=>{v8.compare[+e.dataset.cname].name=e.value;v8Save(false)});
+ $("#v8CompareRows").querySelectorAll("[data-csym]").forEach(e=>e.onchange=()=>{v8.compare[+e.dataset.csym].symbol=e.value.trim().toUpperCase();v8Save(false)});
+ $("#v8CompareRows").querySelectorAll("[data-cdel]").forEach(e=>e.onclick=()=>{v8.compare.splice(+e.dataset.cdel,1);v8Save(false)});
+}
+function v8ParseCsv(text){
+ const lines=text.replace(/\r/g,"").split("\n").filter(Boolean),head=lines.shift().split(",").map(x=>x.trim().toLowerCase()),di=head.indexOf("date"),si=head.indexOf("symbol"),ci=head.indexOf("close");if(di<0||si<0||ci<0)throw new Error("columns");
+ const out={};for(const line of lines){const p=line.split(","),d=p[di]?.trim(),s=p[si]?.trim().toUpperCase(),c=Number(p[ci]);if(!d||!s||!(c>0))continue;(out[s]??=[]).push([d,c])}Object.values(out).forEach(a=>a.sort((x,y)=>x[0].localeCompare(y[0])));return out;
+}
+function v8PriceInfo(){const syms=Object.keys(v8Prices),n=syms.reduce((s,k)=>s+v8Prices[k].length,0);if($("#v8PriceInfo"))$("#v8PriceInfo").textContent=syms.length?`${syms.length} sembol · ${n} fiyat noktası · ${syms.join(", ")}`:"Henüz fiyat geçmişi yok."}
+function v8Series(symbol,start,end){return (v8Prices[String(symbol).toUpperCase()]||[]).filter(x=>(!start||x[0]>=start)&&(!end||x[0]<=end))}
+function v8MonthlyKey(d){return d.slice(0,7)}
+function v8Backtest(rows,start,end,capital,contrib,frequency,rebalance){
+ rows=rows.filter(r=>r.symbol&&r.weight>0);const ws=rows.reduce((s,r)=>s+Number(r.weight),0);if(!rows.length||!ws)throw new Error("Portföy ağırlığı yok");
+ const maps={},datesSet=new Set();for(const r of rows){const ser=v8Series(r.symbol,start,end);if(ser.length<2)throw new Error(`${r.symbol} için yeterli fiyat yok`);maps[r.symbol]=Object.fromEntries(ser);ser.forEach(x=>datesSet.add(x[0]))}
+ const dates=[...datesSet].sort();const common=dates.filter(d=>rows.every(r=>maps[r.symbol][d]));if(common.length<2)throw new Error("Sembollerin ortak tarihleri yetersiz");
+ let cash=0,shares={};rows.forEach(r=>shares[r.symbol]=capital*(r.weight/ws)/maps[r.symbol][common[0]]);
+ let invested=capital,lastMonth=v8MonthlyKey(common[0]),lastYear=common[0].slice(0,4),curve=[];
+ for(let i=0;i<common.length;i++){const d=common[i],month=v8MonthlyKey(d),year=d.slice(0,4);let value=Object.entries(shares).reduce((s,[sym,q])=>s+q*maps[sym][d],cash);
+   if(i>0&&frequency==="monthly"&&month!==lastMonth&&contrib>0){rows.forEach(r=>shares[r.symbol]+=contrib*(r.weight/ws)/maps[r.symbol][d]);invested+=contrib;value+=contrib}
+   const doRebal=i>0&&((rebalance==="monthly"&&month!==lastMonth)||(rebalance==="yearly"&&year!==lastYear));if(doRebal){value=Object.entries(shares).reduce((s,[sym,q])=>s+q*maps[sym][d],0);rows.forEach(r=>shares[r.symbol]=value*(r.weight/ws)/maps[r.symbol][d])}
+   value=Object.entries(shares).reduce((s,[sym,q])=>s+q*maps[sym][d],cash);curve.push([d,value]);lastMonth=month;lastYear=year;
+ }
+ const final=curve.at(-1)[1],years=Math.max(1/365,(new Date(curve.at(-1)[0])-new Date(curve[0][0]))/31557600000),cagr=Math.pow(final/capital,1/years)-1;
+ let peak=curve[0][1],mdd=0;const rets=[];for(let i=1;i<curve.length;i++){peak=Math.max(peak,curve[i][1]);mdd=Math.min(mdd,curve[i][1]/peak-1);rets.push(curve[i][1]/curve[i-1][1]-1)}
+ const mean=rets.reduce((s,x)=>s+x,0)/Math.max(1,rets.length),sd=Math.sqrt(rets.reduce((s,x)=>s+(x-mean)**2,0)/Math.max(1,rets.length-1)),vol=sd*Math.sqrt(252),sharpe=vol?mean*252/vol:0;
+ return {curve,final,invested,totalReturn:final/invested-1,cagr,mdd,vol,sharpe,start:curve[0][0],end:curve.at(-1)[0]};
+}
+function v8DrawChart(result){
+ const box=$("#v8BtChart");if(!result){box.innerHTML='<div class="v8-chart-empty">Sonuç yok.</div>';return}
+ const pts=result.curve,vals=pts.map(x=>x[1]),min=Math.min(...vals),max=Math.max(...vals),w=800,h=220,p=18,den=max-min||1,path=pts.map((x,i)=>`${i?"L":"M"} ${p+i/(pts.length-1)*(w-2*p)} ${h-p-(x[1]-min)/den*(h-2*p)}`).join(" ");
+ box.innerHTML=`<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-label="Backtest eğrisi"><path d="${path}" fill="none" stroke="currentColor" stroke-width="3" vector-effect="non-scaling-stroke"/></svg>`;
+}
+function v8ShowBacktest(r){v8LastBacktest=r;$("#v8BtRange").textContent=`${r.start} → ${r.end}`;$("#v8BtStats").innerHTML=`<div class="v8-stat"><span>Son değer</span><strong>${money(r.final)}</strong></div><div class="v8-stat"><span>Toplam getiri</span><strong class="${r.totalReturn>=0?"good":"bad"}">${(r.totalReturn*100).toFixed(1)}%</strong></div><div class="v8-stat"><span>CAGR</span><strong>${(r.cagr*100).toFixed(1)}%</strong></div><div class="v8-stat"><span>Max drawdown</span><strong class="bad">${(r.mdd*100).toFixed(1)}%</strong></div><div class="v8-stat"><span>Volatilite</span><strong>${(r.vol*100).toFixed(1)}%</strong></div><div class="v8-stat"><span>Sharpe*</span><strong>${r.sharpe.toFixed(2)}</strong></div><div class="v8-stat"><span>Yatırılan</span><strong>${money(r.invested)}</strong></div><div class="v8-stat"><span>Net fark</span><strong>${money(r.final-r.invested)}</strong></div>`;v8DrawChart(r)}
 
 // ===== V7 Personal Finance data =====
 // V7 yapılandırma verileri ayrı tutulur; mevcut butcem_v1 işlem verisini ve Supabase şemasını bozmaz.
@@ -588,6 +686,7 @@ function v5Show(view){
  sum.classList.toggle("v5-hide",view!=="summary");
  app.classList.toggle("v5-hide",!(view==="budget"||view==="transactions"));
  assets.classList.toggle("v5-hide",view!=="assets");
+ if(view==="assets")v8Render();
  finance.classList.toggle("v5-hide",view!=="finance");
  if(view==="summary")v5Refresh();
  if(view==="finance")v7Render();
@@ -609,6 +708,22 @@ function v5Init(){
  document.querySelector("#v6AssetsCloud").onclick=openAuth;
  document.querySelector("#v6SummarySettings").onclick=()=>$("#settingsBtn").click();
  document.querySelector("#v6AssetsSettings").onclick=()=>$("#settingsBtn").click();
+ document.querySelectorAll("[data-v8tab]").forEach(b=>b.onclick=()=>v8OpenTab(b.dataset.v8tab));
+ document.querySelectorAll("[data-measure]").forEach(b=>b.onclick=()=>{v8.measure=b.dataset.measure;v8Save(false)});
+ $("#v8AddAsset").onclick=()=>v8OpenAsset();
+ $("#v8AssetForm").onsubmit=e=>{e.preventDefault();const id=$("#v8AssetId").value,a={id:id||v7Id(),name:$("#v8AssetName").value.trim(),type:$("#v8AssetType").value,symbol:$("#v8AssetSymbol").value.trim().toUpperCase(),qty:Number($("#v8AssetQty").value)||0,price:Number($("#v8AssetPrice").value)||0,currency:$("#v8AssetCurrency").value,cost:Number($("#v8AssetCost").value)||0,prev:Number($("#v8AssetPrev").value)||0,note:$("#v8AssetNote").value.trim()};const i=v8.assets.findIndex(x=>x.id===id);if(i>=0)v8.assets[i]=a;else v8.assets.push(a);$("#v8AssetDialog").close();v8Save()};
+ $("#v8DeleteAsset").onclick=()=>{const id=$("#v8AssetId").value;if(!id||!confirm("Bu varlık silinsin mi?"))return;v8.assets=v8.assets.filter(a=>a.id!==id);$("#v8AssetDialog").close();v8Save()};
+ $("#v8SaveRates").onclick=()=>{v8.rates.usdtry=Math.max(.0001,Number($("#v8UsdTry").value)||1);v8.rates.gramGold=Math.max(.0001,Number($("#v8GramGold").value)||1);v8Save()};
+ $("#v8TakeSnapshot").onclick=()=>{const d=today(),total=v8TotalTry(),i=v8.snapshots.findIndex(s=>s.date===d),snap={date:d,total};if(i>=0)v8.snapshots[i]=snap;else v8.snapshots.push(snap);v8.snapshots.sort((a,b)=>a.date.localeCompare(b.date));v8Save()};
+ $("#v8PriceCsv").onchange=async e=>{const f=e.target.files?.[0];if(!f)return;try{const parsed=v8ParseCsv(await f.text());v8Prices={...v8Prices,...parsed};localStorage.setItem(V8_PRICE_KEY,JSON.stringify(v8Prices));v8PriceInfo();v6Toast("Fiyat geçmişi yüklendi")}catch(err){alert("CSV okunamadı. date,symbol,close başlıklarını kontrol et.")}finally{e.target.value=""}};
+ $("#v8ClearPrices").onclick=()=>{if(confirm("Yüklenen backtest fiyat geçmişi silinsin mi?")){v8Prices={};localStorage.removeItem(V8_PRICE_KEY);v8PriceInfo();v8DrawChart(null)}};
+ $("#v8AddBtRow").onclick=()=>{v8.btRows.push({symbol:"",weight:0});v8Save(false)};
+ $("#v8RunBacktest").onclick=()=>{try{const r=v8Backtest(v8.btRows,$("#v8BtStart").value,$("#v8BtEnd").value,Math.max(1,Number($("#v8BtCapital").value)||100000),Math.max(0,Number($("#v8BtContribution").value)||0),$("#v8BtFrequency").value,$("#v8BtRebalance").value);v8ShowBacktest(r)}catch(err){alert(err.message||"Backtest çalıştırılamadı.")}};
+ $("#v8AddCompare").onclick=()=>{v8.compare.push({name:"Yeni senaryo",symbol:""});v8Save(false)};
+ $("#v8RunCompare").onclick=()=>{const start=$("#v8BtStart").value,end=$("#v8BtEnd").value,capital=Math.max(1,Number($("#v8BtCapital").value)||100000),contrib=Math.max(0,Number($("#v8BtContribution").value)||0),freq=$("#v8BtFrequency").value;const rows=[];for(const c of v8.compare){try{const r=v8Backtest([{symbol:c.symbol,weight:100}],start,end,capital,contrib,freq,"none");rows.push({name:c.name,symbol:c.symbol,r})}catch(err){rows.push({name:c.name,symbol:c.symbol,error:err.message})}}$("#v8CompareTable").innerHTML=`<table class="v8-table"><thead><tr><th>Senaryo</th><th>Son değer</th><th>Getiri</th><th>CAGR</th><th>Max DD</th></tr></thead><tbody>${rows.map(x=>x.error?`<tr><td>${v51Esc(x.name)} (${v51Esc(x.symbol)})</td><td colspan="4">${v51Esc(x.error)}</td></tr>`:`<tr><td>${v51Esc(x.name)} (${v51Esc(x.symbol)})</td><td>${money(x.r.final)}</td><td>${(x.r.totalReturn*100).toFixed(1)}%</td><td>${(x.r.cagr*100).toFixed(1)}%</td><td>${(x.r.mdd*100).toFixed(1)}%</td></tr>`).join("")}</tbody></table>`};
+ $("#v8Backup").onclick=()=>download(`butcem-v8-${today()}.json`,JSON.stringify({app:"Bütçem",version:8,exportedAt:new Date().toISOString(),wealth:v8,prices:v8Prices},null,2),"application/json");
+ $("#v8Restore").onchange=async e=>{const f=e.target.files?.[0];if(!f)return;try{const x=JSON.parse(await f.text()),data=x.wealth||x;if(!data||!Array.isArray(data.assets))throw new Error();if(!confirm("V8 yatırım verisi bu yedekle değiştirilsin mi?"))return;v8={...v8Defaults(),...data};v8Prices=x.prices||v8Prices;localStorage.setItem(V8_PRICE_KEY,JSON.stringify(v8Prices));v8Save()}catch(err){alert("V8 yedeği okunamadı.")}finally{e.target.value=""}};
+ v8Render();
  document.querySelector("#v7Theme").onclick=()=>v5Theme(document.documentElement.dataset.theme==="dark"?"light":"dark");
  document.querySelector("#v7Cloud").onclick=openAuth;document.querySelector("#v7Settings").onclick=()=>$("#settingsBtn").click();
  document.querySelectorAll("[data-v7tab]").forEach(b=>b.onclick=()=>v7OpenTab(b.dataset.v7tab));

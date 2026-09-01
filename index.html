@@ -251,6 +251,33 @@ body[data-view="budget"] .v6-budget-only{display:block}
 .v7-chip{display:inline-flex;align-items:center;padding:4px 7px;border:1px solid var(--line);background:var(--surface2);border-radius:999px;font-size:9px;color:var(--muted)}
 @media(max-width:520px){.v7-account-grid,.v7-goalgrid{grid-template-columns:1fr}.v7-summarygrid{grid-template-columns:1fr 1fr}.v7-formgrid{grid-template-columns:1fr}.v7-formgrid .wide{grid-column:auto}.v7-account-select{grid-template-columns:1fr}.v7-transfer-arrow{transform:rotate(90deg);padding:0}}
 
+
+/* ===== V8 Wealth & Backtest ===== */
+.v8-wrap{max-width:900px;margin:auto;padding:14px 14px 118px}
+.v8-head{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:12px}.v8-head h1{margin:0;font-size:27px}.v8-head .sub{font-size:12px;color:var(--muted);margin-top:3px}
+.v8-tabs{display:flex;gap:7px;overflow:auto;padding:3px 0 10px;scrollbar-width:none}.v8-tabs::-webkit-scrollbar{display:none}.v8-tabs button{white-space:nowrap;padding:9px 12px}.v8-tabs button.active{background:var(--text);color:var(--bg);border-color:var(--text)}
+.v8-panel{display:none}.v8-panel.active{display:block}
+.v8-card{background:var(--card);border:1px solid var(--line);border-radius:21px;padding:16px;margin-top:10px;box-shadow:var(--shadow)}
+.v8-cardhead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}.v8-cardhead strong{font-size:16px}
+.v8-hero{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(230px,.7fr);gap:12px}.v8-net{font-size:34px;font-weight:860;letter-spacing:-.035em;margin-top:4px}.v8-subvalue{font-size:12px;color:var(--muted);margin-top:5px}
+.v8-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.v8-metric{border:1px solid var(--line);background:var(--surface2);border-radius:15px;padding:12px}.v8-metric span{display:block;font-size:10px;color:var(--muted)}.v8-metric strong{display:block;font-size:15px;margin-top:5px}
+.v8-measure{display:flex;gap:5px;flex-wrap:wrap}.v8-measure button{padding:6px 9px;font-size:10px}.v8-measure button.active{background:var(--text);color:var(--bg);border-color:var(--text)}
+.v8-allocation{display:flex;height:14px;border-radius:999px;overflow:hidden;border:1px solid var(--line);background:var(--surface2)}.v8-allocation span{height:100%;min-width:2px}.v8-legend{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:11px}.v8-legendrow{display:flex;justify-content:space-between;gap:8px;font-size:11px}.v8-dot{width:8px;height:8px;border-radius:50%;display:inline-block;background:var(--accent);margin-right:5px}
+.v8-assets{display:flex;flex-direction:column;gap:7px}.v8-asset{display:grid;grid-template-columns:minmax(0,1.3fr) repeat(3,minmax(90px,.55fr)) auto;gap:9px;align-items:center;padding:11px 0;border-bottom:1px solid var(--line)}.v8-asset:last-child{border-bottom:0}.v8-assetname{font-weight:760;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.v8-assetmeta{font-size:10px;color:var(--muted);margin-top:4px}.v8-assetval{font-size:12px;text-align:right}.v8-assetval strong{display:block;font-size:13px}.v8-asset-actions{display:flex;gap:5px}.v8-asset-actions button{padding:6px 8px;font-size:10px}
+.v8-wealthgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.v8-rank{border:1px solid var(--line);background:var(--surface2);border-radius:18px;padding:15px}.v8-rank .flag{font-size:20px}.v8-rank .rankbig{font-size:26px;font-weight:860;margin-top:7px}.v8-rank .rankmeta{font-size:10px;color:var(--muted);margin-top:5px;line-height:1.45}
+.v8-ladder{display:flex;flex-direction:column;gap:6px;margin-top:12px}.v8-ladderrow{display:grid;grid-template-columns:80px 1fr auto;gap:9px;align-items:center;font-size:10px}.v8-ladderbar{height:8px;background:var(--surface2);border:1px solid var(--line);border-radius:999px;position:relative}.v8-ladderbar i{position:absolute;top:-4px;width:2px;height:14px;background:var(--text);border-radius:3px}
+.v8-btgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.v8-formgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px}.v8-formgrid .wide{grid-column:1/-1}.v8-formgrid input,.v8-formgrid select,.v8-formgrid textarea{margin:0}
+.v8-tablewrap{overflow:auto}.v8-table{width:100%;border-collapse:collapse;font-size:11px;min-width:620px}.v8-table th,.v8-table td{text-align:right;padding:8px 7px;border-bottom:1px solid var(--line)}.v8-table th:first-child,.v8-table td:first-child{text-align:left}.v8-table th{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.v8-chart{height:230px;position:relative;border:1px solid var(--line);border-radius:16px;background:var(--surface2);overflow:hidden}.v8-chart svg{width:100%;height:100%;display:block}.v8-chart-empty{height:100%;display:grid;place-items:center;text-align:center;padding:20px;font-size:12px;color:var(--muted)}
+.v8-benchmark-list{display:flex;flex-direction:column;gap:7px}.v8-benchmark{display:grid;grid-template-columns:minmax(0,1fr) 90px 90px auto;gap:8px;align-items:center}.v8-benchmark input{margin:0}.v8-benchmark button{padding:6px 8px;font-size:10px}
+.v8-import{border:1px dashed var(--line);background:var(--surface2);border-radius:16px;padding:13px;font-size:11px;color:var(--muted);line-height:1.5}.v8-import code{font-size:10px}
+.v8-statgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.v8-stat{background:var(--surface2);border:1px solid var(--line);border-radius:14px;padding:11px}.v8-stat span{display:block;font-size:9px;color:var(--muted)}.v8-stat strong{display:block;font-size:14px;margin-top:5px}
+.v8-hypo{display:flex;flex-direction:column;gap:8px}.v8-hyporow{display:grid;grid-template-columns:minmax(0,1fr) 100px auto;gap:8px;align-items:center}.v8-hyporow input,.v8-hyporow select{margin:0}
+.v8-source{font-size:9px;color:var(--muted);line-height:1.5;margin-top:8px}.v8-warning{padding:10px 11px;border:1px solid var(--line);background:var(--surface2);border-radius:14px;font-size:10px;color:var(--muted);line-height:1.5}
+.v8-snapshot{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.v8-snap{border:1px solid var(--line);background:var(--surface2);border-radius:14px;padding:10px}.v8-snap span{display:block;font-size:9px;color:var(--muted)}.v8-snap strong{display:block;font-size:13px;margin-top:4px}
+@media(max-width:700px){.v8-hero,.v8-btgrid{grid-template-columns:1fr}.v8-asset{grid-template-columns:minmax(0,1fr) 90px auto}.v8-asset .v8-hide-mobile{display:none}.v8-statgrid,.v8-snapshot{grid-template-columns:1fr 1fr}.v8-metrics{grid-template-columns:1fr 1fr}}
+@media(max-width:480px){.v8-wealthgrid{grid-template-columns:1fr}.v8-formgrid{grid-template-columns:1fr}.v8-formgrid .wide{grid-column:auto}.v8-legend{grid-template-columns:1fr}.v8-benchmark{grid-template-columns:1fr 85px auto}.v8-benchmark .v8-bench-cost{display:none}.v8-net{font-size:30px}}
+
 </style>
 </head>
 <body>
@@ -456,19 +483,50 @@ body[data-view="budget"] .v6-budget-only{display:block}
  </div>
 </section>
 
-<section id="v6Assets" class="v6-assets v5-hide">
- <div class="v6-page-head"><div><h1>Bütçem</h1><div class="v6-page-title">Varlıklar</div></div><div class="v6-top-actions"><button id="v6AssetsCloud" class="ghost v6-iconbtn" type="button" aria-label="Bulut" title="Hesap ve bulut">☁</button><button id="v6AssetsSettings" class="ghost v6-iconbtn" type="button" aria-label="Ayarlar" title="Ayarlar">⚙</button><button id="v6AssetsTheme" class="ghost v6-iconbtn" type="button" aria-label="Tema" title="Tema">◐</button></div></div>
- <div class="v6-assets-hero">
-   <span class="v6-coming">V8 altyapısı hazır</span>
-   <div class="v5-kicker">VARLIKLAR</div>
-   <div class="v5-hero-value" style="font-size:29px">Net Servet & Yatırımlar</div>
-   <div class="v5-sub">Bütçe modülünü bozmadan; hisse, ETF, altın, kripto, nakit ve manuel varlıkların aynı merkezde toplanacağı alan.</div>
+
+<section id="v6Assets" class="v8-wrap v5-hide">
+ <div class="v8-head"><div><h1>Bütçem</h1><div class="sub">Net servet & yatırım laboratuvarı</div></div><div class="v6-top-actions"><button id="v6AssetsCloud" class="ghost v6-iconbtn" type="button" title="Hesap ve bulut">☁</button><button id="v6AssetsSettings" class="ghost v6-iconbtn" type="button" title="Ayarlar">⚙</button><button id="v6AssetsTheme" class="ghost v6-iconbtn" type="button" title="Tema">◐</button></div></div>
+ <div class="v8-tabs">
+  <button class="ghost active" data-v8tab="overview">Genel Bakış</button>
+  <button class="ghost" data-v8tab="portfolio">Portföy</button>
+  <button class="ghost" data-v8tab="wealth">Servet Konumum</button>
+  <button class="ghost" data-v8tab="backtest">Backtest</button>
+  <button class="ghost" data-v8tab="compare">Karşılaştır</button>
  </div>
- <div class="v6-assets-grid">
-  <div class="v6-assets-card"><strong>Net servet</strong><span>TL, USD ve gram altın bazında toplam değer ve değişim.</span></div>
-  <div class="v6-assets-card"><strong>Yatırımlar</strong><span>İstediğin sembolü arayıp portföyüne ekleyebileceğin serbest yapı.</span></div>
-  <div class="v6-assets-card"><strong>Performans</strong><span>Günlük / toplam kâr-zarar ve varlık bazlı katkı analizi.</span></div>
-  <div class="v6-assets-card"><strong>Karşılaştırma</strong><span>“Hepsi altın / QQQ / seçtiğim hisse olsaydı?” geçmiş fiyat simülasyonu.</span></div>
+
+ <div id="v8OverviewPanel" class="v8-panel active">
+  <div class="v8-card v8-hero">
+   <div><div class="v5-kicker">NET SERVET</div><div id="v8NetWorth" class="v8-net">₺0</div><div id="v8NetMeta" class="v8-subvalue">Varlıklar yükleniyor…</div><div id="v8Measure" class="v8-measure" style="margin-top:12px"><button class="ghost active" data-measure="TRY">TL</button><button class="ghost" data-measure="USD">USD</button><button class="ghost" data-measure="GOLD">Gram Altın</button></div></div>
+   <div id="v8Metrics" class="v8-metrics"></div>
+  </div>
+  <div class="v8-card"><div class="v8-cardhead"><strong>Varlık dağılımı</strong><span id="v8AssetCount" class="v7-chip">0 varlık</span></div><div id="v8Allocation" class="v8-allocation"></div><div id="v8AllocationLegend" class="v8-legend"></div></div>
+  <div class="v8-card"><div class="v8-cardhead"><strong>Servet anlık görüntüleri</strong><button id="v8TakeSnapshot" class="ghost v6-compactbtn" type="button">Bugünü kaydet</button></div><div id="v8Snapshots" class="v8-snapshot"></div><div class="v8-source">Anlık görüntüler net servetin zaman içindeki değişimini cihazda saklar.</div></div>
+ </div>
+
+ <div id="v8PortfolioPanel" class="v8-panel">
+  <div class="v8-card"><div class="v8-cardhead"><strong>Portföy & varlıklar</strong><button id="v8AddAsset" class="primary v6-compactbtn" type="button">+ Varlık</button></div><div id="v8AssetsList" class="v8-assets"></div></div>
+  <div class="v8-card"><div class="v8-cardhead"><strong>Değerleme ayarları</strong><span class="v7-chip">Manuel / API-ready</span></div><div class="v8-formgrid"><div><label>USD / TRY</label><input id="v8UsdTry" type="number" min="0.01" step="0.0001"></div><div><label>Gram altın (TRY)</label><input id="v8GramGold" type="number" min="0.01" step="0.01"></div></div><div class="actions"><button id="v8SaveRates" class="primary" type="button">Kurları kaydet</button></div><div class="v8-source">V8.0 güvenilirliği için piyasa fiyatlarını kendiliğinden uydurmaz. Manuel değerleme çalışır; API katmanı sonraki bağlantı için hazır tutulur.</div></div>
+ </div>
+
+ <div id="v8WealthPanel" class="v8-panel">
+  <div class="v8-card"><div class="v8-cardhead"><strong>Servet Konumum</strong><span class="v7-chip">Tahmini</span></div><div id="v8WealthRanks" class="v8-wealthgrid"></div><div id="v8WealthLadder" class="v8-ladder"></div><div class="v8-warning" style="margin-top:12px">Bu ekran kesin bir kişi sıralaması değildir. Servet dağılımı kaynaklarından elde edilen geniş bantları ve interpolasyonu kullanır. Türkiye görünümü deneysel tahmindir; dünya görünümü UBS küresel servet bantlarıyla kalibre edilmiştir.</div><div class="v8-source">Kaynak referansı: UBS Global Wealth Report 2025/2026 küresel servet piramidi; World Inequality Report 2026 Türkiye servet dağılımı. Veri yılı ve yöntem kod içinde saklanır.</div></div>
+ </div>
+
+ <div id="v8BacktestPanel" class="v8-panel">
+  <div class="v8-card"><div class="v8-cardhead"><strong>Backtest laboratuvarı</strong><span class="v7-chip">CSV fiyat motoru</span></div>
+   <div class="v8-btgrid">
+    <div><div class="v8-import"><strong>Fiyat geçmişi yükle</strong><br>CSV formatı: <code>date,symbol,close</code><br>Örnek: <code>2025-01-02,QQQ,521.31</code><br>Aynı dosyada birden fazla sembol olabilir.<div class="actions" style="justify-content:flex-start"><label class="ghost" style="cursor:pointer;padding:9px 11px;border-radius:11px">CSV yükle<input id="v8PriceCsv" type="file" accept=".csv,text/csv" hidden></label><button id="v8ClearPrices" class="ghost" type="button">Veriyi temizle</button></div><div id="v8PriceInfo" class="v8-hint"></div></div></div>
+    <div class="v8-formgrid"><div><label>Başlangıç</label><input id="v8BtStart" type="date"></div><div><label>Bitiş</label><input id="v8BtEnd" type="date"></div><div><label>Başlangıç sermayesi</label><input id="v8BtCapital" type="number" min="1" step="100" value="100000"></div><div><label>Periyodik ekleme</label><input id="v8BtContribution" type="number" min="0" step="100" value="0"></div><div><label>Ekleme sıklığı</label><select id="v8BtFrequency"><option value="none">Yok</option><option value="monthly">Aylık</option></select></div><div><label>Rebalance</label><select id="v8BtRebalance"><option value="none">Yok</option><option value="monthly">Aylık</option><option value="yearly">Yıllık</option></select></div></div>
+   </div>
+   <div style="margin-top:12px"><div class="v8-cardhead"><strong>Backtest portföyü</strong><button id="v8AddBtRow" class="ghost v6-compactbtn" type="button">+ Sembol</button></div><div id="v8BtRows" class="v8-hypo"></div></div>
+   <div class="actions"><button id="v8RunBacktest" class="primary" type="button">Backtest çalıştır</button></div>
+  </div>
+  <div class="v8-card"><div class="v8-cardhead"><strong>Sonuç</strong><span id="v8BtRange" class="v7-chip">—</span></div><div id="v8BtStats" class="v8-statgrid"></div><div id="v8BtChart" class="v8-chart" style="margin-top:12px"><div class="v8-chart-empty">CSV fiyat geçmişi yükleyip portföy ağırlıklarını belirle.</div></div></div>
+ </div>
+
+ <div id="v8ComparePanel" class="v8-panel">
+  <div class="v8-card"><div class="v8-cardhead"><strong>Alternatif evrenler</strong><button id="v8AddCompare" class="ghost v6-compactbtn" type="button">+ Senaryo</button></div><div class="v8-warning">Aynı tarih aralığı ve aynı nakit akışlarıyla “hepsi QQQ olsaydı?”, “hepsi altın olsaydı?” gibi senaryoları karşılaştır. Backtest fiyat verisi burada da kullanılır.</div><div id="v8CompareRows" class="v8-benchmark-list" style="margin-top:12px"></div><div class="actions"><button id="v8RunCompare" class="primary" type="button">Karşılaştır</button></div></div>
+  <div class="v8-card"><div class="v8-cardhead"><strong>Karşılaştırma sonucu</strong><span class="v7-chip">Aynı başlangıç / nakit akışı</span></div><div id="v8CompareTable" class="v8-tablewrap"></div></div>
  </div>
 </section>
 
@@ -482,6 +540,13 @@ body[data-view="budget"] .v6-budget-only{display:block}
 <label>Başlangıç ekranı</label><select id="v5Start"><option value="summary">Finansal Özet</option><option value="transactions">İşlemler</option><option value="budget">Bütçe</option><option value="finance">Finans</option><option value="assets">Varlıklar</option></select>
 <button id="v5Done" class="primary" style="width:100%;margin-top:16px">Bütçem'i aç</button></div></div>
 
+
+
+<dialog id="v8AssetDialog"><form id="v8AssetForm">
+<h3 id="v8AssetTitle">Varlık ekle</h3><input id="v8AssetId" type="hidden">
+<div class="v8-formgrid"><div class="wide"><label>Varlık adı</label><input id="v8AssetName" maxlength="80" required placeholder="Örn. NVIDIA, Altın, Ev"></div><div><label>Tür</label><select id="v8AssetType"><option value="stock">Hisse</option><option value="etf">ETF</option><option value="crypto">Kripto</option><option value="gold">Altın</option><option value="cash">Nakit / Döviz</option><option value="realestate">Gayrimenkul</option><option value="vehicle">Araç</option><option value="other">Diğer</option></select></div><div><label>Sembol</label><input id="v8AssetSymbol" maxlength="20" placeholder="NVDA / BTC / XAU"></div><div><label>Miktar</label><input id="v8AssetQty" type="number" min="0" step="0.00000001" value="1"></div><div><label>Güncel birim fiyat</label><input id="v8AssetPrice" type="number" min="0" step="0.000001" required></div><div><label>Para birimi</label><select id="v8AssetCurrency"><option value="TRY">TRY</option><option value="USD">USD</option></select></div><div><label>Ortalama maliyet</label><input id="v8AssetCost" type="number" min="0" step="0.000001"></div><div><label>Dünkü fiyat</label><input id="v8AssetPrev" type="number" min="0" step="0.000001"></div><div class="wide"><label>Not</label><input id="v8AssetNote" maxlength="120" placeholder="İsteğe bağlı"></div></div>
+<div class="actions"><button id="v8DeleteAsset" class="ghost v7-danger" type="button" style="display:none">Sil</button><button class="ghost" type="button" onclick="document.querySelector('#v8AssetDialog').close()">Vazgeç</button><button class="primary">Kaydet</button></div>
+</form></dialog>
 
 <dialog id="v7AccountDialog"><form id="v7AccountForm">
 <h3 id="v7AccountTitle">Hesap ekle</h3><input id="v7AccountId" type="hidden">
@@ -520,7 +585,7 @@ body[data-view="budget"] .v6-budget-only{display:block}
 <div id="v6Toast" class="v6-toast"><span id="v6ToastText">Kaydedildi</span><button id="v6ToastAction" type="button" style="display:none">Geri al</button></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="supabase-config.js?v=7.0"></script>
+<script src="supabase-config.js?v=8.0"></script>
 
-<script src="app.js?v=7.0"></script>
+<script src="app.js?v=8.0"></script>
 </body></html>
