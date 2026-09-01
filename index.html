@@ -102,6 +102,23 @@ html[data-theme="dark"] .item{background:var(--card)}
 .v51-mode-active{background:var(--accent)!important;color:#fff!important;border-color:transparent!important;font-weight:700}
 @media(max-width:430px){.v51-donut-wrap{grid-template-columns:128px 1fr;gap:12px}.v51-donut{width:124px;height:124px}.v51-donut:after{inset:22px}.v51-legend-row{font-size:11px}}
 
+
+/* ===== V5.2 İşlemler ===== */
+.v52-filter{display:grid;grid-template-columns:minmax(0,1fr) 130px 150px;gap:8px;margin-bottom:10px}
+.v52-filter input,.v52-filter select{margin:0}
+.v52-item{align-items:flex-start!important}
+.v52-item-main{min-width:0;flex:1}
+.v52-item-title{font-weight:720;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.v52-item-side{display:flex;flex-direction:column;align-items:flex-end;gap:7px}
+.v52-actions{display:flex;gap:5px}
+.v52-actions button{padding:6px 8px;font-size:11px;border-radius:9px}
+.v52-delete{color:var(--bad)!important}
+.v52-helper{font-size:11px;color:var(--muted);margin-top:5px;line-height:1.45}
+.v52-count{font-size:12px;color:var(--muted);margin:2px 0 10px}
+.v52-dialog-delete{margin-right:auto;color:var(--bad)!important}
+html[data-theme="dark"] dialog{background:var(--card);color:var(--text)}
+@media(max-width:560px){.v52-filter{grid-template-columns:1fr 1fr}.v52-filter input{grid-column:1/-1}.v52-item-side{max-width:44%}}
+
 </style>
 </head>
 <body>
@@ -135,23 +152,32 @@ html[data-theme="dark"] .item{background:var(--card)}
 <div class="section toolbar"><button id="expenseBtn" class="primary">+ Harcama</button><button id="incomeBtn" class="ghost">+ Gelir</button></div>
 
 <div class="section card"><h2>Kategoriler</h2><div id="categories"></div></div>
-<div class="section card"><h2>Son işlemler</h2><div id="transactions" class="list"></div></div>
+<div class="section card" id="transactionsCard">
+<div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><h2 style="margin-bottom:10px">İşlemler</h2><span id="txnCount" class="small"></span></div>
+<div class="v52-filter">
+<input id="txnSearch" type="search" placeholder="İşlem ara…">
+<select id="txnFilterType"><option value="all">Tümü</option><option value="expense">Harcamalar</option><option value="income">Gelirler</option></select>
+<select id="txnFilterCategory"><option value="all">Tüm kategoriler</option></select>
+</div>
+<div id="transactions" class="list"></div>
+</div>
 </div>
 <button id="fab" class="primary fab v5-fab">+ Harcama</button>
 
 <dialog id="txnDialog"><form id="txnForm">
-<h3 id="txnTitle">Harcama ekle</h3><input id="txnType" type="hidden">
+<h3 id="txnTitle">Harcama ekle</h3><input id="txnType" type="hidden"><input id="txnEditId" type="hidden">
 <label>Tutar</label><input id="amount" type="number" min="0.01" step="0.01" required inputmode="decimal">
 <div class="row"><div><label>Kategori</label><select id="category"></select></div><div><label>Ödeme</label><select id="payment"><option>Nakit</option><option>Kredi Kartı</option><option>Banka Kartı</option><option>Havale / EFT</option></select></div></div>
 <label>Açıklama</label><input id="description" maxlength="100">
 <label>Tarih</label><input id="date" type="date" required>
-<div class="actions"><button type="button" id="cancelTxn" class="ghost">Vazgeç</button><button class="primary">Kaydet</button></div>
+<div class="actions"><button type="button" id="deleteTxnBtn" class="ghost v52-dialog-delete" style="display:none">Sil</button><button type="button" id="cancelTxn" class="ghost">Vazgeç</button><button class="primary">Kaydet</button></div>
 </form></dialog>
 
 <dialog id="settingsDialog"><form id="settingsForm">
 <h3>Ayarlar ve verilerim</h3>
 <label>Aylık bütçe</label><input id="monthlyBudget" type="number" min="0" step="100">
-<label>Kategoriler</label><textarea id="categoriesText" rows="4"></textarea>
+<label>Harcama kategorileri</label><textarea id="categoriesText" rows="5"></textarea>
+<div class="v52-helper">Virgülle ayırabilirsin. Örn: Yemek, Kahve, Market, Benzin, Araç, Faturalar, Abonelikler, Sağlık, Eğitim, Seyahat, Hediye, Kişisel Bakım.</div>
 <div class="backupbox">
 <strong>Veri güvenliği</strong>
 <div class="status" id="backupStatus">Kayıtların bu cihazda saklanıyor.</div>
@@ -235,7 +261,7 @@ html[data-theme="dark"] .item{background:var(--card)}
 <label>Başlangıç ekranı</label><select id="v5Start"><option value="summary">Finansal Özet</option><option value="budget">Bütçe</option><option value="assets">Varlıklar</option></select>
 <button id="v5Done" class="primary" style="width:100%;margin-top:16px">Bütçem'i aç</button></div></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="supabase-config.js?v=5.1.0"></script>
+<script src="supabase-config.js?v=5.2"></script>
 
-<script src="app.js?v=5.1.0"></script>
+<script src="app.js?v=5.2"></script>
 </body></html>

@@ -1,12 +1,12 @@
 const KEY="butcem_v1";
 const DATA_VERSION=4;
-const DEFAULT_CATS=["Kahve","Yemek","Market","Benzin","Alışveriş","Eğlence","Ulaşım","Fatura","Sağlık","Diğer"];
+const DEFAULT_CATS=["Yemek","Kahve","Market","Benzin","Ulaşım","Alışveriş","Eğlence","Ev / Kira","Faturalar","Abonelikler","Sağlık","Eğitim","Seyahat / Tatil","Hediye","Kişisel Bakım","Araç","Evcil Hayvan","Vergi / Harç","Bağış","Diğer"];
 const $=s=>document.querySelector(s);
 function currentMonth(){let d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`}
 let selectedMonth=currentMonth();
 function normalize(raw){
   const s=(raw&&typeof raw==="object")?raw:{};
-  return {dataVersion:DATA_VERSION,transactions:Array.isArray(s.transactions)?s.transactions:[],monthlyBudget:Number(s.monthlyBudget)||0,categories:Array.isArray(s.categories)&&s.categories.length?s.categories:DEFAULT_CATS,lastBackupAt:s.lastBackupAt||null,settingsUpdatedAt:s.settingsUpdatedAt||null,lastCloudSyncAt:s.lastCloudSyncAt||null};
+  const existing=Array.isArray(s.categories)&&s.categories.length?s.categories:[];const categories=[...new Set([...existing,...DEFAULT_CATS])];return {dataVersion:DATA_VERSION,transactions:Array.isArray(s.transactions)?s.transactions:[],monthlyBudget:Number(s.monthlyBudget)||0,categories,lastBackupAt:s.lastBackupAt||null,settingsUpdatedAt:s.settingsUpdatedAt||null,lastCloudSyncAt:s.lastCloudSyncAt||null};
 }
 function load(){try{return normalize(JSON.parse(localStorage.getItem(KEY)))}catch(e){return normalize(null)}}
 let state=load();
@@ -17,7 +17,41 @@ function shift(mk,n){let [y,m]=mk.split("-").map(Number),d=new Date(y,m-1+n,1);r
 function mname(mk){let [y,m]=mk.split("-").map(Number);return new Intl.DateTimeFormat("tr-TR",{month:"long",year:"numeric"}).format(new Date(y,m-1,1))}
 function day(s){return Number(s.slice(8,10))}
 function download(name,text,type){let b=new Blob([text],{type}),a=document.createElement("a");a.href=URL.createObjectURL(b);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
-function openTxn(type){$("#txnType").value=type;$("#txnTitle").textContent=type==="expense"?"Harcama ekle":"Gelir ekle";$("#amount").value="";$("#description").value="";$("#date").value=today();let cats=type==="expense"?state.categories:["Aile Desteği","Maaş","Burs","Yatırım Getirisi","Satış","Diğer Gelir"];$("#category").innerHTML="";cats.forEach(c=>{let o=document.createElement("option");o.textContent=c;$("#category").appendChild(o)});$("#payment").disabled=false;$("#txnDialog").showModal()}
+const INCOME_CATS=["Maaş","Aile Desteği","Burs","Ek Gelir","Satış","Kira Geliri","Faiz / Getiri","Temettü","İade","Hediye","Diğer Gelir"];
+const DELETE_QUEUE_KEY="butcem_v5_deleted_ids";
+function deletedIds(){try{return new Set(JSON.parse(localStorage.getItem(DELETE_QUEUE_KEY)||"[]").map(String))}catch(e){return new Set()}}
+function queueDeletedId(id){const s=deletedIds();s.add(String(id));localStorage.setItem(DELETE_QUEUE_KEY,JSON.stringify([...s]))}
+function unqueueDeletedIds(ids){const s=deletedIds();ids.forEach(id=>s.delete(String(id)));localStorage.setItem(DELETE_QUEUE_KEY,JSON.stringify([...s]))}
+function fillCategoryOptions(type,selected=""){
+ const cats=type==="expense"?state.categories:INCOME_CATS;
+ $("#category").innerHTML="";
+ cats.forEach(c=>{let o=document.createElement("option");o.value=c;o.textContent=c;if(c===selected)o.selected=true;$("#category").appendChild(o)});
+}
+function openTxn(type,txn=null){
+ $("#txnType").value=type;
+ $("#txnEditId").value=txn?.id||"";
+ $("#txnTitle").textContent=txn?(type==="expense"?"Harcamayı düzenle":"Geliri düzenle"):(type==="expense"?"Harcama ekle":"Gelir ekle");
+ $("#amount").value=txn?.amount??"";
+ $("#description").value=txn?.description||"";
+ $("#date").value=txn?.date||today();
+ fillCategoryOptions(type,txn?.category||"");
+ $("#payment").disabled=false;
+ if(txn?.payment && ![...$("#payment").options].some(o=>o.value===txn.payment)){let o=document.createElement("option");o.value=txn.payment;o.textContent=txn.payment;$("#payment").appendChild(o)}
+ $("#payment").value=txn?.payment||"Nakit";
+ $("#deleteTxnBtn").style.display=txn?"inline-block":"none";
+ $("#txnDialog").showModal();
+}
+function findTxn(id){return state.transactions.find(t=>String(t.id)===String(id))}
+function deleteTransaction(id){
+ const t=findTxn(id);if(!t)return;
+ if(!confirm(`"${t.description||t.category||"Bu işlem"}" silinsin mi? Bu işlem geri alınamaz.`))return;
+ queueDeletedId(id);
+ state.transactions=state.transactions.filter(x=>String(x.id)!==String(id));
+ state.settingsUpdatedAt=state.settingsUpdatedAt||new Date().toISOString();
+ save();
+ if($("#txnDialog").open)$("#txnDialog").close();
+ if(typeof v5Refresh==="function")v5Refresh();
+}
 let quickTxnMode="expense";
 function setQuickTxnMode(type){
  quickTxnMode=type;
@@ -29,7 +63,8 @@ $("#incomeBtn").onclick=()=>{if(quickTxnMode==="income")openTxn("income");else s
 $("#fab").onclick=()=>openTxn(quickTxnMode);
 setQuickTxnMode("expense");
 $("#cancelTxn").onclick=()=>$("#txnDialog").close();
-$("#txnForm").onsubmit=e=>{e.preventDefault();let amount=Number($("#amount").value);if(!(amount>0))return;state.transactions.push({id:(crypto.randomUUID?crypto.randomUUID():Date.now()+""+Math.random()),type:$("#txnType").value,amount,category:$("#category").value,payment:$("#payment").value,description:$("#description").value.trim(),date:$("#date").value});save();$("#txnDialog").close()};
+$("#txnForm").onsubmit=e=>{e.preventDefault();let amount=Number($("#amount").value);if(!(amount>0))return;const editId=$("#txnEditId").value,type=$("#txnType").value;const obj={id:editId||(crypto.randomUUID?crypto.randomUUID():Date.now()+""+Math.random()),type,amount,category:$("#category").value,payment:$("#payment").value,description:$("#description").value.trim(),date:$("#date").value,updatedAt:new Date().toISOString()};if(editId){const i=state.transactions.findIndex(t=>String(t.id)===String(editId));if(i>=0)state.transactions[i]={...state.transactions[i],...obj};else state.transactions.push(obj)}else state.transactions.push(obj);save();$("#txnDialog").close();if(typeof v5Refresh==="function")v5Refresh()};
+$("#deleteTxnBtn").onclick=()=>{const id=$("#txnEditId").value;if(id)deleteTransaction(id)};
 $("#prev").onclick=()=>{selectedMonth=shift(selectedMonth,-1);render()};$("#next").onclick=()=>{let n=shift(selectedMonth,1);if(n<=currentMonth()){selectedMonth=n;render()}};
 $("#settingsBtn").onclick=()=>{$("#monthlyBudget").value=state.monthlyBudget||"";$("#categoriesText").value=state.categories.join(", ");updateBackupStatus();$("#settingsDialog").showModal()};$("#cancelSettings").onclick=()=>$("#settingsDialog").close();
 $("#settingsForm").onsubmit=e=>{e.preventDefault();state.monthlyBudget=Math.max(0,Number($("#monthlyBudget").value)||0);let c=$("#categoriesText").value.split(",").map(x=>x.trim()).filter(Boolean);if(c.length)state.categories=[...new Set(c)];state.settingsUpdatedAt=new Date().toISOString();save();$("#settingsDialog").close()};
@@ -177,6 +212,16 @@ function mergeTransactions(local,remote){
  }
  return [...m.values()];
 }
+async function processPendingDeletes(){
+ if(!sb||!currentUser)return;
+ const ids=[...deletedIds()];if(!ids.length)return;
+ for(let i=0;i<ids.length;i+=100){
+   const batch=ids.slice(i,i+100);
+   const {error}=await sb.from("butcem_transactions").delete().eq("user_id",currentUser.id).in("id",batch);
+   if(error)throw error;
+   unqueueDeletedIds(batch);
+ }
+}
 async function pullCloud(){
  if(!sb||!currentUser)return;
  const [{data:txs,error:txErr},{data:settings,error:setErr}]=await Promise.all([
@@ -184,7 +229,7 @@ async function pullCloud(){
    sb.from("butcem_settings").select("*").eq("user_id",currentUser.id).maybeSingle()
  ]);
  if(txErr)throw txErr;if(setErr)throw setErr;
- const remote=(txs||[]).map(txFromCloud);
+ const tomb=deletedIds();const remote=(txs||[]).map(txFromCloud).filter(t=>!tomb.has(String(t.id)));
  state.transactions=mergeTransactions(state.transactions,remote);
  if(settings){
    const remoteStamp=settings.settings_updated_at||settings.updated_at||"";
@@ -218,7 +263,8 @@ async function syncCloud(manual=false){
  cloudBusy=true;
  if(manual) setCloudUI("☁️ Senkronize ediliyor…","Cihaz ve hesabındaki veriler karşılaştırılıyor.");
  try{
-   // Önce buluttakini çek, birleştir; sonra birleşmiş sonucu geri gönder.
+   // Bekleyen silmeleri önce buluta uygula; böylece silinen kayıt başka cihazdan geri dirilmez.
+   await processPendingDeletes();
    await pullCloud();
    await pushCloud();
    await pullCloud();
@@ -291,10 +337,15 @@ function render(){
  if(!ins.children.length){let b=document.createElement("div");b.className="item";b.textContent="Yeni aylar biriktikçe burada otomatik karşılaştırmalar oluşacak.";ins.appendChild(b)}
 
  let sums={};ex.forEach(t=>sums[t.category]=(sums[t.category]||0)+t.amount);let arr=Object.entries(sums).sort((a,b)=>b[1]-a[1]),cat=$("#categories");cat.innerHTML="";if(!arr.length)cat.innerHTML='<div class="small">Bu ay harcama yok.</div>';let max=arr[0]?.[1]||1;arr.forEach(([k,v])=>{let r=document.createElement("div");r.className="barrow";r.innerHTML=`<div>${k}</div><div class="bar"><span style="width:${v/max*100}%"></span></div><div class="small">${money(v)}</div>`;cat.appendChild(r)});
- let list=$("#transactions");list.innerHTML="";let recent=[...tx].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,30);if(!recent.length)list.innerHTML='<div class="small">Bu ay işlem yok.</div>';recent.forEach(t=>{let r=document.createElement("div");r.className="item";let l=document.createElement("div"),title=document.createElement("div"),meta=document.createElement("div");title.textContent=t.description||t.category;meta.className="meta";meta.textContent=`${t.category} • ${t.date} • ${t.payment}`;l.append(title,meta);let a=document.createElement("div");a.className="amount "+(t.type==="income"?"good":"bad");a.textContent=(t.type==="income"?"+":"-")+money(t.amount);r.append(l,a);list.appendChild(r)});
+ let list=$("#transactions"),search=($("#txnSearch")?.value||"").trim().toLocaleLowerCase("tr-TR"),ft=$("#txnFilterType")?.value||"all",fc=$("#txnFilterCategory")?.value||"all";
+ let catSelect=$("#txnFilterCategory");if(catSelect){const before=catSelect.value;const allCats=[...new Set(tx.map(t=>t.category).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"tr"));catSelect.innerHTML='<option value="all">Tüm kategoriler</option>'+allCats.map(c=>`<option value="${v51Esc(c)}">${v51Esc(c)}</option>`).join("");catSelect.value=allCats.includes(before)?before:"all";fc=catSelect.value}
+ let filtered=[...tx].filter(t=>(ft==="all"||t.type===ft)&&(fc==="all"||t.category===fc)&&(!search||[t.description,t.category,t.payment,String(t.amount)].join(" ").toLocaleLowerCase("tr-TR").includes(search))).sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+ list.innerHTML="";if($("#txnCount"))$("#txnCount").textContent=`${filtered.length} işlem`;
+ if(!filtered.length)list.innerHTML='<div class="small">Bu filtrelerde işlem bulunamadı.</div>';
+ filtered.forEach(t=>{let r=document.createElement("div");r.className="item v52-item";let l=document.createElement("div");l.className="v52-item-main";let title=document.createElement("div"),meta=document.createElement("div");title.className="v52-item-title";title.textContent=t.description||t.category;meta.className="meta";meta.textContent=`${t.category} • ${t.date} • ${t.payment}`;l.append(title,meta);let side=document.createElement("div");side.className="v52-item-side";let a=document.createElement("div");a.className="amount "+(t.type==="income"?"good":"bad");a.textContent=(t.type==="income"?"+":"-")+money(t.amount);let acts=document.createElement("div");acts.className="v52-actions";let edit=document.createElement("button");edit.className="ghost";edit.type="button";edit.textContent="Düzenle";edit.onclick=()=>openTxn(t.type,t);let del=document.createElement("button");del.className="ghost v52-delete";del.type="button";del.textContent="Sil";del.onclick=()=>deleteTransaction(t.id);acts.append(edit,del);side.append(a,acts);r.append(l,side);list.appendChild(r)});
 }
 if("serviceWorker"in navigator){
-  navigator.serviceWorker.register("sw.js?v=5.0").then(reg=>{
+  navigator.serviceWorker.register("sw.js?v=5.2").then(reg=>{
     reg.update().catch(()=>{});
     if(reg.waiting) reg.waiting.postMessage("SKIP_WAITING");
     reg.addEventListener("updatefound",()=>{
@@ -315,6 +366,8 @@ if("serviceWorker"in navigator){
   });
 }
 state.dataVersion=DATA_VERSION;localStorage.setItem(KEY,JSON.stringify(state));render();
+["txnSearch","txnFilterType","txnFilterCategory"].forEach(id=>{const el=$("#"+id);if(el)el.addEventListener(id==="txnSearch"?"input":"change",()=>render())});
+
 
 
 // ===== V5.1 kişiselleştirme / Financial Dashboard =====
@@ -371,7 +424,7 @@ function v5Refresh(){
 function v5Show(view){
  let sum=document.querySelector("#v5Summary"),app=document.querySelector(".app");
  if(view==="summary"){sum.classList.remove("v5-hide");app.classList.add("v5-hide");v5Refresh()}
- else{sum.classList.add("v5-hide");app.classList.remove("v5-hide");if(view==="assets")alert("Varlıklar modülünün yeri hazır. Net Servet/Yatırım motorunu sonraki aşamada ekleyeceğiz.")}
+ else{sum.classList.add("v5-hide");app.classList.remove("v5-hide");if(view==="transactions")setTimeout(()=>document.querySelector("#transactionsCard")?.scrollIntoView({behavior:"smooth",block:"start"}),50);if(view==="assets")alert("Varlıklar modülünün yeri hazır. Net Servet/Yatırım motorunu sonraki aşamada ekleyeceğiz.")}
  document.querySelectorAll("#v5Nav button").forEach(b=>b.classList.toggle("active",b.dataset.view===view));
 }
 function v5Init(){
