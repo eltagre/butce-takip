@@ -47,14 +47,61 @@ header{
 }
 
 
-/* ===== V5 Finansal görünüm ===== */
-:root{--navbg:rgba(255,255,255,.92);--soft:#eef2f7;--shadow:0 8px 30px rgba(17,24,39,.05)}
-html[data-theme="dark"]{--bg:#0b0d10;--card:#15181d;--text:#f4f6f8;--muted:#9ca3af;--line:#282d35;--accent:#4f7cff;--good:#42b883;--bad:#ff6b65;--navbg:rgba(21,24,29,.94);--soft:#20242b;--shadow:none}
-body{transition:background .2s,color .2s}.app{padding-bottom:112px}.card,.item{box-shadow:var(--shadow)}
-html[data-theme="dark"] .ghost,html[data-theme="dark"] input,html[data-theme="dark"] select,html[data-theme="dark"] textarea{background:var(--card);color:var(--text);border-color:var(--line)}
-html[data-theme="dark"] .item{background:var(--card)}html[data-theme="dark"] .progress,html[data-theme="dark"] .bar{background:var(--soft)}
-.v5-home{display:none;max-width:760px;margin:auto;padding:18px 14px 112px}.v5-home.show{display:block}.v5-hero{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:18px;box-shadow:var(--shadow);margin-top:14px}.v5-kicker{font-size:12px;color:var(--muted);font-weight:700}.v5-hero-value{font-size:32px;font-weight:800;letter-spacing:-.04em;margin-top:6px}.v5-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}.v5-mini{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px;box-shadow:var(--shadow)}.v5-mini strong{display:block;font-size:20px;margin-top:5px}.v5-muted{color:var(--muted);font-size:12px}.v5-bottom{position:fixed;z-index:80;left:0;right:0;bottom:0;background:var(--navbg);backdrop-filter:blur(18px);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(4,1fr);padding:7px 8px calc(7px + env(safe-area-inset-bottom))}.v5-nav{border:0;background:transparent;color:var(--muted);padding:7px 2px;font-size:11px;display:flex;flex-direction:column;align-items:center;gap:2px}.v5-nav .ico{font-size:20px}.v5-nav.active{color:var(--accent);font-weight:700}.v5-theme{position:fixed;z-index:81;right:14px;top:calc(12px + env(safe-area-inset-top));width:42px;height:42px;padding:0;border-radius:14px}.v5-onboarding{display:none;position:fixed;z-index:120;inset:0;background:var(--bg);overflow:auto;padding:calc(30px + env(safe-area-inset-top)) 20px calc(30px + env(safe-area-inset-bottom))}.v5-onboarding.show{display:block}.v5-onboarding-inner{max-width:540px;margin:auto}.v5-onboarding h2{font-size:30px;line-height:1.08;letter-spacing:-.04em;margin:8px 0}.v5-choice{display:flex;align-items:center;gap:11px;background:var(--card);border:1px solid var(--line);border-radius:17px;padding:14px;margin:9px 0;color:var(--text)}.v5-choice input{width:20px;height:20px}.v5-onboarding select{margin-top:6px}.v5-wide{width:100%;margin-top:14px}.v5-assets-note{padding:30px 10px;text-align:center;color:var(--muted)}
-@media(min-width:760px){.v5-bottom{left:50%;right:auto;width:520px;transform:translateX(-50%);border:1px solid var(--line);border-bottom:0;border-radius:20px 20px 0 0}}
+/* ===== V5 Finansal arayüz temeli ===== */
+:root{--surface:#fff;--surface2:#f8fafc;--navbg:rgba(255,255,255,.92);--shadow:0 8px 28px rgba(15,23,42,.05)}
+html[data-theme="dark"]{--bg:#090b0f;--card:#14171c;--text:#f5f7fa;--muted:#9ca3af;--line:#252a32;--accent:#5b8cff;--good:#42b883;--bad:#ff6b67;--surface:#14171c;--surface2:#101318;--navbg:rgba(20,23,28,.92);color-scheme:dark}
+body{background:var(--bg);transition:background .2s,color .2s}
+.card,.item{box-shadow:var(--shadow)}
+.v5-summary{max-width:760px;margin:auto;padding:8px 14px 110px}
+.v5-hero{background:var(--card);border:1px solid var(--line);border-radius:24px;padding:20px;margin-top:8px}
+.v5-kicker{font-size:12px;font-weight:750;letter-spacing:.08em;color:var(--muted)}
+.v5-hero-value{font-size:34px;font-weight:800;letter-spacing:-.04em;margin:7px 0 3px}
+.v5-sub{font-size:13px;color:var(--muted)}
+.v5-mini-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}.v5-mini{background:var(--card);border:1px solid var(--line);border-radius:19px;padding:15px}.v5-mini strong{display:block;font-size:20px;margin-top:5px}
+.v5-nav{position:fixed;left:0;right:0;bottom:0;z-index:80;display:grid;grid-template-columns:repeat(4,1fr);gap:2px;background:var(--navbg);backdrop-filter:blur(18px);border-top:1px solid var(--line);padding:7px 10px calc(7px + env(safe-area-inset-bottom))}
+.v5-nav button{background:transparent;color:var(--muted);padding:6px 2px;font-size:11px;display:flex;flex-direction:column;align-items:center;gap:3px}.v5-nav button i{font-style:normal;font-size:19px}.v5-nav button.active{color:var(--accent);font-weight:750}
+.v5-theme{position:fixed;z-index:79;right:14px;top:calc(12px + env(safe-area-inset-top));width:42px;height:42px;padding:0;border:1px solid var(--line);background:var(--card);color:var(--text);border-radius:14px}
+.v5-fab{bottom:calc(76px + env(safe-area-inset-bottom))!important;width:56px;height:56px;padding:0!important;font-size:28px}
+.v5-onboarding{position:fixed;inset:0;z-index:120;background:var(--bg);padding:calc(28px + env(safe-area-inset-top)) 20px calc(30px + env(safe-area-inset-bottom));overflow:auto}.v5-onboarding>div{max-width:560px;margin:auto}.v5-onboarding h2{font-size:31px;letter-spacing:-.04em;margin:8px 0}.v5-choice{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:17px;padding:14px;margin:9px 0;color:var(--text)}.v5-choice input{width:20px}.v5-onboarding select{background:var(--card);color:var(--text)}.v5-hide{display:none!important}
+@media(min-width:700px){.v5-nav{left:50%;right:auto;transform:translateX(-50%);width:520px;border:1px solid var(--line);border-bottom:0;border-radius:20px 20px 0 0}}
+
+/* ===== V5.1 Financial Dashboard ===== */
+html[data-theme="dark"] input,html[data-theme="dark"] select,html[data-theme="dark"] textarea,
+html[data-theme="dark"] .ghost{background:var(--card);color:var(--text);border-color:var(--line)}
+html[data-theme="dark"] .item{background:var(--card)}
+.v51-topline{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.v51-month{font-size:13px;color:var(--muted);font-weight:650}
+.v51-budget-track{height:10px;border-radius:999px;background:var(--surface2);overflow:hidden;margin-top:14px;border:1px solid var(--line)}
+.v51-budget-track span{display:block;height:100%;border-radius:inherit;background:var(--accent);transition:width .25s ease}
+.v51-stat-label{font-size:12px;color:var(--muted)}
+.v51-stat-delta{font-size:11px;color:var(--muted);margin-top:4px}
+.v51-panel{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:17px;margin-top:12px;box-shadow:var(--shadow)}
+.v51-panel-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:13px}
+.v51-panel-title{font-size:16px;font-weight:780}
+.v51-donut-wrap{display:grid;grid-template-columns:150px 1fr;gap:18px;align-items:center}
+.v51-donut{width:145px;height:145px;border-radius:50%;position:relative;background:conic-gradient(var(--line) 0 100%);margin:auto}
+.v51-donut:after{content:"";position:absolute;inset:25px;border-radius:50%;background:var(--card);border:1px solid var(--line)}
+.v51-donut-center{position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;pointer-events:none}
+.v51-donut-center strong{font-size:17px}.v51-donut-center span{font-size:10px;color:var(--muted)}
+.v51-legend{display:flex;flex-direction:column;gap:8px;min-width:0}
+.v51-legend-row{display:grid;grid-template-columns:10px minmax(0,1fr) auto;gap:7px;align-items:center;font-size:12px}
+.v51-dot{width:8px;height:8px;border-radius:50%}.v51-legend-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.v51-chart{height:150px;display:flex;gap:8px;align-items:flex-end;padding-top:8px;border-bottom:1px solid var(--line)}
+.v51-monthcol{flex:1;min-width:0;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:5px}
+.v51-bars{height:112px;width:100%;display:flex;align-items:flex-end;justify-content:center;gap:3px}
+.v51-bar{width:min(15px,35%);min-height:2px;border-radius:5px 5px 2px 2px}
+.v51-bar.income{background:var(--good)}.v51-bar.expense{background:var(--bad)}
+.v51-monthname{font-size:10px;color:var(--muted)}
+.v51-chart-legend{display:flex;gap:13px;font-size:11px;color:var(--muted);margin-top:10px}
+.v51-recent{display:flex;flex-direction:column;gap:8px}
+.v51-recent-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}
+.v51-recent-row:last-child{border-bottom:0}.v51-recent-main{min-width:0}.v51-recent-title{font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.v51-recent-meta{font-size:11px;color:var(--muted);margin-top:3px}
+.v51-recent-amt{font-size:14px;font-weight:780;white-space:nowrap}
+.v51-empty{color:var(--muted);font-size:13px;padding:8px 0}
+.v51-soon{font-size:11px;padding:5px 8px;border-radius:999px;background:var(--surface2);color:var(--muted);border:1px solid var(--line)}
+.v51-mode-active{background:var(--accent)!important;color:#fff!important;border-color:transparent!important;font-weight:700}
+@media(max-width:430px){.v51-donut-wrap{grid-template-columns:128px 1fr;gap:12px}.v51-donut{width:124px;height:124px}.v51-donut:after{inset:22px}.v51-legend-row{font-size:11px}}
+
 </style>
 </head>
 <body>
@@ -85,17 +132,17 @@ html[data-theme="dark"] .item{background:var(--card)}html[data-theme="dark"] .pr
 
 <div class="section card"><h2>Aylık karşılaştırma</h2><div id="compare" style="font-weight:700"></div><div id="insights" class="list" style="margin-top:10px"></div></div>
 
-<div class="section toolbar"><button id="expenseBtn" class="primary">Harcama</button><button id="incomeBtn" class="ghost">Gelir</button></div>
+<div class="section toolbar"><button id="expenseBtn" class="primary">+ Harcama</button><button id="incomeBtn" class="ghost">+ Gelir</button></div>
 
 <div class="section card"><h2>Kategoriler</h2><div id="categories"></div></div>
 <div class="section card"><h2>Son işlemler</h2><div id="transactions" class="list"></div></div>
 </div>
-<button id="fab" class="primary fab">+ Harcama</button>
+<button id="fab" class="primary fab v5-fab">+ Harcama</button>
 
 <dialog id="txnDialog"><form id="txnForm">
 <h3 id="txnTitle">Harcama ekle</h3><input id="txnType" type="hidden">
 <label>Tutar</label><input id="amount" type="number" min="0.01" step="0.01" required inputmode="decimal">
-<div class="row"><div><label>Kategori</label><select id="category"></select></div><div><label>Hesap / ödeme yöntemi</label><select id="payment"><option>Nakit</option><option>Kredi Kartı</option><option>Banka Kartı</option><option>Havale / EFT</option></select></div></div>
+<div class="row"><div><label>Kategori</label><select id="category"></select></div><div><label>Ödeme</label><select id="payment"><option>Nakit</option><option>Kredi Kartı</option><option>Banka Kartı</option><option>Havale / EFT</option></select></div></div>
 <label>Açıklama</label><input id="description" maxlength="100">
 <label>Tarih</label><input id="date" type="date" required>
 <div class="actions"><button type="button" id="cancelTxn" class="ghost">Vazgeç</button><button class="primary">Kaydet</button></div>
@@ -145,17 +192,50 @@ html[data-theme="dark"] .item{background:var(--card)}html[data-theme="dark"] .pr
 </div>
 </form></dialog>
 
-<div id="v5Home" class="v5-home">
- <div class="top"><div><h1>Özet</h1><div class="small" id="v5DateLabel"></div></div></div>
- <div class="v5-hero"><div class="v5-kicker">BU AY NET DURUM</div><div id="v5Net" class="v5-hero-value">₺0</div><div id="v5NetSub" class="small">Gelir eksi harcama</div></div>
- <div class="v5-grid"><div class="v5-mini"><span class="v5-muted">Gelir</span><strong id="v5Income" class="good">₺0</strong></div><div class="v5-mini"><span class="v5-muted">Harcama</span><strong id="v5Expense" class="bad">₺0</strong></div><div class="v5-mini"><span class="v5-muted">Kalan bütçe</span><strong id="v5Remaining">—</strong></div><div class="v5-mini"><span class="v5-muted">Tasarruf oranı</span><strong id="v5Saving">—</strong></div></div>
- <div class="v5-hero"><div class="v5-kicker">KİŞİSEL FİNANS MERKEZİ</div><div style="font-weight:750;margin-top:6px">Seçtiğin modüller burada birleşecek.</div><div class="small" style="margin-top:6px">Net servet, yatırımlar, hedefler ve karşılaştırmalar sonraki adımlarda bu özet ekranına eklenecek.</div></div>
-</div>
-<button id="v5Theme" class="ghost v5-theme" type="button" aria-label="Tema değiştir">◐</button>
-<nav class="v5-bottom" id="v5Bottom"><button class="v5-nav active" data-view="summary"><span class="ico">⌂</span><span>Özet</span></button><button class="v5-nav" data-view="transactions"><span class="ico">⇄</span><span>İşlemler</span></button><button class="v5-nav" data-view="budget"><span class="ico">◎</span><span>Bütçe</span></button><button class="v5-nav" data-view="assets"><span class="ico">◇</span><span>Varlıklar</span></button></nav>
-<div id="v5Onboarding" class="v5-onboarding"><div class="v5-onboarding-inner"><div class="v5-kicker">BÜTÇEM V5</div><h2>Bütçem'i ne için kullanacaksın?</h2><p class="small">Birden fazla seçebilirsin. Daha sonra değiştirebileceksin.</p><label class="v5-choice"><input type="checkbox" value="budget" checked>💳 Harcama ve bütçe takibi</label><label class="v5-choice"><input type="checkbox" value="networth">💰 Net servet takibi</label><label class="v5-choice"><input type="checkbox" value="investments">📈 Yatırım takibi</label><label class="v5-choice"><input type="checkbox" value="compare">⚖️ Portföy karşılaştırma / backtest</label><label class="v5-choice"><input type="checkbox" value="goals">🎯 Birikim hedefleri</label><label>Uygulama açıldığında</label><select id="v5Start"><option value="summary">Finansal Özet</option><option value="budget">Bütçe</option><option value="assets">Varlıklar</option></select><button id="v5Done" class="primary v5-wide" type="button">Bütçem'i aç</button></div></div>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="supabase-config.js?v=5.0"></script>
+<section id="v5Summary" class="v5-summary v5-hide">
+ <div class="v5-hero">
+  <div class="v51-topline"><div><div class="v5-kicker">BU AY KALAN</div><div id="v5MainValue" class="v5-hero-value">₺0</div></div><div id="v51Month" class="v51-month"></div></div>
+  <div id="v5MainSub" class="v5-sub">Aylık bütçeni belirlediğinde kalan tutarı burada göreceksin.</div>
+  <div class="v51-budget-track"><span id="v51BudgetBar" style="width:0%"></span></div>
+ </div>
+ <div class="v5-mini-grid">
+  <div class="v5-mini"><span class="v51-stat-label">Gelir</span><strong id="v5Income" class="good">₺0</strong><div class="v51-stat-delta">Bu ay</div></div>
+  <div class="v5-mini"><span class="v51-stat-label">Harcama</span><strong id="v5Expense" class="bad">₺0</strong><div class="v51-stat-delta">Bu ay</div></div>
+  <div class="v5-mini"><span class="v51-stat-label">Net durum</span><strong id="v5Net">₺0</strong><div class="v51-stat-delta">Gelir − harcama</div></div>
+  <div class="v5-mini"><span class="v51-stat-label">Tasarruf oranı</span><strong id="v5Saving">—</strong><div class="v51-stat-delta">Gelire göre</div></div>
+ </div>
 
-<script src="app.js?v=5.0"></script>
+ <div class="v51-panel">
+  <div class="v51-panel-head"><div class="v51-panel-title">Harcama dağılımı</div><span class="v51-soon">Bu ay</span></div>
+  <div class="v51-donut-wrap">
+   <div class="v51-donut" id="v51Donut"><div class="v51-donut-center"><strong id="v51DonutTotal">₺0</strong><span>harcama</span></div></div>
+   <div id="v51Legend" class="v51-legend"></div>
+  </div>
+ </div>
+
+ <div class="v51-panel">
+  <div class="v51-panel-head"><div class="v51-panel-title">6 aylık görünüm</div><span class="v51-soon">Gelir / Gider</span></div>
+  <div id="v51Chart" class="v51-chart"></div>
+  <div class="v51-chart-legend"><span>● Gelir</span><span>● Harcama</span></div>
+ </div>
+
+ <div class="v51-panel">
+  <div class="v51-panel-head"><div class="v51-panel-title">Son işlemler</div><button id="v51AllTx" class="ghost" type="button" style="padding:7px 9px;font-size:12px">Tümünü gör</button></div>
+  <div id="v51Recent" class="v51-recent"></div>
+ </div>
+</section>
+<button id="v5Theme" class="v5-theme" type="button">◐</button>
+<nav class="v5-nav" id="v5Nav"><button data-view="summary"><i>⌂</i>Özet</button><button data-view="transactions"><i>⇄</i>İşlemler</button><button data-view="budget"><i>◎</i>Bütçe</button><button data-view="assets"><i>◇</i>Varlıklar</button></nav>
+<div id="v5Onboarding" class="v5-onboarding v5-hide"><div><div class="v5-kicker">BÜTÇEM V5</div><h2>Bütçem'i ne için kullanacaksın?</h2><p class="v5-sub">Birden fazla seçebilirsin. Tercihlerini daha sonra değiştirebileceksin.</p>
+<label class="v5-choice"><input type="checkbox" value="budget" checked>💳 Harcama ve bütçe takibi</label>
+<label class="v5-choice"><input type="checkbox" value="networth">💰 Net servet takibi</label>
+<label class="v5-choice"><input type="checkbox" value="investments">📈 Yatırım takibi</label>
+<label class="v5-choice"><input type="checkbox" value="compare">⚖️ Portföy karşılaştırma / backtest</label>
+<label class="v5-choice"><input type="checkbox" value="goals">🎯 Birikim hedefleri</label>
+<label>Başlangıç ekranı</label><select id="v5Start"><option value="summary">Finansal Özet</option><option value="budget">Bütçe</option><option value="assets">Varlıklar</option></select>
+<button id="v5Done" class="primary" style="width:100%;margin-top:16px">Bütçem'i aç</button></div></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-config.js?v=5.1.0"></script>
+
+<script src="app.js?v=5.1.0"></script>
 </body></html>

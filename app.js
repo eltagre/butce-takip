@@ -18,10 +18,17 @@ function mname(mk){let [y,m]=mk.split("-").map(Number);return new Intl.DateTimeF
 function day(s){return Number(s.slice(8,10))}
 function download(name,text,type){let b=new Blob([text],{type}),a=document.createElement("a");a.href=URL.createObjectURL(b);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
 function openTxn(type){$("#txnType").value=type;$("#txnTitle").textContent=type==="expense"?"Harcama ekle":"Gelir ekle";$("#amount").value="";$("#description").value="";$("#date").value=today();let cats=type==="expense"?state.categories:["Aile Desteği","Maaş","Burs","Yatırım Getirisi","Satış","Diğer Gelir"];$("#category").innerHTML="";cats.forEach(c=>{let o=document.createElement("option");o.textContent=c;$("#category").appendChild(o)});$("#payment").disabled=false;$("#txnDialog").showModal()}
-let quickTxnType="expense";
-function setQuickTxnType(type){quickTxnType=type;$("#expenseBtn").className=type==="expense"?"primary":"ghost";$("#incomeBtn").className=type==="income"?"primary":"ghost";$("#fab").textContent=type==="income"?"+ Gelir":"+ Harcama";}
-function quickTxnTap(type){if(quickTxnType===type)openTxn(type);else setQuickTxnType(type)}
-$("#expenseBtn").onclick=()=>quickTxnTap("expense");$("#incomeBtn").onclick=()=>quickTxnTap("income");$("#fab").onclick=()=>openTxn(quickTxnType);$("#cancelTxn").onclick=()=>$("#txnDialog").close();
+let quickTxnMode="expense";
+function setQuickTxnMode(type){
+ quickTxnMode=type;
+ $("#expenseBtn").className=type==="expense"?"primary v51-mode-active":"ghost";
+ $("#incomeBtn").className=type==="income"?"primary v51-mode-active":"ghost";
+}
+$("#expenseBtn").onclick=()=>{if(quickTxnMode==="expense")openTxn("expense");else setQuickTxnMode("expense")};
+$("#incomeBtn").onclick=()=>{if(quickTxnMode==="income")openTxn("income");else setQuickTxnMode("income")};
+$("#fab").onclick=()=>openTxn(quickTxnMode);
+setQuickTxnMode("expense");
+$("#cancelTxn").onclick=()=>$("#txnDialog").close();
 $("#txnForm").onsubmit=e=>{e.preventDefault();let amount=Number($("#amount").value);if(!(amount>0))return;state.transactions.push({id:(crypto.randomUUID?crypto.randomUUID():Date.now()+""+Math.random()),type:$("#txnType").value,amount,category:$("#category").value,payment:$("#payment").value,description:$("#description").value.trim(),date:$("#date").value});save();$("#txnDialog").close()};
 $("#prev").onclick=()=>{selectedMonth=shift(selectedMonth,-1);render()};$("#next").onclick=()=>{let n=shift(selectedMonth,1);if(n<=currentMonth()){selectedMonth=n;render()}};
 $("#settingsBtn").onclick=()=>{$("#monthlyBudget").value=state.monthlyBudget||"";$("#categoriesText").value=state.categories.join(", ");updateBackupStatus();$("#settingsDialog").showModal()};$("#cancelSettings").onclick=()=>$("#settingsDialog").close();
@@ -307,35 +314,73 @@ if("serviceWorker"in navigator){
     location.reload();
   });
 }
-
-// ---------- V5 kişiselleştirilmiş kabuk ----------
-const V5_PREF_KEY="butcem_v5_preferences";
-function getV5Prefs(){try{return JSON.parse(localStorage.getItem(V5_PREF_KEY))||null}catch{return null}}
-function saveV5Prefs(p){localStorage.setItem(V5_PREF_KEY,JSON.stringify(p))}
-function refreshV5Summary(){
- const ym=currentMonth(),tx=state.transactions.filter(t=>t.date&&t.date.startsWith(ym));
- const ex=tx.filter(t=>t.type==="expense").reduce((s,t)=>s+Number(t.amount||0),0);
- const inc=tx.filter(t=>t.type==="income").reduce((s,t)=>s+Number(t.amount||0),0);
- const net=inc-ex,rem=state.monthlyBudget?state.monthlyBudget-ex:null;
- $("#v5Income").textContent=money(inc);$("#v5Expense").textContent=money(ex);$("#v5Net").textContent=money(net);$("#v5Net").className="v5-hero-value "+(net>=0?"good":"bad");
- $("#v5Remaining").textContent=rem===null?"—":money(rem);$("#v5Remaining").className=rem===null?"":(rem>=0?"good":"bad");
- $("#v5Saving").textContent=inc>0?`%${Math.round(net/inc*100)}`:"—";
- $("#v5DateLabel").textContent=new Date().toLocaleDateString("tr-TR",{month:"long",year:"numeric"});
-}
-function setV5Theme(theme){document.documentElement.dataset.theme=theme;let p=getV5Prefs()||{modules:["budget"],startView:"summary"};p.theme=theme;saveV5Prefs(p)}
-function showV5View(view){
- const app=document.querySelector(".app"),home=$("#v5Home");
- if(view==="summary"){app.style.display="none";home.classList.add("show");refreshV5Summary()}
- else{home.classList.remove("show");app.style.display="block";if(view==="transactions")document.querySelector("#transactions")?.closest(".section")?.scrollIntoView({behavior:"smooth"});if(view==="budget")window.scrollTo({top:0,behavior:"smooth"});if(view==="assets")alert("Varlıklar modülünün yeri hazır. Net Servet / Yatırımlar V8'de buraya gelecek.")}
- document.querySelectorAll(".v5-nav").forEach(b=>b.classList.toggle("active",b.dataset.view===view));
-}
-function initV5(){
- let p=getV5Prefs();
- if(!p){$("#v5Onboarding").classList.add("show")}else{setV5Theme(p.theme||"light");showV5View(p.startView||"summary")}
- $("#v5Done").onclick=()=>{const modules=[...document.querySelectorAll("#v5Onboarding input:checked")].map(x=>x.value);const np={modules:modules.length?modules:["budget"],startView:$("#v5Start").value,theme:"light"};saveV5Prefs(np);$("#v5Onboarding").classList.remove("show");showV5View(np.startView)};
- document.querySelectorAll(".v5-nav").forEach(b=>b.onclick=()=>showV5View(b.dataset.view));
- $("#v5Theme").onclick=()=>setV5Theme(document.documentElement.dataset.theme==="dark"?"light":"dark");
-}
-
 state.dataVersion=DATA_VERSION;localStorage.setItem(KEY,JSON.stringify(state));render();
-initV5();
+
+
+// ===== V5.1 kişiselleştirme / Financial Dashboard =====
+const V5_PREF_KEY="butcem_v5_preferences";
+function v5GetPrefs(){try{return JSON.parse(localStorage.getItem(V5_PREF_KEY))}catch(e){return null}}
+function v5SetPrefs(p){localStorage.setItem(V5_PREF_KEY,JSON.stringify(p))}
+function v5Theme(t){document.documentElement.dataset.theme=t;let p=v5GetPrefs()||{modules:["budget"],startView:"summary"};p.theme=t;v5SetPrefs(p)}
+function v51MonthKey(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`}
+function v51MonthLabel(key){let [y,m]=key.split("-").map(Number);return new Date(y,m-1,1).toLocaleDateString("tr-TR",{month:"long",year:"numeric"})}
+function v51Esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function v51RecentDate(s){if(!s)return "";let [y,m,d]=s.split("-").map(Number);return new Date(y,m-1,d).toLocaleDateString("tr-TR",{day:"numeric",month:"short"})}
+
+function v5Refresh(){
+ const key=currentMonth(), tx=state.transactions.filter(t=>t.date&&t.date.startsWith(key));
+ const inc=tx.filter(t=>t.type==="income").reduce((a,t)=>a+Number(t.amount||0),0);
+ const ex=tx.filter(t=>t.type==="expense").reduce((a,t)=>a+Number(t.amount||0),0);
+ const net=inc-ex, budget=Number(state.monthlyBudget||0), remaining=budget?budget-ex:null;
+ const q=s=>document.querySelector(s);
+ q("#v5Income").textContent=money(inc);q("#v5Expense").textContent=money(ex);q("#v5Net").textContent=money(net);
+ q("#v5Net").className=net>=0?"good":"bad";q("#v5Saving").textContent=inc>0?`%${Math.round(net/inc*100)}`:"—";
+ q("#v51Month").textContent=v51MonthLabel(key);
+ if(budget){
+   q("#v5MainValue").textContent=money(remaining);
+   q("#v5MainValue").className="v5-hero-value "+(remaining<0?"bad":"");
+   q("#v5MainSub").textContent=remaining>=0?`${money(budget)} bütçenin ${Math.min(100,Math.round(ex/budget*100))}%'i kullanıldı`:`Bütçe ${money(Math.abs(remaining))} aşıldı`;
+   q("#v51BudgetBar").style.width=Math.min(100,ex/budget*100)+"%";
+ }else{
+   q("#v5MainValue").textContent=money(net);
+   q("#v5MainValue").className="v5-hero-value "+(net<0?"bad":"");
+   q("#v5MainSub").textContent="Aylık bütçe belirlenmedi · Net durum gösteriliyor";
+   q("#v51BudgetBar").style.width="0%";
+ }
+
+ // Donut
+ const cats={};tx.filter(t=>t.type==="expense").forEach(t=>cats[t.category||"Diğer"]=(cats[t.category||"Diğer"]||0)+Number(t.amount||0));
+ const rows=Object.entries(cats).sort((a,b)=>b[1]-a[1]).slice(0,6);
+ const palette=["#2563eb","#059669","#d97706","#7c3aed","#db2777","#64748b"];
+ let acc=0, stops=[];
+ rows.forEach(([_,v],i)=>{let a=ex?v/ex*100:0;stops.push(`${palette[i]} ${acc}% ${acc+a}%`);acc+=a});
+ q("#v51Donut").style.background=stops.length?`conic-gradient(${stops.join(",")})`:"var(--surface2)";
+ q("#v51DonutTotal").textContent=money(ex);
+ q("#v51Legend").innerHTML=rows.length?rows.map(([name,v],i)=>`<div class="v51-legend-row"><span class="v51-dot" style="background:${palette[i]}"></span><span class="v51-legend-name">${v51Esc(name)}</span><strong>${Math.round(v/ex*100)}%</strong></div>`).join(""):`<div class="v51-empty">Henüz harcama yok.</div>`;
+
+ // Six-month chart
+ const now=new Date(), months=[];
+ for(let i=5;i>=0;i--){let d=new Date(now.getFullYear(),now.getMonth()-i,1),k=v51MonthKey(d);let mts=state.transactions.filter(t=>t.date&&t.date.startsWith(k));months.push({k,label:d.toLocaleDateString("tr-TR",{month:"short"}),inc:mts.filter(t=>t.type==="income").reduce((a,t)=>a+Number(t.amount||0),0),ex:mts.filter(t=>t.type==="expense").reduce((a,t)=>a+Number(t.amount||0),0)})}
+ const max=Math.max(1,...months.flatMap(x=>[x.inc,x.ex]));
+ q("#v51Chart").innerHTML=months.map(x=>`<div class="v51-monthcol"><div class="v51-bars"><span class="v51-bar income" title="Gelir ${money(x.inc)}" style="height:${Math.max(x.inc?3:0,x.inc/max*100)}%"></span><span class="v51-bar expense" title="Harcama ${money(x.ex)}" style="height:${Math.max(x.ex?3:0,x.ex/max*100)}%"></span></div><div class="v51-monthname">${v51Esc(x.label)}</div></div>`).join("");
+
+ // Recent transactions
+ const recent=[...state.transactions].sort((a,b)=>String(b.date).localeCompare(String(a.date))).slice(0,5);
+ q("#v51Recent").innerHTML=recent.length?recent.map(t=>`<div class="v51-recent-row"><div class="v51-recent-main"><div class="v51-recent-title">${v51Esc(t.description||t.category||"İşlem")}</div><div class="v51-recent-meta">${v51Esc(t.category||"")} · ${v51Esc(t.payment||"")} · ${v51RecentDate(t.date)}</div></div><div class="v51-recent-amt ${t.type==="income"?"good":"bad"}">${t.type==="income"?"+":"−"}${money(t.amount)}</div></div>`).join(""):`<div class="v51-empty">Henüz işlem yok. Sağ alttaki + ile ilk kaydını ekleyebilirsin.</div>`;
+}
+function v5Show(view){
+ let sum=document.querySelector("#v5Summary"),app=document.querySelector(".app");
+ if(view==="summary"){sum.classList.remove("v5-hide");app.classList.add("v5-hide");v5Refresh()}
+ else{sum.classList.add("v5-hide");app.classList.remove("v5-hide");if(view==="assets")alert("Varlıklar modülünün yeri hazır. Net Servet/Yatırım motorunu sonraki aşamada ekleyeceğiz.")}
+ document.querySelectorAll("#v5Nav button").forEach(b=>b.classList.toggle("active",b.dataset.view===view));
+}
+function v5Init(){
+ let p=v5GetPrefs();
+ if(!p){document.querySelector("#v5Onboarding").classList.remove("v5-hide")}
+ else{v5Theme(p.theme||"light");v5Show(p.startView||"summary")}
+ document.querySelector("#v5Done").onclick=()=>{let modules=[...document.querySelectorAll("#v5Onboarding input:checked")].map(x=>x.value),startView=document.querySelector("#v5Start").value;p={modules:modules.length?modules:["budget"],startView,theme:"light"};v5SetPrefs(p);document.querySelector("#v5Onboarding").classList.add("v5-hide");v5Show(startView)};
+ document.querySelectorAll("#v5Nav button").forEach(b=>b.onclick=()=>v5Show(b.dataset.view));
+ document.querySelector("#v5Theme").onclick=()=>v5Theme(document.documentElement.dataset.theme==="dark"?"light":"dark");
+ document.querySelector("#v51AllTx").onclick=()=>v5Show("transactions");
+}
+setTimeout(v5Init,0);
