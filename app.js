@@ -427,7 +427,7 @@ function render(){
  filtered.forEach(t=>{let r=document.createElement("div");r.className="item v52-item v6-tappable";r.onclick=e=>{if(!e.target.closest("button"))openTxn(t.type,t)};let l=document.createElement("div");l.className="v52-item-main";let title=document.createElement("div"),meta=document.createElement("div");title.className="v52-item-title";title.textContent=t.description||t.category;meta.className="meta";meta.textContent=`${t.category} • ${t.date} • ${t.payment}`;l.append(title,meta);if(t.cardName){let pill=document.createElement("span");pill.className="v6-account-pill";pill.textContent=t.cardName;l.appendChild(pill)}let side=document.createElement("div");side.className="v52-item-side";let a=document.createElement("div");a.className="amount "+(t.type==="income"?"good":"bad");a.textContent=(t.type==="income"?"+":"-")+money(t.amount);let acts=document.createElement("div");acts.className="v52-actions";let edit=document.createElement("button");edit.className="ghost";edit.type="button";edit.textContent="Düzenle";edit.onclick=()=>openTxn(t.type,t);let del=document.createElement("button");del.className="ghost v52-delete";del.type="button";del.textContent="Sil";del.onclick=()=>deleteTransaction(t.id);acts.append(edit,del);side.append(a,acts);r.append(l,side);list.appendChild(r)});
 }
 if("serviceWorker"in navigator){
-  navigator.serviceWorker.register("sw.js?v=8.2").then(reg=>{
+  navigator.serviceWorker.register("sw.js?v=8.3.4").then(reg=>{
     reg.update().catch(()=>{});
     if(reg.waiting) reg.waiting.postMessage("SKIP_WAITING");
     reg.addEventListener("updatefound",()=>{
@@ -532,6 +532,24 @@ async function v82RefreshCoreRates(force=false){
 }
 function v82PrevFx(a){return a.currency==="USD"?Number(v8.market?.usdtryPrev||v8.rates.usdtry||1):1}
 function v82DayAttribution(){let market=0,fx=0;const curFx=Number(v8.rates.usdtry||1),prevFx=Number(v8.market?.usdtryPrev||curFx),x=Number(v8.market?.xauusd||0),xp=Number(v8.market?.xauusdPrev||x);for(const a of v8.assets){const q=Number(a.qty||0),p=Number(a.price||0),pp=Number(a.prev||p);if(a.type==="gold"&&a.currency==="TRY"&&x>0&&xp>0){market+=q/31.1034768*(x-xp)*prevFx;fx+=q/31.1034768*x*(curFx-prevFx);continue}if(a.currency==="USD"){market+=q*(p-pp)*prevFx;fx+=q*p*(curFx-prevFx)}else market+=q*(p-pp)}return {market,fx,total:market+fx}}
+function v834UsdAmount(n){if(!Number.isFinite(n))return "—";const x=new Intl.NumberFormat("en-US",{style:"currency",currency:"USD",minimumFractionDigits:2,maximumFractionDigits:2}).format(n);return n>0?"+"+x:x}
+function v834AssetDayMove(a){
+ const q=Number(a.qty||0),p=Number(a.price||0),pp=Number(a.prev||0);
+ if(!(q>0&&p>0&&pp>0))return null;
+ const curFx=a.currency==="USD"?Number(v8.rates.usdtry||0):1,prevFx=a.currency==="USD"?Number(v8.market?.usdtryPrev||curFx):1;
+ if(!(curFx>0&&prevFx>0))return null;
+ const current=q*p*curFx,previous=q*pp*prevFx,delta=current-previous,pct=previous?delta/previous*100:0;
+ return {asset:a,current,previous,delta,pct};
+}
+function v834RenderDailyMovers(){
+ const box=$("#v834DailyMovers");if(!box)return;
+ const moves=v8.assets.map(v834AssetDayMove).filter(Boolean).filter(x=>Math.abs(x.delta)>=0.01);
+ const winners=moves.filter(x=>x.delta>0).sort((a,b)=>b.delta-a.delta),losers=moves.filter(x=>x.delta<0).sort((a,b)=>a.delta-b.delta);
+ const row=x=>{const a=x.asset,meta=a.symbol?String(a.symbol).toUpperCase():v8TypeName(a.type);return `<div class="v834-mover"><div class="v834-mover-name"><strong>${v51Esc(a.name||meta)}</strong><small>${v51Esc(meta)}${a.currency==="USD"?" · kur dahil":""}</small></div><div class="v834-mover-value"><strong class="${x.delta>=0?"good":"bad"}">${x.delta>=0?"+":""}${money(x.delta)}</strong><span class="${x.pct>=0?"good":"bad"}">${x.pct>=0?"+":""}${x.pct.toFixed(2)}%</span></div></div>`};
+ const col=(title,items,kind)=>`<div class="v834-movercol"><div class="v834-mover-title"><strong>${title}</strong><span>${items.length} varlık</span></div>${items.length?items.map(row).join(""):`<div class="v834-mover-empty">Bugün ${kind} varlık yok.</div>`}</div>`;
+ if(!moves.length){box.innerHTML='<div class="v834-movercol" style="grid-column:1/-1"><div class="v834-mover-empty">Günlük hareket için dünkü fiyat verisi gereken varlıklar henüz hazır değil. Fiyatları yenilediğinde burada otomatik görünür.</div></div>';return}
+ box.innerHTML=col("Kazandıranlar",winners,"kazandıran")+col("Kaybettirenler",losers,"kaybettiren");
+}
 function v82RenderRates(){
  const u=Number(v8.rates.usdtry||0),up=Number(v8.market?.usdtryPrev||0),x=Number(v8.market?.xauusd||0),xp=Number(v8.market?.xauusdPrev||0),g=Number(v8.rates.gramGold||0),gp=Number(v8.market?.gramGoldPrev||0);
  const set=(id,val,pct,digits=2,prefix="")=>{const el=$(id);if(el)el.textContent=val>0?prefix+new Intl.NumberFormat("tr-TR",{minimumFractionDigits:digits,maximumFractionDigits:digits}).format(val):"—";const ch=$(id+"Change");if(ch){ch.textContent=(pct>=0?"+":"")+pct.toFixed(2)+"% günlük";ch.className=pct>=0?"good":"bad"}};
@@ -573,7 +591,7 @@ function v8Render(){
  const total=v8TotalTry(),usd=total/Math.max(.0001,Number(v8.rates.usdtry||1)),cost=v8.assets.reduce((s,a)=>s+v8AssetCostTry(a),0),pl=total-cost;
  const prev=v8.assets.reduce((s,a)=>s+Number(a.qty||0)*Number(a.prev||a.price||0)*v82PrevFx(a),0),day=total-prev,dayPct=prev?day/prev*100:0;
  $("#v8NetWorth").textContent=v8FormatTryValue(total);$("#v8NetMeta").textContent=`${v8.assets.length} varlık · Maliyet bazlı ${pl>=0?"+":""}${v8FormatTryValue(pl,"TRY")}`;
- $("#v8Metrics").innerHTML=`<div class="v8-metric"><span>Bugün</span><strong class="${day>=0?"good":"bad"}">${day>=0?"+":""}${money(day)}</strong></div><div class="v8-metric"><span>Günlük %</span><strong class="${dayPct>=0?"good":"bad"}">${dayPct>=0?"+":""}${dayPct.toFixed(2)}%</strong></div><div class="v8-metric"><span>Toplam P/L</span><strong class="${pl>=0?"good":"bad"}">${pl>=0?"+":""}${money(pl)}</strong></div>`;const attr=v82DayAttribution();if($("#v82Attribution"))$("#v82Attribution").innerHTML=`<span>Piyasa etkisi <b class="${attr.market>=0?"good":"bad"}">${attr.market>=0?"+":""}${money(attr.market)}</b></span><span>Kur etkisi <b class="${attr.fx>=0?"good":"bad"}">${attr.fx>=0?"+":""}${money(attr.fx)}</b></span>`;v82RenderRates();
+ $("#v8Metrics").innerHTML=`<div class="v8-metric"><span>Bugün</span><strong class="${day>=0?"good":"bad"}">${day>=0?"+":""}${money(day)}</strong></div><div class="v8-metric"><span>Günlük %</span><strong class="${dayPct>=0?"good":"bad"}">${dayPct>=0?"+":""}${dayPct.toFixed(2)}%</strong></div><div class="v8-metric"><span>Toplam P/L</span><strong class="${pl>=0?"good":"bad"}">${pl>=0?"+":""}${money(pl)}</strong></div>`;const attr=v82DayAttribution(),liveUsdTry=Number(v8.rates.usdtry||0),usdEquivalent=liveUsdTry>0?day/liveUsdTry:NaN;if($("#v82Attribution"))$("#v82Attribution").innerHTML=`<span>Piyasa etkisi <b class="${attr.market>=0?"good":"bad"}">${attr.market>=0?"+":""}${money(attr.market)}</b></span><span>Kur etkisi <b class="${attr.fx>=0?"good":"bad"}">${attr.fx>=0?"+":""}${money(attr.fx)}</b></span><span title="Günlük TL değişimin canlı USD/TRY ile karşılığı">USD karşılığı <b class="${day>=0?"good":"bad"}">${v834UsdAmount(usdEquivalent)}</b></span>`;v82RenderRates();v834RenderDailyMovers();
  document.querySelectorAll("[data-measure]").forEach(b=>b.classList.toggle("active",b.dataset.measure===v8.measure));$("#v8AssetCount").textContent=`${v8.assets.length} varlık`;
  const typeTotals={};v8.assets.forEach(a=>typeTotals[a.type]=(typeTotals[a.type]||0)+v8AssetValueTry(a));const alloc=Object.entries(typeTotals).sort((a,b)=>b[1]-a[1]);
  $("#v8Allocation").innerHTML=alloc.map(([t,val],i)=>`<span style="width:${total?val/total*100:0}%;background:${v8Color(i)}"></span>`).join("");
