@@ -288,12 +288,19 @@ function mergeById(localArr=[],remoteArr=[]){
  return [...m.values()];
 }
 function assetKey(a){return String(a?.symbol||a?.name||a?.id||'').trim().toUpperCase()+"|"+String(a?.type||'')}
-function mergeAssets(localArr=[],remoteArr=[]){
+function assetStamp(a,fallback=""){return String(a?.updatedAt||a?.marketUpdatedAt||fallback||"")}
+function mergeTombstones(a={},b={}){const out={...(a||{})};for(const [k,v] of Object.entries(b||{})){if(!out[k]||String(v)>String(out[k]))out[k]=v}return out}
+function mergeAssets(localArr=[],remoteArr=[],tombstones={},localFallback="",remoteFallback=""){
  const m=new Map();
- for(const a of remoteArr||[])if(a)m.set(assetKey(a),a);
- for(const a of localArr||[])if(a){const k=assetKey(a);m.set(k,{...(m.get(k)||{}),...a})}
- return [...m.values()];
+ const put=(a,fallback)=>{if(!a)return;const k=assetKey(a),prev=m.get(k);if(!prev||assetStamp(a,fallback)>=assetStamp(prev.a,prev.fallback))m.set(k,{a:{...a},fallback})};
+ for(const a of remoteArr||[])put(a,remoteFallback);
+ for(const a of localArr||[])put(a,localFallback);
+ const out=[];
+ for(const [k,row] of m){const del=String(tombstones?.[k]||"");if(del&&del>=assetStamp(row.a,row.fallback))continue;out.push(row.a)}
+ return out;
 }
+function markAssetDeleted(a){if(!a)return;const k=assetKey(a),ts=new Date().toISOString();v8.assetTombstones=v8.assetTombstones||{};v8.assetTombstones[k]=ts}
+function clearAssetTombstone(a){const k=assetKey(a);if(v8.assetTombstones?.[k])delete v8.assetTombstones[k]}
 function mergeSnapshots(localArr=[],remoteArr=[]){
  const m=new Map();for(const x of remoteArr||[])if(x?.date)m.set(x.date,x);for(const x of localArr||[])if(x?.date)m.set(x.date,{...(m.get(x.date)||{}),...x});return [...m.values()].sort((a,b)=>String(a.date).localeCompare(String(b.date)));
 }
@@ -317,7 +324,8 @@ async function pullExtendedCloud(){
  }
  if(wr.data){
   const x=wr.data.payload||{};
-  v8={...v8Defaults(),...x,...v8,assets:mergeAssets(v8.assets,x.assets),rates:{...v8Defaults().rates,...(x.rates||{}),...(v8.rates||{})},profile:{...v8Defaults().profile,...(x.profile||{}),...(v8.profile||{})},market:{...v8Defaults().market,...(x.market||{}),...(v8.market||{})},snapshots:mergeSnapshots(v8.snapshots,x.snapshots),btRows:Array.isArray(v8.btRows)&&v8.btRows.length?v8.btRows:(x.btRows||v8Defaults().btRows),compare:Array.isArray(v8.compare)&&v8.compare.length?v8.compare:(x.compare||v8Defaults().compare),cloudUpdatedAt:new Date().toISOString()};
+  const tomb=mergeTombstones(v8.assetTombstones,x.assetTombstones);
+  v8={...v8Defaults(),...x,...v8,assetTombstones:tomb,assets:mergeAssets(v8.assets,x.assets,tomb,v8.cloudUpdatedAt,wr.data.updated_at),rates:{...v8Defaults().rates,...(x.rates||{}),...(v8.rates||{})},profile:{...v8Defaults().profile,...(x.profile||{}),...(v8.profile||{})},market:{...v8Defaults().market,...(x.market||{}),...(v8.market||{})},snapshots:mergeSnapshots(v8.snapshots,x.snapshots),btRows:Array.isArray(v8.btRows)&&v8.btRows.length?v8.btRows:(x.btRows||v8Defaults().btRows),compare:Array.isArray(v8.compare)&&v8.compare.length?v8.compare:(x.compare||v8Defaults().compare),cloudUpdatedAt:new Date().toISOString()};
  }
  if(ir.data&&chooseRemote(v83,ir.data)){
   v83={...{period:"1m",customStart:"",customEnd:""},...(ir.data.payload||{}),cloudUpdatedAt:ir.data.updated_at};
@@ -476,8 +484,8 @@ $("#v6ExportFiltered").onclick=()=>v6ExportCurrentFilter();
 // ===== V8 Wealth & Backtest =====
 const V8_KEY="butcem_v8_wealth";
 const V8_PRICE_KEY="butcem_v8_prices";
-function v8Defaults(){return {assets:[],rates:{usdtry:40,gramGold:4000},measure:"TRY",snapshots:[],profile:{age:null,mode:"personal",adults:1,country:"TR"},market:{lastRefresh:null,usdtryPrev:null,xauusd:null,xauusdPrev:null,gramGoldPrev:null,fxUpdatedAt:null,serverCache:null},btRows:[{symbol:"QQQ",weight:60},{symbol:"BTC",weight:20},{symbol:"GLD",weight:20}],compare:[{name:"Hepsi QQQ",symbol:"QQQ"},{name:"Hepsi BTC",symbol:"BTC"},{name:"Hepsi Altın",symbol:"GLD"}],cloudUpdatedAt:null}}
-function v8Load(){try{const x=JSON.parse(localStorage.getItem(V8_KEY)||"{}");return {...v8Defaults(),...x,assets:Array.isArray(x.assets)?x.assets:[],rates:{...v8Defaults().rates,...(x.rates||{})},profile:{...v8Defaults().profile,...(x.profile||{})},market:{...v8Defaults().market,...(x.market||{})},snapshots:Array.isArray(x.snapshots)?x.snapshots:[],btRows:Array.isArray(x.btRows)&&x.btRows.length?x.btRows:v8Defaults().btRows,compare:Array.isArray(x.compare)?x.compare:v8Defaults().compare}}catch(e){return v8Defaults()}}
+function v8Defaults(){return {assets:[],assetTombstones:{},rates:{usdtry:40,gramGold:4000},measure:"TRY",snapshots:[],profile:{age:null,mode:"personal",adults:1,country:"TR"},market:{lastRefresh:null,usdtryPrev:null,xauusd:null,xauusdPrev:null,gramGoldPrev:null,fxUpdatedAt:null,serverCache:null},btRows:[{symbol:"QQQ",weight:60},{symbol:"BTC",weight:20},{symbol:"GLD",weight:20}],compare:[{name:"Hepsi QQQ",symbol:"QQQ"},{name:"Hepsi BTC",symbol:"BTC"},{name:"Hepsi Altın",symbol:"GLD"}],cloudUpdatedAt:null}}
+function v8Load(){try{const x=JSON.parse(localStorage.getItem(V8_KEY)||"{}");return {...v8Defaults(),...x,assets:Array.isArray(x.assets)?x.assets:[],assetTombstones:(x.assetTombstones&&typeof x.assetTombstones==="object")?x.assetTombstones:{},rates:{...v8Defaults().rates,...(x.rates||{})},profile:{...v8Defaults().profile,...(x.profile||{})},market:{...v8Defaults().market,...(x.market||{})},snapshots:Array.isArray(x.snapshots)?x.snapshots:[],btRows:Array.isArray(x.btRows)&&x.btRows.length?x.btRows:v8Defaults().btRows,compare:Array.isArray(x.compare)?x.compare:v8Defaults().compare}}catch(e){return v8Defaults()}}
 function v8LoadPrices(){try{return JSON.parse(localStorage.getItem(V8_PRICE_KEY)||"{}")}catch(e){return {}}}
 let v8=v8Load(),v8Prices=v8LoadPrices(),v8LastBacktest=null;
 function v8Save(show=true,queueSync=true){if(queueSync)v8.cloudUpdatedAt=new Date().toISOString();localStorage.setItem(V8_KEY,JSON.stringify(v8));v8Render();if(queueSync)queueCloudSync();if(show)v6Toast("Kaydedildi")}
@@ -549,7 +557,7 @@ function v82RenderRates(){
  const c=v8.market?.serverCache,el=$("#v82ServerCache");if(el){const hits=[c?.usd?.hit,c?.xau?.hit].filter(v=>v!==undefined);const hitText=hits.length?hits.every(Boolean)?"ortak sunucu cache'inden":"sunucu cache/API karışık":"cache durumu bekleniyor";el.innerHTML=`<b>${hitText}</b>${v8.market?.fxUpdatedAt?` · ${new Date(v8.market.fxUpdatedAt).toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit"})}`:""}${c?.errors?.length?` · fallback: ${c.errors.join(", ")}`:""}`}}
 
 async function v81RefreshAsset(a,force=false){if(a.type==="gold")return a;if(!a.symbol||!["stock","etf","crypto"].includes(a.type))return a;const q=await v81Market("quote",{symbol:a.symbol},force?0:V81_QUOTE_TTL);return v81QuoteToAsset(a,q)}
-async function v81RefreshAll(force=false){const btn=$("#v81RefreshAll");if(btn)btn.disabled=true;let ok=0,fail=0;try{await v82RefreshCoreRates(force)}catch(e){fail++}for(const a of v8.assets){try{await v81RefreshAsset(a,force);ok++}catch(e){fail++}}v82ApplyGoldAssets();v8.market.lastRefresh=new Date().toISOString();v8Save(false,false);v83AutoSnapshot();if(btn)btn.disabled=false;if(force)v6Toast(fail?`${ok} varlık güncellendi · ${fail} veri alınamadı`:"Kur, altın ve piyasa fiyatları güncellendi")}
+async function v81RefreshAll(force=false){const btn=$("#v81RefreshAll");if(btn)btn.disabled=true;let ok=0,fail=0;try{await v82RefreshCoreRates(force)}catch(e){fail++}for(const a of v8.assets){try{await v81RefreshAsset(a,force);ok++}catch(e){fail++}}v82ApplyGoldAssets();v8.market.lastRefresh=new Date().toISOString();v8Save(false,false);v83AutoSnapshot();if(!localStorage.getItem("butcem_v833_backfill_done")){v833BackfillRecentSnapshots(false).then(()=>localStorage.setItem("butcem_v833_backfill_done","1")).catch(()=>{})}if(btn)btn.disabled=false;if(force)v6Toast(fail?`${ok} varlık güncellendi · ${fail} veri alınamadı`:"Kur, altın ve piyasa fiyatları güncellendi")}
 async function v81Search(q){q=q.trim();if(q.length<2)return [];const out=await v81Market("search",{symbol:q},V81_SEARCH_TTL);return out?.data?.data||out?.data||[]}
 function v81RenderSearch(items){const box=$("#v81SearchResults");if(!box)return;if(!items.length){box.style.display="none";return}box.innerHTML=items.slice(0,8).map((x,i)=>`<div class="v81-result" data-v81pick="${i}"><strong>${v51Esc(x.instrument_name||x.name||x.symbol||"")}</strong><span>${v51Esc(x.symbol||"")} · ${v51Esc(x.exchange||"")} · ${v51Esc(x.instrument_type||x.type||"")}</span></div>`).join("");box.style.display="block";box.querySelectorAll("[data-v81pick]").forEach(el=>el.onclick=async()=>{const x=items[+el.dataset.v81pick];$("#v8AssetName").value=x.instrument_name||x.name||x.symbol||"";$("#v8AssetSymbol").value=(x.symbol||"").toUpperCase();$("#v8AssetCurrency").value=(x.currency==="TRY"?"TRY":"USD");const typ=String(x.instrument_type||x.type||"").toLowerCase();$("#v8AssetType").value=typ.includes("etf")?"etf":typ.includes("crypto")?"crypto":"stock";box.style.display="none";$("#v81AssetQuoteStatus").textContent="Fiyat alınıyor…";try{const q=await v81Market("quote",{symbol:$("#v8AssetSymbol").value},0),d=q.data||{};$("#v8AssetPrice").value=Number(d.close||d.price||0)||"";$("#v8AssetPrev").value=Number(d.previous_close||0)||"";$("#v81AssetQuoteStatus").textContent=`${d.exchange||""} · ${d.currency||"USD"} · fiyat otomatik alındı`}catch(e){$("#v81AssetQuoteStatus").textContent="Otomatik fiyat alınamadı; manuel girebilirsin."}})}
 async function v81EnsureHistory(symbol,start,end){
@@ -574,7 +582,7 @@ function v8Render(){
  const typeTotals={};v8.assets.forEach(a=>typeTotals[a.type]=(typeTotals[a.type]||0)+v8AssetValueTry(a));const alloc=Object.entries(typeTotals).sort((a,b)=>b[1]-a[1]);
  $("#v8Allocation").innerHTML=alloc.map(([t,val],i)=>`<span style="width:${total?val/total*100:0}%;background:${v8Color(i)}"></span>`).join("");
  $("#v8AllocationLegend").innerHTML=alloc.length?alloc.map(([t,val],i)=>`<div class="v8-legendrow"><span><i class="v8-dot" style="background:${v8Color(i)}"></i>${v8TypeName(t)}</span><strong>%${total?(val/total*100).toFixed(1):0}</strong></div>`).join(""):`<div class="v7-empty">Henüz varlık eklenmedi.</div>`;
- $("#v8Snapshots").innerHTML=v8.snapshots.length?v8.snapshots.slice(-4).reverse().map(s=>`<div class="v8-snap"><span>${v51RecentDate(s.date)}</span><strong>${v8FormatTryValue(s.total,"TRY")}</strong></div>`).join(""):`<div class="v7-empty">Henüz anlık görüntü yok.</div>`;
+ $("#v8Snapshots").innerHTML=v8.snapshots.length?v8.snapshots.slice(-4).reverse().map(s=>`<div class="v8-snap"><span>${v51RecentDate(s.date)}</span><strong>${v8FormatTryValue(s.total,"TRY")}</strong>${s.backfilled?`<small>${s.quality==="historical"?"Tarihsel fiyatlarla":"Tarihsel + sabit değer"}</small>`:""}</div>`).join(""):`<div class="v7-empty">Henüz anlık görüntü yok.</div>`;
 
  $("#v8AssetsList").innerHTML=v8.assets.length?[...v8.assets].sort((a,b)=>v8AssetValueTry(b)-v8AssetValueTry(a)).map(a=>{const val=v8AssetValueTry(a),c=v8AssetCostTry(a),p=c?(val-c)/c*100:0;return `<div class="v8-asset"><div><div class="v8-assetname">${v51Esc(a.name)}</div><div class="v8-assetmeta">${v51Esc(v8TypeName(a.type))}${a.symbol?` · ${v51Esc(a.symbol.toUpperCase())}`:""}${a.exchange?` · ${v51Esc(a.exchange)}`:""} · ${a.qty}${a.type==="gold"?" gr":""} × ${a.currency} ${a.price}${a.marketUpdatedAt?` · ${new Date(a.marketUpdatedAt).toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit"})}`:""}</div></div><div class="v8-assetval"><span>Değer</span><strong>${money(val)}</strong></div><div class="v8-assetval v8-hide-mobile"><span>P/L</span><strong class="${p>=0?"good":"bad"}">${p>=0?"+":""}${p.toFixed(1)}%</strong></div><div class="v8-assetval v8-hide-mobile"><span>Ağırlık</span><strong>%${total?(val/total*100).toFixed(1):0}</strong></div><div class="v8-asset-actions"><button class="ghost" data-v8edit="${v51Esc(a.id)}">Düzenle</button></div></div>`}).join(""):`<div class="v7-empty">Altın, hisse, ETF, kripto, nakit, ev, araç veya başka bir varlık ekleyebilirsin.</div>`;
  $("#v8AssetsList").querySelectorAll("[data-v8edit]").forEach(b=>b.onclick=()=>v8OpenAsset(b.dataset.v8edit));
@@ -842,6 +850,23 @@ const V83_KEY="butcem_v83_intelligence";
 function v83Load(){try{return {...{period:"1m",customStart:"",customEnd:"",cloudUpdatedAt:null},...JSON.parse(localStorage.getItem(V83_KEY)||"{}")}}catch(e){return {period:"1m",customStart:"",customEnd:"",cloudUpdatedAt:null}}}
 let v83=v83Load();
 function v83Save(){v83.cloudUpdatedAt=new Date().toISOString();localStorage.setItem(V83_KEY,JSON.stringify(v83));queueCloudSync()}
+async function v833SnapshotTotalForDate(date){
+ const fx=await v83History("USD/TRY",date,date).catch(()=>[]),fxRow=v83Closest(fx,date,"before")||v83Closest(fx,date,"after");
+ const usdtry=Number(fxRow?.close||v8.rates.usdtry||1);let total=0,estimated=0,priced=0;
+ for(const a of v8.assets){const qty=Number(a.qty||0);if(!(qty>0))continue;
+  if(["vehicle","realestate","other"].includes(a.type)||(!v83Symbol(a)&&a.currency!=="USD")){total+=qty*Number(a.price||0)*(a.currency==="USD"?usdtry:1);estimated++;continue}
+  let px=null;
+  try{const sym=v83Symbol(a);if(sym){const h=await v83History(sym,date,date),r=v83Closest(h,date,"before")||v83Closest(h,date,"after");if(r)px=Number(r.close)}}catch{}
+  if(!(px>0)){px=Number(a.price||0);estimated++}else priced++;
+  total+=qty*px*(a.type==="gold"?1:(a.currency==="USD"?usdtry:1));
+ }
+ return {total,priced,estimated,usdtry};
+}
+async function v833BackfillRecentSnapshots(force=false){
+ if(!v8.assets.length)return;const dates=[1,2].map(n=>{const d=new Date();d.setDate(d.getDate()-n);return d.toISOString().slice(0,10)});let changed=false;
+ for(const date of dates){try{const r=await v833SnapshotTotalForDate(date);if(!(r.total>0))continue;const snap={date,total:r.total,auto:true,backfilled:true,quality:r.estimated?"mixed":"historical",pricedAssets:r.priced,estimatedAssets:r.estimated,recalculatedAt:new Date().toISOString()};const i=v8.snapshots.findIndex(x=>x.date===date);if(i>=0)v8.snapshots[i]=snap;else v8.snapshots.push(snap);changed=true}catch(e){console.warn("Snapshot backfill başarısız",date,e)}}
+ if(changed){v8.snapshots.sort((a,b)=>a.date.localeCompare(b.date));v8.cloudUpdatedAt=new Date().toISOString();localStorage.setItem(V8_KEY,JSON.stringify(v8));v8Render();queueCloudSync();if(force)v6Toast("Dün ve 2 gün önceki servet yeniden hesaplandı")}
+}
 function v83AutoSnapshot(){try{if(!v8.assets.length)return;const d=today(),total=v8TotalTry();if(!(total>0))return;const i=v8.snapshots.findIndex(x=>x.date===d),snap={date:d,total,auto:true};if(i>=0)v8.snapshots[i]={...v8.snapshots[i],...snap};else v8.snapshots.push(snap);v8.snapshots.sort((a,b)=>a.date.localeCompare(b.date));v8.cloudUpdatedAt=new Date().toISOString();localStorage.setItem(V8_KEY,JSON.stringify(v8));queueCloudSync()}catch(e){console.warn("Otomatik portföy snapshot alınamadı",e)}}
 function v83PeriodStart(period,end=new Date()){
  const d=new Date(end); if(period==="1d")d.setDate(d.getDate()-1); else if(period==="1w")d.setDate(d.getDate()-7); else if(period==="1m")d.setMonth(d.getMonth()-1); else if(period==="3m")d.setMonth(d.getMonth()-3); else if(period==="6m")d.setMonth(d.getMonth()-6); else if(period==="1y")d.setFullYear(d.getFullYear()-1); else d.setFullYear(d.getFullYear()-5); return d.toISOString().slice(0,10)
@@ -904,10 +929,11 @@ function v5Init(){
  $("#v8AssetType").onchange=e=>{if(e.target.value==="gold"){if(!$("#v8AssetSymbol").value)$("#v8AssetSymbol").value="GRAM";$("#v8AssetCurrency").value="TRY";if(Number(v8.rates.gramGold)>0)$("#v8AssetPrice").value=v8.rates.gramGold;if(Number(v8.market?.gramGoldPrev)>0)$("#v8AssetPrev").value=v8.market.gramGoldPrev;$("#v81AssetQuoteStatus").textContent="Altın miktarı gram kabul edilir; fiyat XAU/USD + USD/TRY ile otomatik hesaplanır."}};
  $("#v81SaveWealthProfile").onclick=()=>{v8.profile={age:$("#v81Age").value?Number($("#v81Age").value):null,mode:$("#v81WealthMode").value,adults:Math.max(1,Number($("#v81Adults").value)||1),country:$("#v81Country").value};v8Save()};
 
- $("#v8AssetForm").onsubmit=e=>{e.preventDefault();const id=$("#v8AssetId").value,existing=v8.assets.find(x=>x.id===id)||{},a={...existing,id:id||v7Id(),name:$("#v8AssetName").value.trim(),type:$("#v8AssetType").value,symbol:$("#v8AssetSymbol").value.trim().toUpperCase(),qty:Number($("#v8AssetQty").value)||0,price:Number($("#v8AssetPrice").value)||0,currency:$("#v8AssetCurrency").value,cost:Number($("#v8AssetCost").value)||0,prev:Number($("#v8AssetPrev").value)||0,note:$("#v8AssetNote").value.trim()};if(a.type==="gold"){a.symbol=a.symbol||"GRAM";a.currency="TRY";if(Number(v8.rates.gramGold)>0)a.price=Number(v8.rates.gramGold);if(Number(v8.market?.gramGoldPrev)>0)a.prev=Number(v8.market.gramGoldPrev)}const i=v8.assets.findIndex(x=>x.id===id);if(i>=0)v8.assets[i]=a;else v8.assets.push(a);$("#v8AssetDialog").close();v8Save()};
- $("#v8DeleteAsset").onclick=()=>{const id=$("#v8AssetId").value;if(!id||!confirm("Bu varlık silinsin mi?"))return;v8.assets=v8.assets.filter(a=>a.id!==id);$("#v8AssetDialog").close();v8Save()};
+ $("#v8AssetForm").onsubmit=e=>{e.preventDefault();const id=$("#v8AssetId").value,existing=v8.assets.find(x=>x.id===id)||{},a={...existing,id:id||v7Id(),name:$("#v8AssetName").value.trim(),type:$("#v8AssetType").value,symbol:$("#v8AssetSymbol").value.trim().toUpperCase(),qty:Number($("#v8AssetQty").value)||0,price:Number($("#v8AssetPrice").value)||0,currency:$("#v8AssetCurrency").value,cost:Number($("#v8AssetCost").value)||0,prev:Number($("#v8AssetPrev").value)||0,note:$("#v8AssetNote").value.trim(),updatedAt:new Date().toISOString()};if(a.type==="gold"){a.symbol=a.symbol||"GRAM";a.currency="TRY";if(Number(v8.rates.gramGold)>0)a.price=Number(v8.rates.gramGold);if(Number(v8.market?.gramGoldPrev)>0)a.prev=Number(v8.market.gramGoldPrev)}clearAssetTombstone(a);const i=v8.assets.findIndex(x=>x.id===id);if(i>=0)v8.assets[i]=a;else v8.assets.push(a);$("#v8AssetDialog").close();v8Save()};
+ $("#v8DeleteAsset").onclick=()=>{const id=$("#v8AssetId").value,a=v8.assets.find(x=>x.id===id);if(!a||!confirm("Bu varlık silinsin mi? Diğer cihazlardan da kaldırılacak."))return;markAssetDeleted(a);v8.assets=v8.assets.filter(x=>x.id!==id);$("#v8AssetDialog").close();v8Save()};
  $("#v8SaveRates").onclick=()=>{v8.rates.usdtry=Math.max(.0001,Number($("#v8UsdTry").value)||1);v8.rates.gramGold=Math.max(.0001,Number($("#v8GramGold").value)||1);v8Save()};
  $("#v8TakeSnapshot").onclick=()=>{const d=today(),total=v8TotalTry(),i=v8.snapshots.findIndex(s=>s.date===d),snap={date:d,total};if(i>=0)v8.snapshots[i]=snap;else v8.snapshots.push(snap);v8.snapshots.sort((a,b)=>a.date.localeCompare(b.date));v8Save()};
+ $("#v833RebuildSnapshots").onclick=async()=>{const b=$("#v833RebuildSnapshots");b.disabled=true;try{await v833BackfillRecentSnapshots(true);localStorage.setItem("butcem_v833_backfill_done","1")}finally{b.disabled=false}};
  $("#v8PriceCsv").onchange=async e=>{const f=e.target.files?.[0];if(!f)return;try{const parsed=v8ParseCsv(await f.text());v8Prices={...v8Prices,...parsed};localStorage.setItem(V8_PRICE_KEY,JSON.stringify(v8Prices));v8PriceInfo();v6Toast("Fiyat geçmişi yüklendi")}catch(err){alert("CSV okunamadı. date,symbol,close başlıklarını kontrol et.")}finally{e.target.value=""}};
  $("#v8ClearPrices").onclick=()=>{if(confirm("Yüklenen backtest fiyat geçmişi silinsin mi?")){v8Prices={};localStorage.removeItem(V8_PRICE_KEY);v8PriceInfo();v8DrawChart(null)}};
  $("#v8AddBtRow").onclick=()=>{v8.btRows.push({symbol:"",weight:0});v8Save(false)};
@@ -956,4 +982,4 @@ setTimeout(v5Init,0);
 {id:"recovery-ceg",name:"CEG",type:"stock",symbol:"CEG",qty:1,price:296,currency:"USD",cost:296,prev:0,note:"V8.3.2 kurtarma"},
 {id:"recovery-car",name:"Araç",type:"vehicle",symbol:"",qty:1,price:800000,currency:"TRY",cost:800000,prev:800000,note:"Güncel değer 800.000 TL · V8.3.2 kurtarma"},
 {id:"recovery-glrmk",name:"GLRMK",type:"stock",symbol:"GLRMK",qty:474,price:160,currency:"TRY",cost:160,prev:0,note:"V8.3.2 kurtarma"}
-];const existing=new Set(v8.assets.map(assetKey));let n=0;for(const a of seed){if(!existing.has(assetKey(a))){v8.assets.push(a);existing.add(assetKey(a));n++}}v8.cloudUpdatedAt=new Date().toISOString();v8Save(false,true);v6Toast(n?`${n} eksik varlık geri yüklendi`:"Kurtarma portföyündeki varlıklar zaten mevcut");setTimeout(()=>syncCloud(true),300);};})();
+];const existing=new Set(v8.assets.map(assetKey));let n=0;for(const a of seed){if(!existing.has(assetKey(a))){a.updatedAt=new Date().toISOString();clearAssetTombstone(a);v8.assets.push(a);existing.add(assetKey(a));n++}}v8.cloudUpdatedAt=new Date().toISOString();v8Save(false,true);v6Toast(n?`${n} eksik varlık geri yüklendi`:"Kurtarma portföyündeki varlıklar zaten mevcut");setTimeout(()=>syncCloud(true),300);};})();
