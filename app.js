@@ -278,9 +278,24 @@ function remoteStamp(x){return String(x?.updated_at||"")}
 function chooseRemote(localObj,remoteRow){
  if(!remoteRow)return false;
  const ls=cloudStamp(localObj),rs=remoteStamp(remoteRow);
- // Eski local-only cihaz ilk kez buluta bağlanıyorsa mevcut bulut kaydı kanonik kabul edilir.
  if(!ls)return true;
  return rs>=ls;
+}
+function mergeById(localArr=[],remoteArr=[]){
+ const m=new Map();
+ for(const x of remoteArr||[])if(x&&x.id!=null)m.set(String(x.id),x);
+ for(const x of localArr||[])if(x&&x.id!=null)m.set(String(x.id),{...(m.get(String(x.id))||{}),...x});
+ return [...m.values()];
+}
+function assetKey(a){return String(a?.symbol||a?.name||a?.id||'').trim().toUpperCase()+"|"+String(a?.type||'')}
+function mergeAssets(localArr=[],remoteArr=[]){
+ const m=new Map();
+ for(const a of remoteArr||[])if(a)m.set(assetKey(a),a);
+ for(const a of localArr||[])if(a){const k=assetKey(a);m.set(k,{...(m.get(k)||{}),...a})}
+ return [...m.values()];
+}
+function mergeSnapshots(localArr=[],remoteArr=[]){
+ const m=new Map();for(const x of remoteArr||[])if(x?.date)m.set(x.date,x);for(const x of localArr||[])if(x?.date)m.set(x.date,{...(m.get(x.date)||{}),...x});return [...m.values()].sort((a,b)=>String(a.date).localeCompare(String(b.date)));
 }
 function persistExtendedLocal(){
  try{localStorage.setItem(V7_KEY,JSON.stringify(v7))}catch{}
@@ -296,11 +311,13 @@ async function pullExtendedCloud(){
  ]);
  for(const r of [fr,wr,ir])if(r.error)throw r.error;
  extendedCloudPresence={finance:!!fr.data,wealth:!!wr.data,intelligence:!!ir.data};
- if(fr.data&&chooseRemote(v7,fr.data)){
-  const x=fr.data.payload||{};v7={...v7Defaults(),...x,accounts:Array.isArray(x.accounts)?x.accounts:[],transfers:Array.isArray(x.transfers)?x.transfers:[],recurring:Array.isArray(x.recurring)?x.recurring:[],categoryBudgets:x.categoryBudgets&&typeof x.categoryBudgets==="object"?x.categoryBudgets:{},goals:Array.isArray(x.goals)?x.goals:[],cloudUpdatedAt:fr.data.updated_at};
+ if(fr.data){
+  const x=fr.data.payload||{};
+  v7={...v7Defaults(),...x,...v7,accounts:mergeById(v7.accounts,x.accounts),transfers:mergeById(v7.transfers,x.transfers),recurring:mergeById(v7.recurring,x.recurring),categoryBudgets:{...(x.categoryBudgets||{}),...(v7.categoryBudgets||{})},goals:mergeById(v7.goals,x.goals),cloudUpdatedAt:new Date().toISOString()};
  }
- if(wr.data&&chooseRemote(v8,wr.data)){
-  const x=wr.data.payload||{};v8={...v8Defaults(),...x,assets:Array.isArray(x.assets)?x.assets:[],rates:{...v8Defaults().rates,...(x.rates||{})},profile:{...v8Defaults().profile,...(x.profile||{})},market:{...v8Defaults().market,...(x.market||{})},snapshots:Array.isArray(x.snapshots)?x.snapshots:[],btRows:Array.isArray(x.btRows)&&x.btRows.length?x.btRows:v8Defaults().btRows,compare:Array.isArray(x.compare)?x.compare:v8Defaults().compare,cloudUpdatedAt:wr.data.updated_at};
+ if(wr.data){
+  const x=wr.data.payload||{};
+  v8={...v8Defaults(),...x,...v8,assets:mergeAssets(v8.assets,x.assets),rates:{...v8Defaults().rates,...(x.rates||{}),...(v8.rates||{})},profile:{...v8Defaults().profile,...(x.profile||{}),...(v8.profile||{})},market:{...v8Defaults().market,...(x.market||{}),...(v8.market||{})},snapshots:mergeSnapshots(v8.snapshots,x.snapshots),btRows:Array.isArray(v8.btRows)&&v8.btRows.length?v8.btRows:(x.btRows||v8Defaults().btRows),compare:Array.isArray(v8.compare)&&v8.compare.length?v8.compare:(x.compare||v8Defaults().compare),cloudUpdatedAt:new Date().toISOString()};
  }
  if(ir.data&&chooseRemote(v83,ir.data)){
   v83={...{period:"1m",customStart:"",customEnd:""},...(ir.data.payload||{}),cloudUpdatedAt:ir.data.updated_at};
@@ -928,3 +945,15 @@ function v5Init(){
  document.addEventListener("click",e=>{if(!e.target.closest(".v51-monthcol"))document.querySelectorAll(".v51-monthcol.active").forEach(c=>{c.classList.remove("active");c.querySelector(".v53-tooltip")?.classList.remove("show")})});
 }
 setTimeout(v5Init,0);
+
+// V8.3.2 — one-time recovery helper for the portfolio lost during first unified-cloud migration.
+(()=>{const b=document.getElementById("v832RecoverPortfolio");if(!b)return;b.onclick=()=>{if(!confirm("Kayıp telefon portföyündeki eksik varlıklar mevcut portföye eklensin mi? Mevcut varlıklar silinmez."))return;const seed=[
+{id:"recovery-gold-232",name:"Gram Altın",type:"gold",symbol:"GRAM",qty:232,price:Number(v8.rates.gramGold)||4400,currency:"TRY",cost:4400,prev:Number(v8.market?.gramGoldPrev)||0,note:"V8.3.2 kurtarma"},
+{id:"recovery-voo",name:"VOO",type:"etf",symbol:"VOO",qty:1,price:688,currency:"USD",cost:688,prev:0,note:"V8.3.2 kurtarma"},
+{id:"recovery-vrt",name:"VRT",type:"stock",symbol:"VRT",qty:8.12,price:300,currency:"USD",cost:300,prev:0,note:"V8.3.2 kurtarma"},
+{id:"recovery-smh",name:"SMH",type:"etf",symbol:"SMH",qty:.7,price:556,currency:"USD",cost:556,prev:0,note:"V8.3.2 kurtarma"},
+{id:"recovery-qqq",name:"QQQ",type:"etf",symbol:"QQQ",qty:.46,price:695,currency:"USD",cost:695,prev:0,note:"V8.3.2 kurtarma"},
+{id:"recovery-ceg",name:"CEG",type:"stock",symbol:"CEG",qty:1,price:296,currency:"USD",cost:296,prev:0,note:"V8.3.2 kurtarma"},
+{id:"recovery-car",name:"Araç",type:"vehicle",symbol:"",qty:1,price:800000,currency:"TRY",cost:800000,prev:800000,note:"Güncel değer 800.000 TL · V8.3.2 kurtarma"},
+{id:"recovery-glrmk",name:"GLRMK",type:"stock",symbol:"GLRMK",qty:474,price:160,currency:"TRY",cost:160,prev:0,note:"V8.3.2 kurtarma"}
+];const existing=new Set(v8.assets.map(assetKey));let n=0;for(const a of seed){if(!existing.has(assetKey(a))){v8.assets.push(a);existing.add(assetKey(a));n++}}v8.cloudUpdatedAt=new Date().toISOString();v8Save(false,true);v6Toast(n?`${n} eksik varlık geri yüklendi`:"Kurtarma portföyündeki varlıklar zaten mevcut");setTimeout(()=>syncCloud(true),300);};})();
