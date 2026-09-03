@@ -389,7 +389,7 @@ body[data-view="budget"] .v6-budget-only{display:block}
 <dialog id="authDialog"><form id="authForm">
 <h3>Hesap & Bulut</h3>
 <div id="authLoggedOut">
-  <div class="small" style="margin-bottom:10px">Aynı hesabı başka cihazda açtığında bütçe verilerin senkronize edilir. Yerel kayıt ve manuel yedek sistemi çalışmaya devam eder.</div>
+  <div class="small" style="margin-bottom:10px">Aynı hesabı başka cihazda açtığında bütçe, işlemler, finans ve portföy verilerin senkronize edilir. Yerel kayıt ve manuel yedek sistemi çalışmaya devam eder.</div>
   <label>E-posta</label><input id="authEmail" type="email" autocomplete="email" required>
   <label>Şifre</label><input id="authPassword" type="password" autocomplete="current-password" minlength="6" required>
   <div class="actions">
@@ -521,17 +521,17 @@ body[data-view="budget"] .v6-budget-only{display:block}
    <div><div id="v8Metrics" class="v8-metrics"></div><div id="v82Attribution" class="v82-attribution"></div></div>
   </div>
   <div class="v8-card"><div class="v8-cardhead"><strong>Varlık dağılımı</strong><span id="v8AssetCount" class="v7-chip">0 varlık</span></div><div id="v8Allocation" class="v8-allocation"></div><div id="v8AllocationLegend" class="v8-legend"></div></div>
-  <div class="v8-card"><div class="v8-cardhead"><strong>Servet anlık görüntüleri</strong><button id="v8TakeSnapshot" class="ghost v6-compactbtn" type="button">Bugünü kaydet</button></div><div id="v8Snapshots" class="v8-snapshot"></div><div class="v8-source">Anlık görüntüler net servetin zaman içindeki değişimini cihazda saklar.</div></div>
+  <div class="v8-card"><div class="v8-cardhead"><strong>Servet anlık görüntüleri</strong><button id="v8TakeSnapshot" class="ghost v6-compactbtn" type="button">Bugünü kaydet</button></div><div id="v8Snapshots" class="v8-snapshot"></div><div class="v8-source">Anlık görüntüler net servetin zaman içindeki değişimini hesabınla senkronize eder; cihazda da yerel kopya tutulur.</div></div>
  </div>
 
  <div id="v8PortfolioPanel" class="v8-panel">
   <div class="v8-card"><div class="v8-cardhead"><div><strong>Portföy & varlıklar</strong><div id="v81MarketStatus" class="v81-live"><i></i> Otomatik piyasa verisi</div></div><div class="v81-refresh"><span id="v81LastRefresh" class="v81-status"></span><button id="v81RefreshAll" class="ghost v6-compactbtn" type="button">↻ Fiyatları yenile</button><button id="v8AddAsset" class="primary v6-compactbtn" type="button">+ Varlık</button></div></div><div id="v8AssetsList" class="v8-assets"></div></div>
-  <div class="v8-card"><div class="v8-cardhead"><strong>Canlı kur & altın</strong><span class="v7-chip">V8.3 · ortak cache</span></div><div class="v82-marketgrid"><div class="v82-rate"><span>USD / TRY</span><strong id="v82UsdTryLive">—</strong><small id="v82UsdTryChange">—</small></div><div class="v82-rate"><span>XAU / USD · ons</span><strong id="v82XauUsdLive">—</strong><small id="v82XauUsdChange">—</small></div><div class="v82-rate"><span>Gram altın · türetilmiş</span><strong id="v82GramGoldLive">—</strong><small id="v82GramGoldChange">—</small></div></div><div id="v82ServerCache" class="v82-server">Piyasa verisi hazırlanıyor…</div><details style="margin-top:12px"><summary style="cursor:pointer">Gelişmiş: API kesilirse manuel fallback</summary><div class="v8-formgrid" style="margin-top:10px"><div><label>USD / TRY</label><input id="v8UsdTry" type="number" min="0.01" step="0.0001"></div><div><label>Gram altın (TRY)</label><input id="v8GramGold" type="number" min="0.01" step="0.01"></div></div><div class="actions"><button id="v8SaveRates" class="primary" type="button">Fallback değerlerini kaydet</button></div></details><div class="v8-source">USD/TRY ve XAU/USD otomatik çekilir. Gram altın = XAU/USD × USD/TRY ÷ 31,1034768. Altın türündeki TRY varlıklarda miktar gram kabul edilir ve fiyat otomatik güncellenir. API erişilemezse son başarılı değer/fallback kullanılır.</div></div>
+  <div class="v8-card"><div class="v8-cardhead"><strong>Canlı kur & altın</strong><span class="v7-chip">V8.3.1 · ortak cache</span></div><div class="v82-marketgrid"><div class="v82-rate"><span>USD / TRY</span><strong id="v82UsdTryLive">—</strong><small id="v82UsdTryChange">—</small></div><div class="v82-rate"><span>XAU / USD · ons</span><strong id="v82XauUsdLive">—</strong><small id="v82XauUsdChange">—</small></div><div class="v82-rate"><span>Gram altın · türetilmiş</span><strong id="v82GramGoldLive">—</strong><small id="v82GramGoldChange">—</small></div></div><div id="v82ServerCache" class="v82-server">Piyasa verisi hazırlanıyor…</div><details style="margin-top:12px"><summary style="cursor:pointer">Gelişmiş: API kesilirse manuel fallback</summary><div class="v8-formgrid" style="margin-top:10px"><div><label>USD / TRY</label><input id="v8UsdTry" type="number" min="0.01" step="0.0001"></div><div><label>Gram altın (TRY)</label><input id="v8GramGold" type="number" min="0.01" step="0.01"></div></div><div class="actions"><button id="v8SaveRates" class="primary" type="button">Fallback değerlerini kaydet</button></div></details><div class="v8-source">USD/TRY ve XAU/USD otomatik çekilir. Gram altın = XAU/USD × USD/TRY ÷ 31,1034768. Altın türündeki TRY varlıklarda miktar gram kabul edilir ve fiyat otomatik güncellenir. API erişilemezse son başarılı değer/fallback kullanılır.</div></div>
  </div>
 
 
  <div id="v8PerformancePanel" class="v8-panel">
-  <div class="v8-card"><div class="v8-cardhead"><div><strong>Portfolio Intelligence</strong><div class="v8-hint">Gerçek dönem getirisi · benchmark · kazandıran/kaybettiren</div></div><span class="v7-chip">V8.3</span></div>
+  <div class="v8-card"><div class="v8-cardhead"><div><strong>Portfolio Intelligence</strong><div class="v8-hint">Gerçek dönem getirisi · benchmark · kazandıran/kaybettiren</div></div><span class="v7-chip">V8.3.1</span></div>
    <div id="v83Periods" class="v83-periods"><button class="ghost active" data-v83p="1d">1G</button><button class="ghost" data-v83p="1w">1H</button><button class="ghost" data-v83p="1m">1A</button><button class="ghost" data-v83p="3m">3A</button><button class="ghost" data-v83p="6m">6A</button><button class="ghost" data-v83p="1y">1Y</button><button class="ghost" data-v83p="all">Tümü</button></div>
    <div class="v83-selectrow"><div><label>Karşılaştırılacak varlık</label><select id="v83AssetSelect"></select></div><button id="v83Refresh" class="ghost" type="button">↻ Güncelle</button></div>
    <div id="v83MainResult" style="margin-top:12px"></div>
@@ -622,5 +622,5 @@ body[data-view="budget"] .v6-budget-only{display:block}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-config.js?v=8.2"></script>
 
-<script src="app.js?v=8.2"></script>
+<script src="app.js?v=8.3.1"></script>
 </body></html>
