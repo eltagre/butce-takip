@@ -427,7 +427,7 @@ function render(){
  filtered.forEach(t=>{let r=document.createElement("div");r.className="item v52-item v6-tappable";r.onclick=e=>{if(!e.target.closest("button"))openTxn(t.type,t)};let l=document.createElement("div");l.className="v52-item-main";let title=document.createElement("div"),meta=document.createElement("div");title.className="v52-item-title";title.textContent=t.description||t.category;meta.className="meta";meta.textContent=`${t.category} • ${t.date} • ${t.payment}`;l.append(title,meta);if(t.cardName){let pill=document.createElement("span");pill.className="v6-account-pill";pill.textContent=t.cardName;l.appendChild(pill)}let side=document.createElement("div");side.className="v52-item-side";let a=document.createElement("div");a.className="amount "+(t.type==="income"?"good":"bad");a.textContent=(t.type==="income"?"+":"-")+money(t.amount);let acts=document.createElement("div");acts.className="v52-actions";let edit=document.createElement("button");edit.className="ghost";edit.type="button";edit.textContent="Düzenle";edit.onclick=()=>openTxn(t.type,t);let del=document.createElement("button");del.className="ghost v52-delete";del.type="button";del.textContent="Sil";del.onclick=()=>deleteTransaction(t.id);acts.append(edit,del);side.append(a,acts);r.append(l,side);list.appendChild(r)});
 }
 if("serviceWorker"in navigator){
-  navigator.serviceWorker.register("sw.js?v=8.3.4").then(reg=>{
+  navigator.serviceWorker.register("sw.js?v=8.4.0").then(reg=>{
     reg.update().catch(()=>{});
     if(reg.waiting) reg.waiting.postMessage("SKIP_WAITING");
     reg.addEventListener("updatefound",()=>{
@@ -503,7 +503,7 @@ let v81Cache=v81CacheLoad(),v81SearchTimer=null,v81PickedMarket=null;
 function v81CacheSave(){try{localStorage.setItem(V81_CACHE_KEY,JSON.stringify(v81Cache))}catch(e){}}
 async function v81Market(action,params={},ttl=0){
  const q=new URLSearchParams({action,...params}),key=action+":"+[...q.entries()].sort().map(x=>x.join("=")).join("&"),hit=v81Cache[key];
- if(hit&&Date.now()-hit.at<ttl)return hit.data;
+ if(hit&&Date.now()-hit.at<ttl&&!hit.data?.cache?.stale)return hit.data;
  const cfg=window.BUTCEM_SUPABASE||window.SUPABASE_CONFIG||{};
  const client=(typeof sb!=="undefined"&&sb)||window.supabaseClient||window.sb||null;
  if(!client)throw new Error("Supabase bağlantısı hazır değil");
@@ -512,23 +512,23 @@ async function v81Market(action,params={},ttl=0){
  const anon=cfg.anonKey||cfg.publishableKey||cfg.key||window.SUPABASE_ANON_KEY||"";
  if(!base)throw new Error("Supabase URL bulunamadı");
  const res=await fetch(`${base}/functions/v1/market-data?${q.toString()}`,{headers:{Authorization:`Bearer ${session.access_token}`,apikey:anon}});
- const out=await res.json();if(!res.ok||!out.ok)throw new Error(out?.error||out?.message||"Piyasa verisi alınamadı");
+ let out;try{out=await res.json()}catch(e){throw new Error(`Piyasa sunucusu HTTP ${res.status}: geçersiz yanıt`)}if(!res.ok||!out.ok)throw new Error(out?.error||out?.message||`Piyasa verisi alınamadı (HTTP ${res.status})`);if(out.cache?.stale)throw new Error("Piyasa kaynağı eski veri döndürdü; mevcut fiyat korundu");
  v81Cache[key]={at:Date.now(),data:out};v81CacheSave();return out;
 }
-function v81QuoteToAsset(a,q){const d=q?.data||{};const px=Number(d.close||d.price||0),prev=Number(d.previous_close||0);if(px>0)a.price=px;if(prev>0)a.prev=prev;a.marketUpdatedAt=q.fetchedAt||new Date().toISOString();a.marketName=d.name||a.marketName;a.exchange=d.exchange||a.exchange;a.currency=d.currency||a.currency||"USD";return a}
+function v81QuoteToAsset(a,q){const d=q?.data||{};const px=Number(d.close||d.price||0),prev=Number(d.previous_close||0);if(!Number.isFinite(px)||px<=0)throw new Error("Geçerli fiyat alınamadı");a.price=px;if(prev>0)a.prev=prev;a.marketUpdatedAt=q.fetchedAt||new Date().toISOString();a.marketName=d.name||a.marketName;a.exchange=d.exchange||a.exchange;a.currency=d.currency||a.currency||"USD";return a}
 
 function v82NumQuote(out){const d=out?.data||{};return {price:Number(d.close||d.price||d.rate||0),prev:Number(d.previous_close||0),data:d,cache:out?.cache||null,fetchedAt:out?.fetchedAt||null}}
 function v82Pct(cur,prev){return prev?((cur-prev)/prev*100):0}
 function v82ApplyGoldAssets(){const g=Number(v8.rates.gramGold||0),gp=Number(v8.market?.gramGoldPrev||0);if(!(g>0))return;for(const a of v8.assets){if(a.type!=="gold")continue;const sym=String(a.symbol||"").toUpperCase();if(sym && !["XAU","GRAM","XAU/TRY","GAU"].includes(sym))continue;a.price=g;if(gp>0)a.prev=gp;a.currency="TRY";a.symbol=sym||"GRAM";a.marketUpdatedAt=v8.market.fxUpdatedAt||new Date().toISOString();a.exchange="Türetilmiş XAU/TRY"}}
 async function v82RefreshCoreRates(force=false){
  let usd=null,xau=null,errors=[];
- try{usd=v82NumQuote(await v81Market("quote",{symbol:"USD/TRY"},force?0:V81_QUOTE_TTL))}catch(e){errors.push("USD/TRY")}
- try{xau=v82NumQuote(await v81Market("quote",{symbol:"XAU/USD"},force?0:V81_QUOTE_TTL))}catch(e){errors.push("XAU/USD")}
+ try{usd=v82NumQuote(await v81Market("quote",{symbol:"USD/TRY"},force?0:V81_QUOTE_TTL))}catch(e){errors.push("USD/TRY");console.warn("USD/TRY güncellenemedi",e.message)}
+ try{xau=v82NumQuote(await v81Market("quote",{symbol:"XAU/USD"},force?0:V81_QUOTE_TTL))}catch(e){errors.push("XAU/USD");console.warn("XAU/USD güncellenemedi",e.message)}
  if(usd?.price>0){v8.rates.usdtry=usd.price;if(usd.prev>0)v8.market.usdtryPrev=usd.prev}
  if(xau?.price>0){v8.market.xauusd=xau.price;if(xau.prev>0)v8.market.xauusdPrev=xau.prev}
  const u=Number(v8.rates.usdtry||0),xp=Number(v8.market.xauusd||0),up=Number(v8.market.usdtryPrev||u),xpp=Number(v8.market.xauusdPrev||xp);
  if(u>0&&xp>0){v8.rates.gramGold=xp*u/31.1034768;v8.market.gramGoldPrev=xpp*up/31.1034768}
- v8.market.fxUpdatedAt=new Date().toISOString();v8.market.serverCache={usd:usd?.cache||null,xau:xau?.cache||null,errors};v82ApplyGoldAssets();v8Save(false,false);return {usd,xau,errors}
+ if(usd?.price>0&&xau?.price>0)v8.market.fxUpdatedAt=new Date().toISOString();v8.market.serverCache={usd:usd?.cache||null,xau:xau?.cache||null,errors};v82ApplyGoldAssets();v8Save(false,false);return {usd,xau,errors}
 }
 function v82PrevFx(a){return a.currency==="USD"?Number(v8.market?.usdtryPrev||v8.rates.usdtry||1):1}
 function v82DayAttribution(){let market=0,fx=0;const curFx=Number(v8.rates.usdtry||1),prevFx=Number(v8.market?.usdtryPrev||curFx),x=Number(v8.market?.xauusd||0),xp=Number(v8.market?.xauusdPrev||x);for(const a of v8.assets){const q=Number(a.qty||0),p=Number(a.price||0),pp=Number(a.prev||p);if(a.type==="gold"&&a.currency==="TRY"&&x>0&&xp>0){market+=q/31.1034768*(x-xp)*prevFx;fx+=q/31.1034768*x*(curFx-prevFx);continue}if(a.currency==="USD"){market+=q*(p-pp)*prevFx;fx+=q*p*(curFx-prevFx)}else market+=q*(p-pp)}return {market,fx,total:market+fx}}
@@ -571,7 +571,20 @@ async function v81RefreshAsset(a,force=false){
  const q=await v81Market("quote",v83MarketParamsForAsset(a),force?0:V81_QUOTE_TTL);
  return v81QuoteToAsset(a,q)
 }
-async function v81RefreshAll(force=false){const btn=$("#v81RefreshAll");if(btn)btn.disabled=true;let ok=0,fail=0;try{await v82RefreshCoreRates(force)}catch(e){fail++}for(const a of v8.assets){try{await v81RefreshAsset(a,force);ok++}catch(e){fail++}}v82ApplyGoldAssets();v8.market.lastRefresh=new Date().toISOString();v8Save(false,false);v83AutoSnapshot();if(btn)btn.disabled=false;if(force)v6Toast(fail?`${ok} varlık güncellendi · ${fail} veri alınamadı`:"Kur, altın ve piyasa fiyatları güncellendi")}
+async function v81RefreshAll(force=false){
+ const btn=$("#v81RefreshAll");if(btn?.disabled)return;if(btn)btn.disabled=true;
+ let ok=0,fail=0;
+ try{
+  try{const rates=await v82RefreshCoreRates(force);fail+=rates.errors.length;if(!(rates.usd?.price>0)&&!rates.errors.includes("USD/TRY"))fail++;if(!(rates.xau?.price>0)&&!rates.errors.includes("XAU/USD"))fail++;}catch(e){fail++;console.warn("Kur güncellemesi başarısız",e.message)}
+  for(const a of v8.assets){
+   if(!a.symbol||!["stock","etf","crypto"].includes(a.type))continue;
+   try{await v81RefreshAsset(a,force);ok++}catch(e){fail++;console.warn("Varlık fiyatı güncellenemedi",e.message)}
+  }
+  v82ApplyGoldAssets();if(!fail)v8.market.lastRefresh=new Date().toISOString();
+  v8Save(false,false);if(!fail)v83AutoSnapshot();
+  if(force)v6Toast(fail?`${ok} varlık güncellendi · ${fail} veri alınamadı`:"Kur, altın ve piyasa fiyatları güncellendi");
+ }finally{if(btn)btn.disabled=false}
+}
 async function v81Search(q){q=q.trim();if(q.length<2)return [];const out=await v81Market("search",{symbol:q},V81_SEARCH_TTL);return out?.data?.data||out?.data||[]}
 function v81RenderSearch(items){const box=$("#v81SearchResults");if(!box)return;if(!items.length){box.style.display="none";return}box.innerHTML=items.slice(0,8).map((x,i)=>`<div class="v81-result" data-v81pick="${i}"><strong>${v51Esc(x.instrument_name||x.name||x.symbol||"")}</strong><span>${v51Esc(x.symbol||"")} · ${v51Esc(x.exchange||"")} · ${v51Esc(x.instrument_type||x.type||"")}</span></div>`).join("");box.style.display="block";box.querySelectorAll("[data-v81pick]").forEach(el=>el.onclick=async()=>{const x=items[+el.dataset.v81pick];v81PickedMarket={exchange:x.exchange||"",mic_code:x.mic_code||"",currency:x.currency||""};$("#v8AssetName").value=x.instrument_name||x.name||x.symbol||"";$("#v8AssetSymbol").value=(x.symbol||"").toUpperCase();$("#v8AssetCurrency").value=(x.currency==="TRY"?"TRY":"USD");const typ=String(x.instrument_type||x.type||"").toLowerCase();$("#v8AssetType").value=typ.includes("etf")?"etf":typ.includes("crypto")?"crypto":"stock";box.style.display="none";$("#v81AssetQuoteStatus").textContent="Fiyat alınıyor…";try{const q=await v81Market("quote",{symbol:$("#v8AssetSymbol").value},0),d=q.data||{};$("#v8AssetPrice").value=Number(d.close||d.price||0)||"";$("#v8AssetPrev").value=Number(d.previous_close||0)||"";$("#v81AssetQuoteStatus").textContent=`${d.exchange||""} · ${d.currency||"USD"} · fiyat otomatik alındı`}catch(e){$("#v81AssetQuoteStatus").textContent="Otomatik fiyat alınamadı; manuel girebilirsin."}})}
 async function v81EnsureHistory(symbol,start,end){
@@ -967,8 +980,8 @@ function v5Init(){
  $("#v8RunBacktest").onclick=async()=>{try{const start=$("#v8BtStart").value,end=$("#v8BtEnd").value;await v81PrepareHistories(v8.btRows.map(x=>x.symbol),start,end);const r=v8Backtest(v8.btRows,start,end,Math.max(1,Number($("#v8BtCapital").value)||100000),Math.max(0,Number($("#v8BtContribution").value)||0),$("#v8BtFrequency").value,$("#v8BtRebalance").value);v8ShowBacktest(r)}catch(err){alert(err.message||"Backtest çalıştırılamadı.")}};
  $("#v8AddCompare").onclick=()=>{v8.compare.push({name:"Yeni senaryo",symbol:""});v8Save(false)};
  $("#v8RunCompare").onclick=async()=>{const start=$("#v8BtStart").value,end=$("#v8BtEnd").value;try{await v81PrepareHistories(v8.compare.map(x=>x.symbol),start,end)}catch(e){alert(e.message);return}const capital=Math.max(1,Number($("#v8BtCapital").value)||100000),contrib=Math.max(0,Number($("#v8BtContribution").value)||0),freq=$("#v8BtFrequency").value;const rows=[];for(const c of v8.compare){try{const r=v8Backtest([{symbol:c.symbol,weight:100}],start,end,capital,contrib,freq,"none");rows.push({name:c.name,symbol:c.symbol,r})}catch(err){rows.push({name:c.name,symbol:c.symbol,error:err.message})}}$("#v8CompareTable").innerHTML=`<table class="v8-table"><thead><tr><th>Senaryo</th><th>Son değer</th><th>Getiri</th><th>CAGR</th><th>Max DD</th></tr></thead><tbody>${rows.map(x=>x.error?`<tr><td>${v51Esc(x.name)} (${v51Esc(x.symbol)})</td><td colspan="4">${v51Esc(x.error)}</td></tr>`:`<tr><td>${v51Esc(x.name)} (${v51Esc(x.symbol)})</td><td>${money(x.r.final)}</td><td>${(x.r.totalReturn*100).toFixed(1)}%</td><td>${(x.r.cagr*100).toFixed(1)}%</td><td>${(x.r.mdd*100).toFixed(1)}%</td></tr>`).join("")}</tbody></table>`};
- $("#v8Backup").onclick=()=>download(`butcem-v8-${today()}.json`,JSON.stringify({app:"Bütçem",version:8,exportedAt:new Date().toISOString(),wealth:v8,prices:v8Prices},null,2),"application/json");
- $("#v8Restore").onchange=async e=>{const f=e.target.files?.[0];if(!f)return;try{const x=JSON.parse(await f.text()),data=x.wealth||x;if(!data||!Array.isArray(data.assets))throw new Error();if(!confirm("V8 yatırım verisi bu yedekle değiştirilsin mi?"))return;v8={...v8Defaults(),...data};v8Prices=x.prices||v8Prices;localStorage.setItem(V8_PRICE_KEY,JSON.stringify(v8Prices));v8Save()}catch(err){alert("V8 yedeği okunamadı.")}finally{e.target.value=""}};
+ if($("#v8Backup"))$("#v8Backup").onclick=()=>download(`butcem-v8-${today()}.json`,JSON.stringify({app:"Bütçem",version:8,exportedAt:new Date().toISOString(),wealth:v8,prices:v8Prices},null,2),"application/json");
+ if($("#v8Restore"))$("#v8Restore").onchange=async e=>{const f=e.target.files?.[0];if(!f)return;try{const x=JSON.parse(await f.text()),data=x.wealth||x;if(!data||!Array.isArray(data.assets))throw new Error();if(!confirm("V8 yatırım verisi bu yedekle değiştirilsin mi?"))return;v8={...v8Defaults(),...data};v8Prices=x.prices||v8Prices;localStorage.setItem(V8_PRICE_KEY,JSON.stringify(v8Prices));v8Save()}catch(err){alert("V8 yedeği okunamadı.")}finally{e.target.value=""}};
  v8Render();
  document.querySelector("#v7Theme").onclick=()=>v5Theme(document.documentElement.dataset.theme==="dark"?"light":"dark");
  document.querySelector("#v7Cloud").onclick=openAuth;document.querySelector("#v7Settings").onclick=()=>$("#settingsBtn").click();
@@ -984,8 +997,8 @@ function v5Init(){
  $("#v7DeleteGoal").onclick=()=>{const id=$("#v7GoalId").value;if(!id||!confirm("Bu hedef silinsin mi?"))return;v7.goals=v7.goals.filter(x=>x.id!==id);$("#v7GoalDialog").close();v7Save()};
  $("#v7GoalAddForm").onsubmit=e=>{e.preventDefault();const g=v7.goals.find(x=>x.id===$("#v7GoalAddId").value),amt=Number($("#v7GoalAddAmount").value);if(g&&amt>0){g.current=Number(g.current||0)+amt;$("#v7GoalAddDialog").close();v7Save()}};
  v7Render();
- $("#v7FinanceBackup").onclick=()=>download(`butcem-finans-v7-${today()}.json`,JSON.stringify({app:"Bütçem",version:7,exportedAt:new Date().toISOString(),finance:v7},null,2),"application/json");
- $("#v7FinanceRestore").onchange=async e=>{const f=e.target.files?.[0];if(!f)return;try{const x=JSON.parse(await f.text()),data=x.finance||x;if(!data||!Array.isArray(data.accounts))throw new Error();if(!confirm("V7 finans verisi bu yedekle değiştirilsin mi? Ana işlemler etkilenmez."))return;v7={...v7Defaults(),...data};v7Save()}catch(err){alert("Finans yedeği okunamadı.")}finally{e.target.value=""}};
+ if($("#v7FinanceBackup"))$("#v7FinanceBackup").onclick=()=>download(`butcem-finans-v7-${today()}.json`,JSON.stringify({app:"Bütçem",version:7,exportedAt:new Date().toISOString(),finance:v7},null,2),"application/json");
+ if($("#v7FinanceRestore"))$("#v7FinanceRestore").onchange=async e=>{const f=e.target.files?.[0];if(!f)return;try{const x=JSON.parse(await f.text()),data=x.finance||x;if(!data||!Array.isArray(data.accounts))throw new Error();if(!confirm("V7 finans verisi bu yedekle değiştirilsin mi? Ana işlemler etkilenmez."))return;v7={...v7Defaults(),...data};v7Save()}catch(err){alert("Finans yedeği okunamadı.")}finally{e.target.value=""}};
  document.querySelector("#v51AllTx").onclick=()=>v5Show("transactions");
  document.querySelector("#v53NextMonth").onclick=()=>{const n=shift(selectedMonth,1);if(n<=currentMonth()){selectedMonth=n;v5Refresh();v6SummaryPulse()}};
  document.querySelector("#v53PrevMonth").onclick=()=>{selectedMonth=shift(selectedMonth,-1);v5Refresh();v6SummaryPulse()};
