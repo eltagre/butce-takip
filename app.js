@@ -427,7 +427,7 @@ function render(){
  filtered.forEach(t=>{let r=document.createElement("div");r.className="item v52-item v6-tappable";r.onclick=e=>{if(!e.target.closest("button"))openTxn(t.type,t)};let l=document.createElement("div");l.className="v52-item-main";let title=document.createElement("div"),meta=document.createElement("div");title.className="v52-item-title";title.textContent=t.description||t.category;meta.className="meta";meta.textContent=`${t.category} • ${t.date} • ${t.payment}`;l.append(title,meta);if(t.cardName){let pill=document.createElement("span");pill.className="v6-account-pill";pill.textContent=t.cardName;l.appendChild(pill)}let side=document.createElement("div");side.className="v52-item-side";let a=document.createElement("div");a.className="amount "+(t.type==="income"?"good":"bad");a.textContent=(t.type==="income"?"+":"-")+money(t.amount);let acts=document.createElement("div");acts.className="v52-actions";let edit=document.createElement("button");edit.className="ghost";edit.type="button";edit.textContent="Düzenle";edit.onclick=()=>openTxn(t.type,t);let del=document.createElement("button");del.className="ghost v52-delete";del.type="button";del.textContent="Sil";del.onclick=()=>deleteTransaction(t.id);acts.append(edit,del);side.append(a,acts);r.append(l,side);list.appendChild(r)});
 }
 if("serviceWorker"in navigator){
-  navigator.serviceWorker.register("sw.js?v=8.3.4").then(reg=>{
+  navigator.serviceWorker.register("sw.js?v=8.4.0").then(reg=>{
     reg.update().catch(()=>{});
     if(reg.waiting) reg.waiting.postMessage("SKIP_WAITING");
     reg.addEventListener("updatefound",()=>{
@@ -503,7 +503,7 @@ let v81Cache=v81CacheLoad(),v81SearchTimer=null,v81PickedMarket=null;
 function v81CacheSave(){try{localStorage.setItem(V81_CACHE_KEY,JSON.stringify(v81Cache))}catch(e){}}
 async function v81Market(action,params={},ttl=0){
  const q=new URLSearchParams({action,...params}),key=action+":"+[...q.entries()].sort().map(x=>x.join("=")).join("&"),hit=v81Cache[key];
- if(hit&&Date.now()-hit.at<ttl)return hit.data;
+ if(hit&&Date.now()-hit.at<ttl&&!hit.data?.cache?.stale)return hit.data;
  const cfg=window.BUTCEM_SUPABASE||window.SUPABASE_CONFIG||{};
  const client=(typeof sb!=="undefined"&&sb)||window.supabaseClient||window.sb||null;
  if(!client)throw new Error("Supabase bağlantısı hazır değil");
@@ -512,10 +512,10 @@ async function v81Market(action,params={},ttl=0){
  const anon=cfg.anonKey||cfg.publishableKey||cfg.key||window.SUPABASE_ANON_KEY||"";
  if(!base)throw new Error("Supabase URL bulunamadı");
  const res=await fetch(`${base}/functions/v1/market-data?${q.toString()}`,{headers:{Authorization:`Bearer ${session.access_token}`,apikey:anon}});
- const out=await res.json();if(!res.ok||!out.ok)throw new Error(out?.error||out?.message||"Piyasa verisi alınamadı");
+ let out;try{out=await res.json()}catch(e){throw new Error(`Piyasa sunucusu HTTP ${res.status}: geçersiz yanıt`)}if(!res.ok||!out.ok)throw new Error(out?.error||out?.message||`Piyasa verisi alınamadı (HTTP ${res.status})`);if(out.cache?.stale)throw new Error("Piyasa kaynağı eski veri döndürdü; mevcut fiyat korundu");
  v81Cache[key]={at:Date.now(),data:out};v81CacheSave();return out;
 }
-function v81QuoteToAsset(a,q){const d=q?.data||{};const px=Number(d.close||d.price||0),prev=Number(d.previous_close||0);if(px>0)a.price=px;if(prev>0)a.prev=prev;a.marketUpdatedAt=q.fetchedAt||new Date().toISOString();a.marketName=d.name||a.marketName;a.exchange=d.exchange||a.exchange;a.currency=d.currency||a.currency||"USD";return a}
+function v81QuoteToAsset(a,q){const d=q?.data||{};const px=Number(d.close||d.price||0),prev=Number(d.previous_close||0);if(!Number.isFinite(px)||px<=0)throw new Error("Geçerli fiyat alınamadı");a.price=px;if(prev>0)a.prev=prev;a.marketUpdatedAt=q.fetchedAt||new Date().toISOString();a.marketName=d.name||a.marketName;a.exchange=d.exchange||a.exchange;a.currency=d.currency||a.currency||"USD";return a}
 
 function v82NumQuote(out){const d=out?.data||{};return {price:Number(d.close||d.price||d.rate||0),prev:Number(d.previous_close||0),data:d,cache:out?.cache||null,fetchedAt:out?.fetchedAt||null}}
 function v82Pct(cur,prev){return prev?((cur-prev)/prev*100):0}
