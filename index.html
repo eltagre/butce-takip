@@ -80,7 +80,13 @@ html[data-theme="dark"] .item{background:var(--card)}
 .v51-panel-title{font-size:16px;font-weight:780}
 .v51-donut-wrap{display:grid;grid-template-columns:150px 1fr;gap:18px;align-items:center}
 .v51-donut{width:145px;height:145px;border-radius:50%;position:relative;background:conic-gradient(var(--line) 0 100%);margin:auto}
-.v51-donut:after{content:"";position:absolute;inset:25px;border-radius:50%;background:var(--card);border:1px solid var(--line)}
+.v51-donut:after{content:none}
+.v51-donut-svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.v51-donut-slice{pointer-events:none;transition:transform .18s ease,filter .18s ease;transform:translate(0,0)}
+.v51-donut-slice.is-active{transform:translate(var(--dx),var(--dy));filter:drop-shadow(0 3px 3px rgba(0,0,0,.22))}
+.v51-donut-hit{pointer-events:stroke;cursor:pointer;outline:none}
+.v51-donut-center{padding:28px;overflow-wrap:anywhere}
+@media(prefers-reduced-motion:reduce){.v51-donut-slice{transition:none}}
 .v51-donut-center{position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;pointer-events:none}
 .v51-donut-center strong{font-size:17px}.v51-donut-center span{font-size:10px;color:var(--muted)}
 .v51-legend{display:flex;flex-direction:column;gap:8px;min-width:0}
@@ -640,6 +646,6 @@ body[data-view="budget"] .v6-budget-only{display:block}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-config.js?v=8.2"></script>
 
-<script src="app.js?v=8.4.0"></script>
+<script src="app.js?v=8.4.3"></script>
 <script src="statements.js?v=8.4.2"></script>
 </body></html>
