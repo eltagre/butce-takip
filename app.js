@@ -805,12 +805,12 @@ function v5Refresh(){
    const sweep=Math.min(2*Math.PI,v/ex*2*Math.PI),end=angle+sweep,mid=angle+sweep/2;
    const path=document.createElementNS(ns,"path");
    const d=sweep>=2*Math.PI-1e-8?`M ${point(angle)} A 61 61 0 1 1 ${point(angle+Math.PI)} A 61 61 0 1 1 ${point(angle+2*Math.PI)}`:`M ${point(angle)} A 61 61 0 ${sweep>Math.PI?1:0} 1 ${point(end)}`;
-   path.setAttribute("d",d);path.setAttribute("fill","none");path.setAttribute("stroke",palette[i]);path.setAttribute("stroke-width","25");path.setAttribute("class","v51-donut-slice");path.setAttribute("tabindex","0");path.setAttribute("aria-label",name+" "+money(v));
+   path.setAttribute("d",d);path.setAttribute("fill","none");path.setAttribute("stroke",palette[i]);path.setAttribute("stroke-width","25");path.setAttribute("class","v51-donut-slice");
    path.style.setProperty("--dx",Math.cos(mid)*7+"px");path.style.setProperty("--dy",Math.sin(mid)*7+"px");
    const activate=()=>{path.classList.add("is-active");total.textContent=money(v);label.textContent=name+" · "+Math.round(v/ex*100)+"%"};
    const deactivate=()=>{path.classList.remove("is-active");reset()};
-   path.addEventListener("pointerenter",activate);path.addEventListener("pointerleave",deactivate);path.addEventListener("focus",activate);path.addEventListener("blur",deactivate);
-   svg.append(path);angle=end;
+   const hit=path.cloneNode(false);hit.setAttribute("class","v51-donut-hit");hit.setAttribute("stroke","transparent");hit.setAttribute("tabindex","0");hit.setAttribute("aria-label",name+" "+money(v));hit.addEventListener("pointerenter",activate);hit.addEventListener("pointerleave",deactivate);hit.addEventListener("focus",activate);hit.addEventListener("blur",deactivate);
+   svg.append(path,hit);angle=end;
  }
  donut.prepend(svg);reset();
  q("#v51Legend").innerHTML=rows.length?rows.map(([name,v],i)=>`<div class="v51-legend-row"><span class="v51-dot" style="background:${palette[i]}"></span><span class="v51-legend-name">${v51Esc(name)}</span><strong>${Math.round(v/ex*100)}%</strong></div>`).join(""):`<div class="v51-empty">Henüz harcama yok.</div>`;
