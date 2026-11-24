@@ -383,6 +383,8 @@ body[data-view="budget"] .v6-budget-only{display:block}
 <button type="button" id="restoreBtn" class="ghost">Yedeği geri yükle</button>
 <button type="button" id="csvImportBtn" class="ghost">Eski CSV’yi içe aktar</button>
 <button type="button" id="csvBtn" class="ghost">CSV dışa aktar</button>
+<button type="button" id="stmtOpen" class="primary">Banka ekstresi yükle</button>
+<button type="button" id="stmtExcel" class="ghost">Excel (.xlsx) indir</button>
 </div>
 <input id="restoreFile" type="file" accept=".json,application/json" style="display:none">
 <input id="csvImportFile" type="file" accept=".csv,text/csv" style="display:none">
@@ -390,6 +392,17 @@ body[data-view="budget"] .v6-budget-only{display:block}
 <div class="actions"><button type="button" id="cancelSettings" class="ghost">Vazgeç</button><button class="primary">Ayarları kaydet</button></div>
 </form></dialog>
 
+<dialog id="stmtDialog" style="width:min(94vw,900px);max-width:900px">
+<h3>Banka ekstresi içe aktar</h3>
+<p class="small">Dosya cihazında okunur. Kaydetmeden önce tutarları, gelir/gider yönünü, kategorileri ve olası tekrarları kontrol et. Taranmış PDF ve tanınmayan banka biçimleri için Excel/CSV tercih et.</p>
+<label for="stmtFile">PDF, Excel veya CSV</label><input id="stmtFile" type="file" accept=".pdf,.xlsx,.xls,.csv">
+<div class="row"><div><label for="stmtAccount">Banka / hesap / kart adı</label><input id="stmtAccount" placeholder="Örn. İş Bankası"></div><div><label for="stmtPayment">Ödeme yöntemi</label><select id="stmtPayment"><option>Kredi Kartı</option><option>Banka Kartı</option><option>Havale / EFT</option><option>Nakit</option></select></div></div>
+<label for="stmtSign">Tür sütunu yoksa harcama işareti</label><select id="stmtSign"><option value="positive">Pozitif tutar = gider (kredi kartı)</option><option value="negative">Negatif tutar = gider (hesap hareketleri)</option></select>
+<p id="stmtStatus" role="status">Dosya seç.</p>
+<div style="overflow:auto;max-height:45vh"><table style="width:100%;min-width:650px"><thead><tr><th>Seç</th><th>Tarih</th><th>Açıklama</th><th>Tür</th><th>Tutar</th><th>Kategori</th><th>Kontrol</th></tr></thead><tbody id="stmtBody"></tbody></table></div>
+<details><summary>Okunamayan / başlık dışı satırlar</summary><pre id="stmtRejected" style="white-space:pre-wrap;overflow-wrap:anywhere;max-height:160px;overflow:auto"></pre></details>
+<div class="actions"><button type="button" id="stmtClose" class="ghost">Kapat</button><button type="button" id="stmtCommit" class="primary" disabled>Seçili işlemleri kaydet</button></div>
+</dialog>
 <dialog id="authDialog"><form id="authForm">
 <h3>Hesap & Bulut</h3>
 <div id="authLoggedOut">
@@ -627,5 +640,6 @@ body[data-view="budget"] .v6-budget-only{display:block}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-config.js?v=8.2"></script>
 
-<script src="app.js?v=8.3.1"></script>
+<script src="app.js?v=8.4.0"></script>
+<script src="statements.js?v=8.4.0"></script>
 </body></html>
