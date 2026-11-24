@@ -791,10 +791,28 @@ function v5Refresh(){
  const cats={};tx.filter(t=>t.type==="expense").forEach(t=>cats[t.category||"Diğer"]=(cats[t.category||"Diğer"]||0)+Number(t.amount||0));
  const rows=Object.entries(cats).sort((a,b)=>b[1]-a[1]).slice(0,6);
  const palette=["#2563eb","#059669","#d97706","#7c3aed","#db2777","#64748b"];
- let acc=0, stops=[];
- rows.forEach(([_,v],i)=>{let a=ex?v/ex*100:0;stops.push(`${palette[i]} ${acc}% ${acc+a}%`);acc+=a});
- q("#v51Donut").style.background=stops.length?`conic-gradient(${stops.join(",")})`:"var(--surface2)";
- q("#v51DonutTotal").textContent=money(ex);
+ const donut=q("#v51Donut"),total=q("#v51DonutTotal"),label=total.nextElementSibling;
+ donut.style.background="none";
+ donut.querySelector("svg")?.remove();
+ const ns="http://www.w3.org/2000/svg",svg=document.createElementNS(ns,"svg");
+ svg.setAttribute("viewBox","0 0 150 150");svg.setAttribute("class","v51-donut-svg");
+ const ring=document.createElementNS(ns,"circle");ring.setAttribute("cx","75");ring.setAttribute("cy","75");ring.setAttribute("r","61");ring.setAttribute("fill","none");ring.setAttribute("stroke","var(--line)");ring.setAttribute("stroke-width","25");svg.append(ring);
+ const point=a=>[75+61*Math.cos(a),75+61*Math.sin(a)].join(" ");
+ let angle=-Math.PI/2;
+ const reset=()=>{total.textContent=money(ex);label.textContent="harcama"};
+ for(const [i,[name,v]] of rows.entries()){
+   if(!(v>0&&ex>0))continue;
+   const sweep=Math.min(2*Math.PI,v/ex*2*Math.PI),end=angle+sweep,mid=angle+sweep/2;
+   const path=document.createElementNS(ns,"path");
+   const d=sweep>=2*Math.PI-1e-8?`M ${point(angle)} A 61 61 0 1 1 ${point(angle+Math.PI)} A 61 61 0 1 1 ${point(angle+2*Math.PI)}`:`M ${point(angle)} A 61 61 0 ${sweep>Math.PI?1:0} 1 ${point(end)}`;
+   path.setAttribute("d",d);path.setAttribute("fill","none");path.setAttribute("stroke",palette[i]);path.setAttribute("stroke-width","25");path.setAttribute("class","v51-donut-slice");path.setAttribute("tabindex","0");path.setAttribute("aria-label",name+" "+money(v));
+   path.style.setProperty("--dx",Math.cos(mid)*7+"px");path.style.setProperty("--dy",Math.sin(mid)*7+"px");
+   const activate=()=>{path.classList.add("is-active");total.textContent=money(v);label.textContent=name+" · "+Math.round(v/ex*100)+"%"};
+   const deactivate=()=>{path.classList.remove("is-active");reset()};
+   path.addEventListener("pointerenter",activate);path.addEventListener("pointerleave",deactivate);path.addEventListener("focus",activate);path.addEventListener("blur",deactivate);
+   svg.append(path);angle=end;
+ }
+ donut.prepend(svg);reset();
  q("#v51Legend").innerHTML=rows.length?rows.map(([name,v],i)=>`<div class="v51-legend-row"><span class="v51-dot" style="background:${palette[i]}"></span><span class="v51-legend-name">${v51Esc(name)}</span><strong>${Math.round(v/ex*100)}%</strong></div>`).join(""):`<div class="v51-empty">Henüz harcama yok.</div>`;
 
  // Six-month chart — seçili ayda biter
