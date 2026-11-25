@@ -757,6 +757,13 @@ function v6CurrentFiltered(){
  const sorters={date_desc:(a,b)=>String(b.date).localeCompare(String(a.date)),date_asc:(a,b)=>String(a.date).localeCompare(String(b.date)),amount_desc:(a,b)=>Number(b.amount)-Number(a.amount),amount_asc:(a,b)=>Number(a.amount)-Number(b.amount)};
  return arr.sort(sorters[sort]||sorters.date_desc);
 }
+function v85DeleteFiltered(){
+ const rows=v6CurrentFiltered();if(!rows.length){v6Toast("Silinecek işlem yok");return}
+ if(!confirm(rows.length+" filtrelenmiş işlem silinecek. Önce bütçe verilerinin JSON yedeği indirilecek. Devam?"))return;
+ download("butcem-toplu-silme-oncesi-"+today()+".json",JSON.stringify(backupObject(),null,2),"application/json;charset=utf-8");
+ if(!confirm("Yedeğin indiğini kontrol et. "+rows.length+" işlemi cihazdan ve senkronize hesabından silmek istediğine emin misin?"))return;
+ const ids=new Set(rows.map(t=>String(t.id)));ids.forEach(queueDeletedId);state.transactions=state.transactions.filter(t=>!ids.has(String(t.id)));save();v5Refresh();v6Toast(ids.size+" işlem silindi");
+}
 function v6ExportCurrentFilter(){
  const arr=v6CurrentFiltered();if(!arr.length){v6Toast("Dışa aktarılacak işlem yok");return}
  const rows=[["Tarih","Tür","Tutar","Kategori","Ödeme","Hesap/Kart","Açıklama","Not"],...arr.map(t=>[t.date,t.type,t.amount,t.category,t.payment,t.cardName||"",t.description||"",t.note||""])];
@@ -988,6 +995,7 @@ async function v83Analyze(start,end,force=false){
 async function v83Run(){const end=today(),start=v83.period==="all"?(v8.snapshots[0]?.date||v83PeriodStart("all")):v83PeriodStart(v83.period);await v83Analyze(start,end)}
 
 function v5Init(){
+ $("#v85DeleteFiltered").onclick=v85DeleteFiltered;
  let p=v5GetPrefs();
  if(!p){document.querySelector("#v5Onboarding").classList.remove("v5-hide")}
  else{v5Theme(p.theme||"light");v5Show(p.startView||"summary")}
