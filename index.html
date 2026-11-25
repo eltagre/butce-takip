@@ -563,7 +563,7 @@ body[data-view="budget"] .v6-budget-only{display:block}
    <div class="v83-selectrow"><div><label>Karşılaştırılacak varlık</label><select id="v83AssetSelect"></select></div><button id="v83Refresh" class="ghost" type="button">↻ Güncelle</button></div>
    <div id="v83MainResult" style="margin-top:12px"></div>
   </div>
-  <div class="v8-card"><div class="v8-cardhead"><strong>Benchmark Arenası</strong><span id="v83Range" class="v7-chip">—</span></div><div id="v83Benchmarks" class="v83-grid"></div><label>Manuel dönem TÜFE (%) — boşsa EVDS</label><input id="v84ManualCpi" type="number" min="-99.99" step="any" placeholder="Örn. 40"><small>Seçili dönemin oranını girip Karşılaştır veya Yenile düğmesine bas.</small><div id="v83InflationNote" class="v83-note" style="margin-top:10px"></div></div>
+  <div class="v8-card"><div class="v8-cardhead"><strong>Benchmark Arenası</strong><span id="v83Range" class="v7-chip">—</span></div><div id="v83Benchmarks" class="v83-grid"></div><div id="v83InflationNote" class="v83-note" style="margin-top:10px"></div></div>
   <div class="v8-card"><div class="v8-cardhead"><strong>Kazandıranlar / Kaybettirenler</strong><span class="v7-chip">Aynı dönem</span></div><div id="v83AssetTable" class="v8-tablewrap"></div></div>
   <div class="v8-card"><div class="v8-cardhead"><strong>Özel tarih karşılaştırması</strong><span class="v7-chip">Başlangıç → bugün</span></div><div class="v83-custom"><div><label>Başlangıç</label><input id="v83CustomStart" type="date"></div><div><label>Bitiş</label><input id="v83CustomEnd" type="date"></div><button id="v83RunCustom" class="primary" type="button">Karşılaştır</button></div></div>
  </div>
@@ -649,6 +649,6 @@ body[data-view="budget"] .v6-budget-only{display:block}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-config.js?v=8.2"></script>
 
-<datalist id="stmtCategoryChoices"><option value="Hesaplar Arası Transfer"></option></datalist><script src="app.js?v=8.4.6"></script>
+<datalist id="stmtCategoryChoices"><option value="Hesaplar Arası Transfer"></option></datalist><script src="app.js?v=8.4.7"></script>
 <script src="statements.js?v=8.4.6"></script>
 </body></html>
