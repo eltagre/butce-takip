@@ -349,6 +349,10 @@ function renderExtendedAfterSync(){
 
 async function syncCloud(manual=false){
  if(!sb||!currentUser||cloudBusy)return;
+ const ownerKey="butcem_local_owner_v1";
+ const owner=localStorage.getItem(ownerKey);
+ if(owner&&owner!==currentUser.id){setCloudUI("⚠️ Eşitleme engellendi","Bu tarayıcıdaki kayıtlar başka bir hesaba bağlı. Veri karışmasını önlemek için ayrı tarayıcı profili kullan.");if(manual)alert("Bu cihazdaki yerel kayıtlar başka bir hesaba bağlı. Eşitleme yapılmadı.");return}
+ if(!owner){if(!confirm("Bu tarayıcıdaki mevcut bütçe, finans ve portföy kayıtlarını "+(currentUser.email||"bu hesap")+" hesabına bağlamak istiyor musun? Yalnızca kayıtlar sana aitse onayla.")){setCloudUI("📱 Eşitleme bekliyor","Yerel kayıtların hesap sahipliği onaylanmadı.");return}localStorage.setItem(ownerKey,currentUser.id)}
  cloudBusy=true;
  const syncOwner=currentUser.id;const assertOwner=()=>{if(currentUser?.id!==syncOwner)throw Error('Hesap değişti')};
  if(manual) setCloudUI("☁️ Senkronize ediliyor…","Cihaz ve hesabındaki veriler karşılaştırılıyor.");
