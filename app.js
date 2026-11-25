@@ -196,6 +196,10 @@ function setCloudUI(main,detail){
   if($("#accountSyncInfo"))$("#accountSyncInfo").textContent=detail||main;
 }
 function updateAuthDialog(){
+  const owner=localStorage.getItem("butcem_local_owner_v1");
+  const blocked=!!owner&&owner!==currentUser?.id;
+  document.body.classList.toggle("v865-account-locked",blocked);
+  if(blocked){document.querySelectorAll("dialog[open]").forEach(d=>{if(d.id!=="authDialog")d.close()});if(!$("#authDialog").open)$("#authDialog").showModal();}
   const logged=!!currentUser;
   $("#authLoggedOut").style.display=logged?"none":"block";
   $("#authLoggedIn").style.display=logged?"block":"none";
@@ -203,7 +207,7 @@ function updateAuthDialog(){
 }
 function openAuth(){updateAuthDialog();$("#authDialog").showModal()}
 $("#cloudBtn").onclick=openAuth;$("#cloudCardBtn").onclick=openAuth;
-$("#authCancel").onclick=()=>$("#authDialog").close();$("#authCancel2").onclick=()=>$("#authDialog").close();
+$("#authCancel").onclick=()=>{if(!document.body.classList.contains("v865-account-locked"))$("#authDialog").close()};$("#authCancel2").onclick=$("#authCancel").onclick;$("#authDialog").addEventListener("cancel",e=>{if(document.body.classList.contains("v865-account-locked"))e.preventDefault()});
 
 function txToCloud(t,userId){return {
  user_id:userId,id:String(t.id),type:t.type,amount:Number(t.amount||0),category:t.category||null,
