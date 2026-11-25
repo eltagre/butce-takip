@@ -389,7 +389,7 @@ body[data-view="budget"] .v6-budget-only{display:block}
 <button type="button" id="restoreBtn" class="ghost">Yedeği geri yükle</button>
 <button type="button" id="csvImportBtn" class="ghost">Eski CSV’yi içe aktar</button>
 <button type="button" id="csvBtn" class="ghost">CSV dışa aktar</button>
-<button type="button" id="stmtOpen" class="primary">Banka ekstresi yükle</button>
+<button type="button" id="stmtOpen" class="primary">Banka ekstresi yükle</button><button type="button" id="receiptOpen" class="ghost">Akıllı fiş tara</button>
 <button type="button" id="stmtExcel" class="ghost">Excel (.xlsx) indir</button>
 </div>
 <input id="restoreFile" type="file" accept=".json,application/json" style="display:none">
@@ -651,4 +651,6 @@ body[data-view="budget"] .v6-budget-only{display:block}
 
 <datalist id="stmtCategoryChoices"><option value="Hesaplar Arası Transfer"></option></datalist><script src="app.js?v=8.4.8"></script>
 <script src="statements.js?v=8.4.6"></script>
+<dialog id="receiptDialog" style="width:min(94vw,680px);max-height:90vh;overflow:auto"><h2>Akıllı fiş tarayıcı</h2><p class="small">Fotoğraf cihazında okunur. OCR hatalarını düzelt; sadece onaylanan ürün kayıtları buluta eşitlenebilir. Fotoğraf saklanmaz.</p><input id="receiptFile" type="file" accept="image/jpeg,image/png,image/webp"><button type="button" id="receiptScan" class="primary">Fotoğrafı oku</button><p id="receiptStatus" role="status"></p><details><summary>Okunan metin / elle giriş</summary><textarea id="receiptText" rows="5" placeholder="Süt 48,50"></textarea><button type="button" id="receiptParse">Metni ayrıştır</button></details><label>Market<input id="receiptStore" placeholder="Market adı"></label><label>Tarih<input id="receiptDate" type="date"></label><label>Hesap<input id="receiptAccount" list="accountSuggestions" placeholder="Nakit veya banka hesabı"></label><label>Fiş toplamı (TL)<input id="receiptTotal" type="number" min="0.01" step="0.01"></label><div style="overflow:auto"><table style="width:100%;min-width:350px"><thead><tr><th>Ürün</th><th>Tutar</th><th>Kategori</th><th></th></tr></thead><tbody id="receiptRows"></tbody></table></div><button type="button" id="receiptAdd">+ Ürün ekle</button><p id="receiptCheck" role="status"></p><button type="button" id="receiptCommit" class="primary" disabled>Onayla ve kaydet</button> <button type="button" id="receiptClose" class="ghost">Kapat</button></dialog>
+<script src="receipts.js?v=8.5.0"></script>
 </body></html>
