@@ -1,4 +1,10 @@
-const KEY="butcem_v1";
+const scopedKeys=["butcem_v1","butcem_v5_deleted_ids","butcem_v8_wealth","butcem_v8_prices","butcem_v81_market_cache","butcem_v7_finance","butcem_v5_preferences","butcem_v83_intelligence"];
+const ownerMarker="butcem_local_owner_v1";
+const bootOwner=localStorage.getItem(ownerMarker);
+function scopedKey(k){return bootOwner?"butcem_account:"+bootOwner+":"+k:k}
+function migrateScoped(){if(!bootOwner)return;for(const k of scopedKeys){const old=localStorage.getItem(k),dest=scopedKey(k);if(old!==null&&localStorage.getItem(dest)===null)localStorage.setItem(dest,old)}}
+migrateScoped();
+const KEY = scopedKey("butcem_v1");
 const DATA_VERSION=4;
 const DEFAULT_CATS=["Yemek","Kahve","Market","Benzin","Ulaşım","Alışveriş","Eğlence","Ev / Kira","Faturalar","Abonelikler","Sağlık","Eğitim","Seyahat / Tatil","Hediye","Kişisel Bakım","Araç","Evcil Hayvan","Vergi / Harç","Bağış","Diğer"];
 const $=s=>document.querySelector(s);
@@ -20,7 +26,7 @@ function download(name,text,type){let b=new Blob([text],{type}),a=document.creat
 const TRANSFER_CAT="Hesaplar Arası Transfer";
 function budgetType(t){return t.category===TRANSFER_CAT?"transfer":t.type}
 const INCOME_CATS=["Maaş","Aile Desteği","Burs","Ek Gelir","Satış","Kira Geliri","Faiz / Getiri","Temettü","İade","Hediye","Diğer Gelir"];
-const DELETE_QUEUE_KEY="butcem_v5_deleted_ids";
+const DELETE_QUEUE_KEY = scopedKey("butcem_v5_deleted_ids");
 function deletedIds(){try{return new Set(JSON.parse(localStorage.getItem(DELETE_QUEUE_KEY)||"[]").map(String))}catch(e){return new Set()}}
 function queueDeletedId(id){const s=deletedIds();s.add(String(id));localStorage.setItem(DELETE_QUEUE_KEY,JSON.stringify([...s]))}
 function unqueueDeletedIds(ids){const s=deletedIds();ids.forEach(id=>s.delete(String(id)));localStorage.setItem(DELETE_QUEUE_KEY,JSON.stringify([...s]))}
@@ -358,7 +364,7 @@ async function syncCloud(manual=false){
  const ownerKey="butcem_local_owner_v1";
  const owner=localStorage.getItem(ownerKey);
  if(owner&&owner!==currentUser.id){setCloudUI("⚠️ Eşitleme engellendi","Bu tarayıcıdaki kayıtlar başka bir hesaba bağlı. Veri karışmasını önlemek için ayrı tarayıcı profili kullan.");if(manual)alert("Bu cihazdaki yerel kayıtlar başka bir hesaba bağlı. Eşitleme yapılmadı.");return}
- if(!owner){if(!confirm("Bu tarayıcıdaki mevcut bütçe, finans ve portföy kayıtlarını "+(currentUser.email||"bu hesap")+" hesabına bağlamak istiyor musun? Yalnızca kayıtlar sana aitse onayla.")){setCloudUI("📱 Eşitleme bekliyor","Yerel kayıtların hesap sahipliği onaylanmadı.");return}localStorage.setItem(ownerKey,currentUser.id)}
+ if(!owner){if(!confirm("Bu tarayıcıdaki mevcut bütçe, finans ve portföy kayıtlarını "+(currentUser.email||"bu hesap")+" hesabına bağlamak istiyor musun? Yalnızca kayıtlar sana aitse onayla.")){setCloudUI("📱 Eşitleme bekliyor","Yerel kayıtların hesap sahipliği onaylanmadı.");return}localStorage.setItem(ownerKey,currentUser.id);location.reload();return}
  cloudBusy=true;
  const syncOwner=currentUser.id;const assertOwner=()=>{if(currentUser?.id!==syncOwner)throw Error('Hesap değişti')};
  if(manual) setCloudUI("☁️ Senkronize ediliyor…","Cihaz ve hesabındaki veriler karşılaştırılıyor.");
@@ -501,8 +507,8 @@ $("#v6ExportFiltered").onclick=()=>v6ExportCurrentFilter();
 
 
 // ===== V8 Wealth & Backtest =====
-const V8_KEY="butcem_v8_wealth";
-const V8_PRICE_KEY="butcem_v8_prices";
+const V8_KEY = scopedKey("butcem_v8_wealth");
+const V8_PRICE_KEY = scopedKey("butcem_v8_prices");
 function v8Defaults(){return {assets:[],rates:{usdtry:40,gramGold:4000},measure:"TRY",snapshots:[],profile:{age:null,mode:"personal",adults:1,country:"TR"},market:{lastRefresh:null,usdtryPrev:null,xauusd:null,xauusdPrev:null,gramGoldPrev:null,fxUpdatedAt:null,serverCache:null},btRows:[{symbol:"QQQ",weight:60},{symbol:"BTC",weight:20},{symbol:"GLD",weight:20}],compare:[{name:"Hepsi QQQ",symbol:"QQQ"},{name:"Hepsi BTC",symbol:"BTC"},{name:"Hepsi Altın",symbol:"GLD"}],cloudUpdatedAt:null}}
 function v8Load(){try{const x=JSON.parse(localStorage.getItem(V8_KEY)||"{}");return {...v8Defaults(),...x,assets:Array.isArray(x.assets)?x.assets:[],rates:{...v8Defaults().rates,...(x.rates||{})},profile:{...v8Defaults().profile,...(x.profile||{})},market:{...v8Defaults().market,...(x.market||{})},snapshots:Array.isArray(x.snapshots)?x.snapshots:[],btRows:Array.isArray(x.btRows)&&x.btRows.length?x.btRows:v8Defaults().btRows,compare:Array.isArray(x.compare)?x.compare:v8Defaults().compare}}catch(e){return v8Defaults()}}
 function v8LoadPrices(){try{return JSON.parse(localStorage.getItem(V8_PRICE_KEY)||"{}")}catch(e){return {}}}
@@ -541,7 +547,7 @@ function v8WealthEstimateUSD(usd,scope){
 }
 
 const V81_QUOTE_TTL=10*60*1000, V81_SEARCH_TTL=24*60*60*1000, V81_HISTORY_TTL=24*60*60*1000;
-const V81_CACHE_KEY="butcem_v81_market_cache";
+const V81_CACHE_KEY = scopedKey("butcem_v81_market_cache");
 function v81CacheLoad(){try{return JSON.parse(localStorage.getItem(V81_CACHE_KEY)||"{}")}catch(e){return {}}}
 let v81Cache=v81CacheLoad(),v81SearchTimer=null,v81PickedMarket=null;
 function v81CacheSave(){try{localStorage.setItem(V81_CACHE_KEY,JSON.stringify(v81Cache))}catch(e){}}
@@ -713,7 +719,7 @@ function v8ShowBacktest(r){v8LastBacktest=r;$("#v8BtRange").textContent=`${r.sta
 
 // ===== V7 Personal Finance data =====
 // V7 yapılandırma verileri ayrı tutulur; mevcut butcem_v1 işlem verisini ve Supabase şemasını bozmaz.
-const V7_KEY="butcem_v7_finance";
+const V7_KEY = scopedKey("butcem_v7_finance");
 function v7Defaults(){return {accounts:[],transfers:[],recurring:[],categoryBudgets:{},goals:[],cloudUpdatedAt:null}}
 function v7Load(){try{const x=JSON.parse(localStorage.getItem(V7_KEY)||"{}");return {...v7Defaults(),...x,accounts:Array.isArray(x.accounts)?x.accounts:[],transfers:Array.isArray(x.transfers)?x.transfers:[],recurring:Array.isArray(x.recurring)?x.recurring:[],categoryBudgets:x.categoryBudgets&&typeof x.categoryBudgets==="object"?x.categoryBudgets:{},goals:Array.isArray(x.goals)?x.goals:[]}}catch(e){return v7Defaults()}}
 let v7=v7Load();
@@ -803,7 +809,7 @@ function v6DaysInMonth(key){const [y,m]=key.split("-").map(Number);return new Da
 function v6ElapsedDays(key){if(key!==currentMonth())return v6DaysInMonth(key);return Math.max(1,new Date().getDate())}
 
 // ===== V5.1 kişiselleştirme / Financial Dashboard =====
-const V5_PREF_KEY="butcem_v5_preferences";
+const V5_PREF_KEY = scopedKey("butcem_v5_preferences");
 function v5GetPrefs(){try{return JSON.parse(localStorage.getItem(V5_PREF_KEY))}catch(e){return null}}
 function v5SetPrefs(p){localStorage.setItem(V5_PREF_KEY,JSON.stringify(p))}
 function v5Theme(t){document.documentElement.dataset.theme=t;let p=v5GetPrefs()||{modules:["budget"],startView:"summary"};p.theme=t;v5SetPrefs(p);const icon=t==="dark"?"☀":"◐";if($("#v5Theme")){$("#v5Theme").textContent=icon;$("#v5Theme").title=t==="dark"?"Açık tema":"Koyu tema"}if($("#v6ThemeTop")){$("#v6ThemeTop").textContent=icon;$("#v6ThemeTop").title=t==="dark"?"Açık tema":"Koyu tema"}if($("#v6AssetsTheme")){$("#v6AssetsTheme").textContent=icon;$("#v6AssetsTheme").title=t==="dark"?"Açık tema":"Koyu tema"}if($("#v7Theme")){$("#v7Theme").textContent=icon;$("#v7Theme").title=t==="dark"?"Açık tema":"Koyu tema"}if($("#v6ThemeSelect"))$("#v6ThemeSelect").value=t}
@@ -950,7 +956,7 @@ function v6SummaryPulse(){const el=$("#v5Summary");el.classList.remove("v6-summa
 
 
 // ===== V8.3 Portfolio Intelligence =====
-const V83_KEY="butcem_v83_intelligence";
+const V83_KEY = scopedKey("butcem_v83_intelligence");
 function v83Load(){try{return {...{period:"1m",customStart:"",customEnd:"",cloudUpdatedAt:null},...JSON.parse(localStorage.getItem(V83_KEY)||"{}")}}catch(e){return {period:"1m",customStart:"",customEnd:"",cloudUpdatedAt:null}}}
 let v83=v83Load();
 function v83Save(){v83.cloudUpdatedAt=new Date().toISOString();localStorage.setItem(V83_KEY,JSON.stringify(v83));queueCloudSync()}
@@ -1109,7 +1115,7 @@ function v86Init(){ $("#v86Open").onclick=()=>$("#v86Menu").showModal();$("#v86C
 function v87TemplateKey(){return "butcem_templates_"+(currentUser?.id||"local")}
 function v87MergeRecords(...lists){const m=new Map();for(const list of lists)for(const t of Array.isArray(list)?list:[]){if(!t||typeof t.id!=="string")continue;const old=m.get(t.id);if(!old||String(t.updatedAt||"")>String(old.updatedAt||"")||(String(t.updatedAt||"")===String(old.updatedAt||"")&&t.deleted))m.set(t.id,t)}return [...m.values()]}
 function v87Records(){try{return v87MergeRecords(JSON.parse(localStorage.getItem(v87TemplateKey())||"[]"))}catch(e){return []}}
-function v87WriteRecords(records){localStorage.setItem(v87TemplateKey(),JSON.stringify(records));queueCloudSync()}
+function v87WriteRecords(records){if(localStorage.getItem(ownerMarker)&&localStorage.getItem(ownerMarker)!==currentUser?.id)throw Error("Hesap kilitli");localStorage.setItem(v87TemplateKey(),JSON.stringify(records));queueCloudSync()}
 function v87ReadTemplates(){return v87Records().filter(t=>!t.deleted).sort((a,b)=>String(b.updatedAt||"").localeCompare(String(a.updatedAt||""))).slice(0,30)}
 
 function v87SaveTemplate(){if($("#txnType").value!=="expense"||$("#category").value===TRANSFER_CAT)return v6Toast("Yalnızca harcama şablonu oluşturulabilir");const amount=Number($("#amount").value),description=$("#description").value.trim();if(!(amount>0)||!description)return v6Toast("Tutar ve açıklama gir");const t={id:crypto.randomUUID(),amount,description,category:$("#category").value,payment:$("#payment").value,cardName:$("#cardName").value.trim()};try{if(v87ReadTemplates().length>=30)return v6Toast("En fazla 30 şablon oluşturabilirsin");t.updatedAt=new Date().toISOString();v87WriteRecords(v87MergeRecords(v87Records(),[t]));v6Toast("Şablon kaydedildi; bağlı hesapta eşitleme bekliyor")}catch(e){v6Toast("Şablon kaydedilemedi")}}
