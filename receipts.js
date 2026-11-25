@@ -1,0 +1,26 @@
+(()=>{
+"use strict";
+const q=id=>document.getElementById(id);
+let rows=[],busy=false,owner=null;
+function parse(text){
+ const out=[];let total=null;
+ for(const line of text.split(/\r?\n/)){
+ const m=line.trim().match(/^(.*?)\s+[*₺]?\s*(\d{1,6}(?:\.\d{3})*,\d{2}|\d{1,6}\.\d{2})\s*(?:TL|₺)?$/i);if(!m)continue;
+ const name=m[1].trim(), amount=Number(m[2].includes(",")?m[2].replace(/\./g,"").replace(",","."):m[2]);
+ if(/^(?:GENEL\s+)?TOPLAM\b|^ÖDENECEK\b/i.test(name)){total=amount;continue}
+ if(!name||!(amount>0)||/KDV|ARA TOPLAM|NAK[İI]T|KRED[İI]|PARA ÜSTÜ|İNDİRİM|ISKONTO|TAR[İI]H|SAAT|F[İI]Ş NO|POS|BANKA|TOPKDV/i.test(name))continue;
+ out.push({name,amount,category:category(name)});
+ }return {rows:out,total};
+}
+function category(n){const s=n.toLocaleLowerCase("tr-TR");return /şampuan|sabun|diş macun|deodorant/.test(s)?"Kişisel Bakım":/deterjan|çamaşır|temizlik|bulaşık/.test(s)?"Temizlik":/çikolata|cips|bisküvi/.test(s)?"Atıştırmalık":/süt|ekmek|yumurta|peynir|yoğurt|et\b|tavuk|pirinç|makarna/.test(s)?"Gıda":"Market"}
+function draw(){const body=q("receiptRows");body.replaceChildren();rows.forEach((r,i)=>{const tr=document.createElement("tr");for(const [key,type] of [["name","text"],["amount","number"],["category","text"]]){const td=document.createElement("td"),input=document.createElement("input");input.type=type;input.value=r[key];input.setAttribute("aria-label",key==="name"?"Ürün":key==="amount"?"Tutar":"Kategori");if(type==="number"){input.min="0.01";input.step="0.01"}input.style.width="100%";input.oninput=()=>{r[key]=type==="number"?Number(input.value):input.value;check()};td.append(input);tr.append(td)}const td=document.createElement("td"),b=document.createElement("button");b.type="button";b.textContent="×";b.setAttribute("aria-label","Satırı kaldır");b.onclick=()=>{rows.splice(i,1);draw()};td.append(b);tr.append(td);body.append(tr)});check()}
+function check(){const sum=rows.reduce((s,r)=>s+Math.round(r.amount*100),0),total=Math.round(Number(q("receiptTotal").value)*100),valid=rows.length>0&&rows.every(r=>r.name.trim()&&r.category.trim()&&r.category!==TRANSFER_CAT&&Number.isFinite(r.amount)&&r.amount>0)&&total>0&&sum===total;q("receiptCheck").textContent="Ürün toplamı: "+money(sum/100)+(total>0?" · Fark: "+money((total-sum)/100):" · Fiş toplamını gir");q("receiptCommit").disabled=busy||!valid;return valid}
+q("receiptOpen").onclick=()=>{owner=currentUser?.id||null;rows=[];q("receiptFile").value="";q("receiptText").value="";q("receiptTotal").value="";q("receiptDate").value=today();q("receiptStore").value="";q("receiptAccount").value="";q("receiptStatus").textContent="Fotoğrafı seç veya fiş metnini yapıştır.";draw();q("receiptDialog").showModal()};
+q("receiptClose").onclick=()=>{if(!busy)q("receiptDialog").close()};
+q("receiptDialog").addEventListener("cancel",e=>{if(busy)e.preventDefault()});
+q("receiptTotal").oninput=check;
+q("receiptAdd").onclick=()=>{rows.push({name:"",amount:0,category:"Market"});draw()};
+q("receiptParse").onclick=()=>{const p=parse(q("receiptText").value);rows=p.rows;if(p.total!==null)q("receiptTotal").value=p.total;draw()};
+q("receiptScan").onclick=async()=>{const f=q("receiptFile").files[0];if(!f||busy)return;if(!/^image\/(jpeg|png|webp)$/.test(f.type)||f.size>15*1024*1024){q("receiptStatus").textContent="JPG, PNG veya WebP (en fazla 15 MB) seç.";return}busy=true;q("receiptScan").disabled=true;q("receiptParse").disabled=true;check();let worker;try{if(!window.Tesseract){await new Promise((resolve,reject)=>{const s=document.createElement("script");s.src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js";s.onload=resolve;s.onerror=reject;document.head.append(s)})}worker=await Tesseract.createWorker("tur+eng",1,{logger:m=>{q("receiptStatus").textContent="OCR: "+m.status+" "+Math.round((m.progress||0)*100)+"%"}});const result=await worker.recognize(f);q("receiptText").value=result.data.text;q("receiptParse").click();q("receiptStatus").textContent="Okuma tamamlandı. Satırları ve fiş toplamını kontrol et."}catch(e){q("receiptStatus").textContent="OCR başarısız. Fiş metnini elle girebilirsin."}finally{if(worker)await worker.terminate().catch(()=>{});busy=false;q("receiptScan").disabled=false;q("receiptParse").disabled=false;check()}};
+q("receiptCommit").onclick=()=>{if(!check()||busy||owner!==(currentUser?.id||null))return;const date=q("receiptDate").value,store=q("receiptStore").value.trim(),account=q("receiptAccount").value.trim();if(!date||!store||!account){q("receiptStatus").textContent="Tarih, market ve hesap bilgisi gerekli.";return}if(!confirm(rows.length+" ürün ayrı harcama olarak kaydedilecek. Aynı fiş banka ekstresinde varsa çift kayıt oluşabilir. Devam?"))return;const stamp=new Date().toISOString(),group=crypto.randomUUID();for(const r of rows){if(!state.categories.includes(r.category.trim()))state.categories.push(r.category.trim());state.transactions.push({id:crypto.randomUUID(),type:"expense",amount:Math.round(r.amount*100)/100,category:r.category.trim(),payment:"Diğer",cardName:account,description:store+" · "+r.name.trim(),note:"Fiş: "+group,date,updatedAt:stamp})}state.settingsUpdatedAt=stamp;save();v5Refresh();q("receiptDialog").close();v6Toast(rows.length+" ürün kaydedildi");rows=[]};
+})();
