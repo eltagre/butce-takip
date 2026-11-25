@@ -975,14 +975,13 @@ async function v83Analyze(start,end,force=false){
  const sym=v83Symbol(a); if(!sym){$("#v83MainResult").innerHTML='<div class="v8-warning">Bu varlığın sembolünü eklemen gerekiyor.</div>';return}
  $("#v83MainResult").innerHTML='<div class="v8-hint">Geçmiş fiyatlar ve benchmarklar hesaplanıyor…</div>';
  const safe=async(fn)=>{try{return await fn()}catch(e){return {pct:null,error:e.message}}};
- const [asset,gold,usd,apiInf]=await Promise.all([safe(()=>v83ReturnAsset(a,start,end)),safe(()=>v83Return("GRAM",start,end)),safe(()=>v83Return("USD/TRY",start,end)),v83Inflation(start,end)]);
- const manual=$("#v84ManualCpi").value.trim(),n=Number(manual),inf=manual!==""&&Number.isFinite(n)&&n>-100?{pct:n,ok:true,manual:true}:apiInf;
+ const [asset,gold,usd,inf]=await Promise.all([safe(()=>v83ReturnAsset(a,start,end)),safe(()=>v83Return("GRAM",start,end)),safe(()=>v83Return("USD/TRY",start,end)),v83Inflation(start,end)]);
  const real=(asset.pct!=null&&inf.pct!=null)?(((1+asset.pct/100)/(1+inf.pct/100)-1)*100):null;
  $("#v83Range").textContent=`${asset.start?.date||start} → ${asset.end?.date||end}`;
  $("#v83MainResult").innerHTML=`<div class="v5-kicker">${v51Esc(v83AssetLabel(a))}</div><div class="v83-herochange ${v83Class(asset.pct)}">${v83FmtPct(asset.pct)}</div><div class="v83-real ${v83Class(real)}">Reel getiri: <b>${v83FmtPct(real)}</b>${asset.pct!=null&&gold.pct!=null?` · Altın bazında ${v83FmtPct((1+asset.pct/100)/(1+gold.pct/100)*100-100)}`:""}</div>`;
- const cards=[['Seçili varlık',asset.pct,asset.start?.close&&asset.end?.close?`${asset.start.close.toFixed(2)} → ${asset.end.close.toFixed(2)}`:''],['Gram altın',gold.pct,'XAU/USD × USD/TRY'],['USD / TRY',usd.pct,'TL karşısında'],['TÜFE',inf.pct,inf.manual?'Manuel dönem TÜFE':inf.ok?'Açıklanan endeks verisi':'EVDS bağlantısı bekleniyor']];
+ const cards=[['Seçili varlık',asset.pct,asset.start?.close&&asset.end?.close?`${asset.start.close.toFixed(2)} → ${asset.end.close.toFixed(2)}`:''],['Gram altın',gold.pct,'XAU/USD × USD/TRY'],['USD / TRY',usd.pct,'TL karşısında'],['TÜFE',inf.pct,inf.ok?'Açıklanan endeks verisi':'EVDS bağlantısı bekleniyor']];
  $("#v83Benchmarks").innerHTML=cards.map(([n,p,s])=>`<div class="v83-bench"><span>${n}</span><strong class="${v83Class(p)}">${v83FmtPct(p)}</strong><small>${s}</small></div>`).join('');
- $("#v83InflationNote").textContent=inf.manual?`Manuel TÜFE (${start} → ${end}); dönem oranını doğrula.`:inf.ok?`TÜFE aylık açıklandığı için dönem, seçilen tarihlere en yakın açıklanmış endeks değerleriyle hesaplanır. Reel getiri bileşik formülle hesaplanır.`:`TÜFE henüz bağlanmadı: ${inf.error||'EVDS_API_KEY secret + V8.3 market-data fonksiyonu gerekli.'}`;
+ $("#v83InflationNote").textContent=inf.ok?`TCMB EVDS · TÜFE endeks dönemi: ${inf.start||"—"} → ${inf.end||"—"}. Reel getiri bileşik formülle hesaplanır.`:`TÜFE henüz bağlanmadı: ${inf.error||'EVDS_API_KEY secret + V8.3 market-data fonksiyonu gerekli.'}`;
  const rows=[];for(const x of v8.assets){const xs=v83Symbol(x);if(!xs)continue;const r=await safe(()=>v83ReturnAsset(x,start,end));const total=v83AssetTotalPL(x).pct;rows.push({x,p:r.pct,total,value:v8AssetValueTry(x),error:r.error||null})}
  rows.sort((a,b)=>(b.p??-999)-(a.p??-999));$("#v83AssetTable").innerHTML=`<table class="v83-table"><thead><tr><th>Varlık</th><th>Dönem (TL)</th><th>Reel (TÜFE)</th><th>Toplam</th><th>Güncel değer</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${v51Esc(v83AssetLabel(r.x))}</td><td class="${v83Class(r.p)}"><b>${v83FmtPct(r.p)}</b></td><td>${v83FmtPct(r.p!=null&&inf.pct!=null?((1+r.p/100)/(1+inf.pct/100)-1)*100:null)}</td><td class="${v83Class(r.total)}">${v83FmtPct(r.total)}</td><td>${money(r.value)}</td></tr>`).join('')}</tbody></table>`;
 }
@@ -1002,7 +1001,7 @@ function v5Init(){
  document.querySelector("#v6SummarySettings").onclick=()=>$("#settingsBtn").click();
  document.querySelector("#v6AssetsSettings").onclick=()=>$("#settingsBtn").click();
  document.querySelectorAll("[data-v8tab]").forEach(b=>b.onclick=()=>{v8OpenTab(b.dataset.v8tab);if(b.dataset.v8tab==="performance"){v83Populate();v83Run().catch(e=>v6Toast(e.message))}});
- document.querySelectorAll("[data-v83p]").forEach(b=>b.onclick=()=>{$("#v84ManualCpi").value="";v83.period=b.dataset.v83p;v83Save();v83Populate();v83Run().catch(e=>v6Toast(e.message))});
+ document.querySelectorAll("[data-v83p]").forEach(b=>b.onclick=()=>{v83.period=b.dataset.v83p;v83Save();v83Populate();v83Run().catch(e=>v6Toast(e.message))});
  $("#v83AssetSelect").onchange=()=>v83Run().catch(e=>v6Toast(e.message));
  $("#v83Refresh").onclick=()=>{v81Cache={};v81CacheSave();v83Run().catch(e=>v6Toast(e.message))};
  $("#v83RunCustom").onclick=()=>{v83.customStart=$("#v83CustomStart").value;v83.customEnd=$("#v83CustomEnd").value;v83Save();if(!v83.customStart||!v83.customEnd||v83.customStart>=v83.customEnd){v6Toast("Tarih aralığını kontrol et");return}v83Analyze(v83.customStart,v83.customEnd).catch(e=>v6Toast(e.message))};
