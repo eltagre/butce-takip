@@ -419,6 +419,7 @@ body[data-view="budget"] .v6-budget-only{display:block}
     <button type="button" id="authCancel" class="ghost">Kapat</button>
     <button type="button" id="signUpBtn" class="ghost">Hesap oluştur</button>
     <button type="button" id="signInBtn" class="primary">Giriş yap</button>
+    <button type="button" id="forgotPasswordBtn" class="ghost">Şifremi unuttum</button>
   </div>
 </div>
 <div id="authLoggedIn" style="display:none">
@@ -433,6 +434,8 @@ body[data-view="budget"] .v6-budget-only{display:block}
   </div>
 </div>
 </form></dialog>
+<dialog id="recoveryDialog"><h3>Şifre sıfırlama</h3><div class="small">E-postana gelen tek kullanımlık kodla yeni şifre oluştur.</div><label>E-posta</label><input id="recoveryEmail" type="email" autocomplete="email" required><div class="actions"><button type="button" id="recoverySend" class="ghost">Doğrulama kodu gönder</button></div><label>Doğrulama kodu</label><input id="recoveryCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="6 haneli kod"><label>Yeni şifre</label><input id="recoveryPassword" type="password" autocomplete="new-password" minlength="8"><label>Yeni şifre tekrar</label><input id="recoveryConfirm" type="password" autocomplete="new-password" minlength="8"><div id="recoveryStatus" class="status" role="status" aria-live="polite"></div><div class="actions"><button type="button" id="recoveryCancel" class="ghost">İptal</button><button type="button" id="recoverySave" class="primary" disabled>Şifreyi güncelle</button></div></dialog>
+
 
 <section id="v5Summary" class="v5-summary v5-hide">
  <div class="v6-page-head"><div><h1>Bütçem</h1><div class="v6-page-title">Finansal özet</div></div><div class="v6-top-actions"><button id="v6SummaryCloud" class="ghost v6-iconbtn" type="button" aria-label="Bulut" title="Hesap ve bulut">☁</button><button id="v6SummarySettings" class="ghost v6-iconbtn" type="button" aria-label="Ayarlar" title="Ayarlar">⚙</button><button id="v5Theme" class="ghost v6-iconbtn" type="button" aria-label="Tema" title="Tema">◐</button></div></div>
@@ -646,6 +649,6 @@ body[data-view="budget"] .v6-budget-only{display:block}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-config.js?v=8.2"></script>
 
-<script src="app.js?v=8.4.3"></script>
+<script src="app.js?v=8.4.4"></script>
 <script src="statements.js?v=8.4.2"></script>
 </body></html>
