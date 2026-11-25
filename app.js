@@ -498,7 +498,7 @@ function v8FormatTryValue(val,measure=v8.measure){
  if(measure==="GOLD")return new Intl.NumberFormat("tr-TR",{maximumFractionDigits:1}).format(val/Math.max(.0001,Number(v8.rates.gramGold||1)))+" gr";
  return money(val);
 }
-function v8OpenTab(tab){document.querySelectorAll("[data-v8tab]").forEach(b=>b.classList.toggle("active",b.dataset.v8tab===tab));document.querySelectorAll(".v8-panel").forEach(p=>p.classList.remove("active"));$("#v8"+tab.charAt(0).toUpperCase()+tab.slice(1)+"Panel")?.classList.add("active");}
+function v8OpenTab(tab){if(tab==="wealth"&&!v5GetPrefs()?.wealthOptIn)tab="overview";if(tab==="performance"&&!v86Modules().includes("compare"))tab="overview";document.querySelectorAll("[data-v8tab]").forEach(b=>b.classList.toggle("active",b.dataset.v8tab===tab));document.querySelectorAll(".v8-panel").forEach(p=>p.classList.remove("active"));$("#v8"+tab.charAt(0).toUpperCase()+tab.slice(1)+"Panel")?.classList.add("active");}
 function v8OpenAsset(id=""){v81PickedMarket=null;if($("#v81AssetSearch"))$("#v81AssetSearch").value="";if($("#v81SearchResults"))$("#v81SearchResults").style.display="none";if($("#v81AssetQuoteStatus"))$("#v81AssetQuoteStatus").textContent="";const a=v8.assets.find(x=>x.id===id);$("#v8AssetId").value=a?.id||"";$("#v8AssetTitle").textContent=a?"Varlığı düzenle":"Varlık ekle";$("#v8AssetName").value=a?.name||"";$("#v8AssetType").value=a?.type||"stock";$("#v8AssetSymbol").value=a?.symbol||"";$("#v8AssetQty").value=a?.qty??1;$("#v8AssetPrice").value=a?.price??"";$("#v8AssetCurrency").value=a?.currency||"TRY";$("#v8AssetCost").value=a?.cost??"";$("#v8AssetPrev").value=a?.prev??"";$("#v8AssetNote").value=a?.note||"";$("#v8DeleteAsset").style.display=a?"inline-block":"none";$("#v8AssetDialog").showModal()}
 function v8Color(i){return `hsl(${(210+i*53)%360} 65% 55%)`}
 function v8WealthEstimateUSD(usd,scope){
@@ -716,6 +716,7 @@ function v7Render(){
  $("#v7AccountsList").querySelectorAll("[data-account]").forEach(el=>el.onclick=()=>v7OpenAccount(el.dataset.account));
  $("#v7TransferFrom").innerHTML=v7AccountOptions($("#v7TransferFrom").value);$("#v7TransferTo").innerHTML=v7AccountOptions($("#v7TransferTo").value);
 
+ const subscriptions=v7.recurring.filter(r=>r.type==="expense"&&/abonelik/i.test(r.category||"")).reduce((s,r)=>s+Number(r.amount||0),0);$("#v86Subscriptions").textContent="Abonelikler: "+money(subscriptions)+" / ay · "+money(subscriptions*12)+" / yıl (aylık düzenli abonelik kayıtları)";
  $("#v7RecurringList").innerHTML=v7.recurring.length?v7.recurring.map(r=>`<div class="v7-row"><div class="v7-rowmain"><div class="v7-rowtitle">${v51Esc(r.description)}</div><div class="v7-rowmeta">${r.type==="income"?"Gelir":"Harcama"} · ${money(r.amount)} · ${v51Esc(r.category||"Diğer")} · ${v51Esc(r.account||"Hesap yok")}</div><span class="v7-recurring-badge">${v7DaysLabel(r.day)}</span></div><div class="v7-rowactions"><button class="ghost" data-rec-edit="${v51Esc(r.id)}">Düzenle</button><button class="primary" data-rec-add="${v51Esc(r.id)}">Bu aya ekle</button></div></div>`).join(""):`<div class="v7-empty">Kira, abonelik, maaş, burs gibi her ay tekrarlanan işlemleri burada saklayabilirsin.</div>`;
  $("#v7RecurringList").querySelectorAll("[data-rec-edit]").forEach(b=>b.onclick=()=>v7OpenRecurring(b.dataset.recEdit));
  $("#v7RecurringList").querySelectorAll("[data-rec-add]").forEach(b=>b.onclick=()=>v7ApplyRecurring(b.dataset.recAdd));
@@ -904,6 +905,7 @@ function v5Refresh(){
  q("#v51Recent").querySelectorAll("[data-id]").forEach(row=>row.onclick=()=>{const t=findTxn(row.dataset.id);if(t)openTxn(t.type,t)});
 }
 function v5Show(view){
+ if(view==="assets"&&!v86Modules().some(x=>["networth","investments","compare"].includes(x)))view="summary";
  let sum=$("#v5Summary"),app=document.querySelector(".app"),assets=$("#v6Assets"),finance=$("#v7Finance");
  document.body.dataset.view=view;
  sum.classList.toggle("v5-hide",view!=="summary");
@@ -1000,12 +1002,13 @@ async function v83Analyze(start,end,force=false){
 async function v83Run(){const end=today(),start=v83.period==="all"?(v8.snapshots[0]?.date||v83PeriodStart("all")):v83PeriodStart(v83.period);await v83Analyze(start,end)}
 
 function v5Init(){
+ v86Init();
  $("#v85DeleteFiltered").onclick=v85DeleteFiltered;
  $("#v85QuickExpense").onclick=()=>openTxn("expense");$("#v85QuickIncome").onclick=()=>openTxn("income");
  let p=v5GetPrefs();
  if(!p){document.querySelector("#v5Onboarding").classList.remove("v5-hide")}
  else{v5Theme(p.theme||"light");v5Show(p.startView||"summary")}
- document.querySelector("#v5Done").onclick=()=>{let modules=[...document.querySelectorAll("#v5Onboarding input:checked")].map(x=>x.value),startView=document.querySelector("#v5Start").value;p={modules:modules.length?modules:["budget"],startView,theme:"light"};v5SetPrefs(p);document.querySelector("#v5Onboarding").classList.add("v5-hide");v5Show(startView)};
+ document.querySelector("#v5Done").onclick=()=>{let modules=[...document.querySelectorAll("#v5Onboarding input:checked")].map(x=>x.value),startView=document.querySelector("#v5Start").value;p={modules:modules.length?modules:["budget"],startView,theme:"light"};v5SetPrefs(p);document.querySelector("#v5Onboarding").classList.add("v5-hide");v5Show(startView);v86Apply();v86Guide()};
  document.querySelectorAll("#v5Nav button").forEach(b=>b.onclick=()=>v5Show(b.dataset.view));
  document.querySelector("#v5Theme").onclick=()=>v5Theme(document.documentElement.dataset.theme==="dark"?"light":"dark");
  document.querySelector("#v6ThemeTop").onclick=()=>v5Theme(document.documentElement.dataset.theme==="dark"?"light":"dark");
@@ -1069,3 +1072,8 @@ function v5Init(){
  document.addEventListener("click",e=>{if(!e.target.closest(".v51-monthcol"))document.querySelectorAll(".v51-monthcol.active").forEach(c=>{c.classList.remove("active");c.querySelector(".v53-tooltip")?.classList.remove("show")})});
 }
 setTimeout(v5Init,0);
+
+function v86Modules(){const p=v5GetPrefs()||{};return p.modules||["budget"]}
+function v86Apply(){const m=v86Modules(),p=v5GetPrefs()||{};const assets=m.some(x=>["networth","investments","compare"].includes(x));document.querySelectorAll('#v5Nav [data-view="assets"]').forEach(e=>e.hidden=!assets);document.querySelectorAll('[data-v8tab="wealth"]').forEach(e=>e.hidden=!p.wealthOptIn);document.querySelectorAll('[data-v8tab="performance"]').forEach(e=>e.hidden=!m.includes("compare"));document.querySelectorAll('#v86Menu input[data-module]').forEach(e=>e.checked=m.includes(e.dataset.module));$("#v86Wealth").checked=!!p.wealthOptIn;if(!assets&&document.body.dataset.view==="assets")v5Show("summary");if(!p.wealthOptIn&&$("#v8WealthPanel")?.classList.contains("active"))v8OpenTab("overview");}
+function v86Guide(){const m=v86Modules();$("#v86GuideText").textContent="Özet ekranında + Harcama veya + Gelir ile işlem ekle. Ayarlar bölümünden aylık bütçeni belirle, banka ekstresi veya BETA fiş tarayıcısını kullan. İşlemler ekranından kayıtları düzenle veya sil. "+(m.some(x=>["investments","networth","compare"].includes(x))?"Varlıklar ekranından yatırımlarını ekle ve fiyatlarını güncelle. ":"")+"Sol üst menüden modülleri açıp kapatabilirsin. Modül kapatmak kayıtlarını silmez.";$("#v86Guide").showModal()}
+function v86Init(){ $("#v86Open").onclick=()=>$("#v86Menu").showModal();$("#v86Close").onclick=()=>$("#v86Menu").close();$("#v86Help").onclick=()=>{$("#v86Menu").close();v86Guide()};$("#v86Finance").onclick=()=>{$("#v86Menu").close();v5Show("finance")};$("#v86Settings").onclick=()=>{$("#v86Menu").close();$("#settingsBtn").click()};$("#v86Menu").querySelectorAll("input").forEach(e=>e.onchange=()=>{const p=v5GetPrefs()||{};p.modules=["budget",...Array.from($("#v86Menu").querySelectorAll("input[data-module]:checked"),x=>x.dataset.module)];p.wealthOptIn=$("#v86Wealth").checked;v5SetPrefs(p);v86Apply()});v86Apply();}
