@@ -348,7 +348,7 @@ body[data-view="budget"] .v6-budget-only{display:block}
 <div class="v6-filter-grid">
 <input id="txnSearch" type="search" placeholder="Açıklama, kategori, hesap ara…">
 <select id="txnScope"><option value="month">Seçili ay</option><option value="all">Tüm zamanlar</option></select>
-<select id="txnFilterType"><option value="all">Gelir + Harcama</option><option value="expense">Harcamalar</option><option value="income">Gelirler</option></select>
+<select id="txnFilterType"><option value="all">Tüm işlemler</option><option value="transfer">Hesaplar arası transfer</option><option value="expense">Harcamalar</option><option value="income">Gelirler</option></select>
 <select id="txnFilterCategory"><option value="all">Tüm kategoriler</option></select>
 <select id="txnFilterPayment"><option value="all">Tüm hesaplar</option></select>
 <select id="txnSort"><option value="date_desc">En yeni</option><option value="date_asc">En eski</option><option value="amount_desc">Tutar ↓</option><option value="amount_asc">Tutar ↑</option></select>
@@ -363,7 +363,7 @@ body[data-view="budget"] .v6-budget-only{display:block}
 <dialog id="txnDialog"><form id="txnForm">
 <h3 id="txnTitle">Harcama ekle</h3><input id="txnType" type="hidden"><input id="txnEditId" type="hidden">
 <label>Tutar</label><input id="amount" type="number" min="0.01" step="0.01" required inputmode="decimal">
-<div class="row"><div><label>Kategori</label><select id="category"></select></div><div><label>Ödeme yöntemi</label><select id="payment"><option>Nakit</option><option>Kredi Kartı</option><option>Banka Kartı</option><option>Havale / EFT</option></select></div></div>
+<div class="row"><div><label>Kategori</label><select id="category"></select><small>Kendi hesapların arası hareket için Hesaplar Arası Transfer seç.</small></div><div><label>Ödeme yöntemi</label><select id="payment"><option>Nakit</option><option>Kredi Kartı</option><option>Banka Kartı</option><option>Havale / EFT</option></select></div></div>
 <label>Açıklama</label><input id="description" maxlength="100" placeholder="Örn. Akşam yemeği">
 <label>Tarih</label><input id="date" type="date" required>
 <details class="v6-details">
@@ -548,7 +548,7 @@ body[data-view="budget"] .v6-budget-only{display:block}
   </div>
   <div class="v8-card"><div class="v8-cardhead"><div><strong>Bugünün Kazandıranları / Kaybettirenleri</strong><div class="v8-hint">Günlük fiyat + kur hareketinin portföyüne gerçek TL katkısı</div></div><span class="v7-chip">1G</span></div><div id="v834DailyMovers" class="v834-movers"></div></div>
   <div class="v8-card"><div class="v8-cardhead"><strong>Varlık dağılımı</strong><span id="v8AssetCount" class="v7-chip">0 varlık</span></div><div id="v8Allocation" class="v8-allocation"></div><div id="v8AllocationLegend" class="v8-legend"></div></div>
-  <div class="v8-card"><div class="v8-cardhead"><strong>Servet anlık görüntüleri</strong><button id="v8TakeSnapshot" class="ghost v6-compactbtn" type="button">Bugünü kaydet</button></div><div id="v8Snapshots" class="v8-snapshot"></div><div class="v8-source">Anlık görüntüler net servetin zaman içindeki değişimini hesabınla senkronize eder. Yanlış kayıtları Düzenle/Sil ile düzeltebilirsin; otomatik kayıtlar anormal sıçramalara karşı korunur.</div></div>
+  <div class="v8-card"><div class="v8-cardhead"><strong>Servet anlık görüntüleri</strong><button id="v8TakeSnapshot" class="ghost v6-compactbtn" type="button">Bugünü kaydet</button></div><button id="v84FillRates" type="button" class="ghost">Eksik geçmiş kurları getir</button><div class="small">TL · USD · gram altın. Yeni kayıtlar uygulamadaki kayıt anı kurunu kullanır; eski kayıtlar tarihsel kapanışla tamamlanabilir.</div><div id="v8Snapshots" class="v8-snapshot"></div><div class="v8-source">Anlık görüntüler net servetin zaman içindeki değişimini hesabınla senkronize eder. Yanlış kayıtları Düzenle/Sil ile düzeltebilirsin; otomatik kayıtlar anormal sıçramalara karşı korunur.</div></div>
  </div>
 
  <div id="v8PortfolioPanel" class="v8-panel">
@@ -563,7 +563,7 @@ body[data-view="budget"] .v6-budget-only{display:block}
    <div class="v83-selectrow"><div><label>Karşılaştırılacak varlık</label><select id="v83AssetSelect"></select></div><button id="v83Refresh" class="ghost" type="button">↻ Güncelle</button></div>
    <div id="v83MainResult" style="margin-top:12px"></div>
   </div>
-  <div class="v8-card"><div class="v8-cardhead"><strong>Benchmark Arenası</strong><span id="v83Range" class="v7-chip">—</span></div><div id="v83Benchmarks" class="v83-grid"></div><div id="v83InflationNote" class="v83-note" style="margin-top:10px"></div></div>
+  <div class="v8-card"><div class="v8-cardhead"><strong>Benchmark Arenası</strong><span id="v83Range" class="v7-chip">—</span></div><div id="v83Benchmarks" class="v83-grid"></div><label>Manuel dönem TÜFE (%) — boşsa EVDS</label><input id="v84ManualCpi" type="number" min="-99.99" step="any" placeholder="Örn. 40"><small>Seçili dönemin oranını girip Karşılaştır veya Yenile düğmesine bas.</small><div id="v83InflationNote" class="v83-note" style="margin-top:10px"></div></div>
   <div class="v8-card"><div class="v8-cardhead"><strong>Kazandıranlar / Kaybettirenler</strong><span class="v7-chip">Aynı dönem</span></div><div id="v83AssetTable" class="v8-tablewrap"></div></div>
   <div class="v8-card"><div class="v8-cardhead"><strong>Özel tarih karşılaştırması</strong><span class="v7-chip">Başlangıç → bugün</span></div><div class="v83-custom"><div><label>Başlangıç</label><input id="v83CustomStart" type="date"></div><div><label>Bitiş</label><input id="v83CustomEnd" type="date"></div><button id="v83RunCustom" class="primary" type="button">Karşılaştır</button></div></div>
  </div>
@@ -649,6 +649,6 @@ body[data-view="budget"] .v6-budget-only{display:block}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-config.js?v=8.2"></script>
 
-<script src="app.js?v=8.4.5"></script>
-<script src="statements.js?v=8.4.4"></script>
+<datalist id="stmtCategoryChoices"><option value="Hesaplar Arası Transfer"></option></datalist><script src="app.js?v=8.4.6"></script>
+<script src="statements.js?v=8.4.6"></script>
 </body></html>
