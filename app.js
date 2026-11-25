@@ -229,20 +229,25 @@ function mergeTransactions(local,remote){
 }
 async function processPendingDeletes(){
  if(!sb||!currentUser)return;
+ const owner=currentUser.id;const guard=()=>{if(currentUser?.id!==owner)throw Error('Hesap değişti; eşitleme durduruldu.')};
  const ids=[...deletedIds()];if(!ids.length)return;
  for(let i=0;i<ids.length;i+=100){
    const batch=ids.slice(i,i+100);
-   const {error}=await sb.from("butcem_transactions").delete().eq("user_id",currentUser.id).in("id",batch);
+   guard();
+   const {error}=await sb.from("butcem_transactions").delete().eq("user_id",owner).in("id",batch);
+   guard();
    if(error)throw error;
    unqueueDeletedIds(batch);
  }
 }
 async function pullCloud(){
  if(!sb||!currentUser)return;
+ const owner=currentUser.id;const guard=()=>{if(currentUser?.id!==owner)throw Error('Hesap değişti; eşitleme durduruldu.')};
  const [{data:txs,error:txErr},{data:settings,error:setErr}]=await Promise.all([
-   sb.from("butcem_transactions").select("*").eq("user_id",currentUser.id),
-   sb.from("butcem_settings").select("*").eq("user_id",currentUser.id).maybeSingle()
+   sb.from("butcem_transactions").select("*").eq("user_id",owner),
+   sb.from("butcem_settings").select("*").eq("user_id",owner).maybeSingle()
  ]);
+ guard();
  if(txErr)throw txErr;if(setErr)throw setErr;
  const tomb=deletedIds();const remote=(txs||[]).map(txFromCloud).filter(t=>!tomb.has(String(t.id)));
  state.transactions=mergeTransactions(state.transactions,remote);
@@ -259,18 +264,23 @@ async function pullCloud(){
 }
 async function pushCloud(){
  if(!sb||!currentUser)return;
+ const owner=currentUser.id;const guard=()=>{if(currentUser?.id!==owner)throw Error('Hesap değişti; eşitleme durduruldu.')};
  if(state.transactions.length){
-   const rows=state.transactions.map(t=>txToCloud(t,currentUser.id));
+   const rows=state.transactions.map(t=>txToCloud(t,owner));
    // Küçük kişisel bütçe uygulaması için tüm yerel kayıtları idempotent upsert ediyoruz.
    for(let i=0;i<rows.length;i+=500){
+     guard();
      const {error}=await sb.from("butcem_transactions").upsert(rows.slice(i,i+500),{onConflict:"user_id,id"});
+     guard();
      if(error)throw error;
    }
  }
+ guard();
  const {error:sErr}=await sb.from("butcem_settings").upsert({
-   user_id:currentUser.id,monthly_budget:Number(state.monthlyBudget)||0,categories:state.categories,
+   user_id:owner,monthly_budget:Number(state.monthlyBudget)||0,categories:state.categories,
    settings_updated_at:state.settingsUpdatedAt||new Date().toISOString(),updated_at:new Date().toISOString()
  },{onConflict:"user_id"});
+ guard();
  if(sErr)throw sErr;
 }
 
@@ -292,11 +302,13 @@ function persistExtendedLocal(){
 }
 async function pullExtendedCloud(){
  if(!sb||!currentUser)return;
+ const owner=currentUser.id;const guard=()=>{if(currentUser?.id!==owner)throw Error('Hesap değişti; eşitleme durduruldu.')};
  const [fr,wr,ir]=await Promise.all([
-  sb.from("butcem_finance_state").select("payload,updated_at").eq("user_id",currentUser.id).maybeSingle(),
-  sb.from("butcem_wealth_state").select("payload,updated_at").eq("user_id",currentUser.id).maybeSingle(),
-  sb.from("butcem_intelligence_state").select("payload,updated_at").eq("user_id",currentUser.id).maybeSingle()
+  sb.from("butcem_finance_state").select("payload,updated_at").eq("user_id",owner).maybeSingle(),
+  sb.from("butcem_wealth_state").select("payload,updated_at").eq("user_id",owner).maybeSingle(),
+  sb.from("butcem_intelligence_state").select("payload,updated_at").eq("user_id",owner).maybeSingle()
  ]);
+ guard();
  for(const r of [fr,wr,ir])if(r.error)throw r.error;
  extendedCloudPresence={finance:!!fr.data,wealth:!!wr.data,intelligence:!!ir.data};
  if(fr.data&&chooseRemote(v7,fr.data)){
@@ -312,6 +324,7 @@ async function pullExtendedCloud(){
 }
 async function pushExtendedCloud(){
  if(!sb||!currentUser)return;
+ const owner=currentUser.id;const guard=()=>{if(currentUser?.id!==owner)throw Error('Hesap değişti; eşitleme durduruldu.')};
  const now=new Date().toISOString();
  if(!v7.cloudUpdatedAt)v7.cloudUpdatedAt=now;
  if(!v8.cloudUpdatedAt)v8.cloudUpdatedAt=now;
@@ -322,7 +335,9 @@ async function pushExtendedCloud(){
   ["butcem_intelligence_state",v83]
  ];
  for(const [table,payload] of rows){
-  const {error}=await sb.from(table).upsert({user_id:currentUser.id,payload,updated_at:payload.cloudUpdatedAt||now},{onConflict:"user_id"});
+  guard();
+  const {error}=await sb.from(table).upsert({user_id:owner,payload,updated_at:payload.cloudUpdatedAt||now},{onConflict:"user_id"});
+  guard();
   if(error)throw error;
  }
  persistExtendedLocal();
@@ -335,16 +350,17 @@ function renderExtendedAfterSync(){
 async function syncCloud(manual=false){
  if(!sb||!currentUser||cloudBusy)return;
  cloudBusy=true;
+ const syncOwner=currentUser.id;const assertOwner=()=>{if(currentUser?.id!==syncOwner)throw Error('Hesap değişti')};
  if(manual) setCloudUI("☁️ Senkronize ediliyor…","Cihaz ve hesabındaki veriler karşılaştırılıyor.");
  try{
    // Bekleyen silmeleri önce buluta uygula; böylece silinen kayıt başka cihazdan geri dirilmez.
-   await processPendingDeletes();
-   await pullCloud();
-   await pullExtendedCloud();
-   await pushCloud();
-   await pushExtendedCloud();
-   await pullCloud();
-   await pullExtendedCloud();
+   await processPendingDeletes();assertOwner();
+   await pullCloud();assertOwner();
+   await pullExtendedCloud();assertOwner();
+   await pushCloud();assertOwner();
+   await pushExtendedCloud();assertOwner();
+   await pullCloud();assertOwner();
+   await pullExtendedCloud();assertOwner();
    state.lastCloudSyncAt=new Date().toISOString();
    localStorage.setItem(KEY,JSON.stringify(state));
    const when=new Date(state.lastCloudSyncAt).toLocaleString("tr-TR");
