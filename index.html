@@ -302,7 +302,7 @@ body[data-view="budget"] .v6-budget-only{display:block}
 @media(max-width:700px){.v82-marketgrid{grid-template-columns:1fr}.v82-rate{display:grid;grid-template-columns:1fr auto;align-items:center}.v82-rate span,.v82-rate small{grid-column:1}.v82-rate strong{grid-column:2;grid-row:1/3}}
 
 
-/* V8.3.4 Portfolio Intelligence */
+/* V8.3.4 Portföy Analizi */
 .v83-periods{display:flex;gap:6px;overflow:auto;padding:2px 0 8px}.v83-periods button{white-space:nowrap;padding:7px 10px;border-radius:999px}.v83-periods button.active{background:var(--text);color:var(--surface)}
 .v83-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}.v83-bench{border:1px solid var(--line);background:var(--surface2);border-radius:15px;padding:12px}.v83-bench span{display:block;font-size:9px;color:var(--muted);margin-bottom:5px}.v83-bench strong{font-size:18px}.v83-bench small{display:block;font-size:9px;color:var(--muted);margin-top:4px}
 .v83-table{width:100%;border-collapse:collapse}.v83-table th,.v83-table td{padding:10px 8px;border-bottom:1px solid var(--line);text-align:right;font-size:11px}.v83-table th:first-child,.v83-table td:first-child{text-align:left}.v83-pill{display:inline-flex;padding:4px 7px;border-radius:999px;border:1px solid var(--line);font-size:9px}.v83-note{font-size:10px;color:var(--muted);line-height:1.5}.v83-selectrow{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end}.v83-herochange{font-size:28px;font-weight:850;letter-spacing:-.03em;margin:6px 0}.v83-real{font-size:11px;margin-top:4px}.v83-custom{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end;margin-top:10px}
@@ -331,7 +331,7 @@ body[data-view="budget"] .v6-budget-only{display:block}
     <div>
       <div class="label">Hesap & bulut</div>
       <div id="cloudStatus" style="font-weight:700;margin-top:4px">Bu cihazda kayıtlı</div>
-      <div id="cloudDetail" class="small" style="margin-top:4px">Bulut hesabı henüz bağlı değil.</div>
+      <button type="button" class="ghost" aria-label="Bulut hesabı ve veri gizliliği" onclick="document.getElementById('privacyInfo').showModal()">ℹ️ Veri gizliliği</button><div id="cloudDetail" class="small" style="margin-top:4px">Bulut hesabı henüz bağlı değil.</div>
     </div>
     <button id="cloudCardBtn" type="button" class="ghost">Hesap</button>
   </div>
@@ -353,7 +353,7 @@ body[data-view="budget"] .v6-budget-only{display:block}
 <select id="txnFilterPayment"><option value="all">Tüm hesaplar</option></select>
 <select id="txnSort"><option value="date_desc">En yeni</option><option value="date_asc">En eski</option><option value="amount_desc">Tutar ↓</option><option value="amount_asc">Tutar ↑</option></select>
 </div>
-<div class="v6-filter-actions"><div id="txnFilterSummary" class="v6-filter-summary"></div><button id="v6ExportFiltered" class="ghost v6-compactbtn" type="button">Filtreyi CSV indir</button><button id="v85DeleteFiltered" class="ghost v6-compactbtn" type="button">Filtrelenenleri toplu sil</button></div>
+<div class="v6-filter-actions"><div id="txnFilterSummary" class="v6-filter-summary"></div><button id="v6ExportFiltered" class="ghost v6-compactbtn" type="button">Filtrelenenleri CSV indir</button><button id="v85DeleteFiltered" class="ghost v6-compactbtn" type="button">Filtrelenenleri toplu sil</button></div>
 </div>
 <div id="transactions" class="list"></div>
 </div>
@@ -409,7 +409,7 @@ body[data-view="budget"] .v6-budget-only{display:block}
 <details><summary>Okunamayan / başlık dışı satırlar</summary><pre id="stmtRejected" style="white-space:pre-wrap;overflow-wrap:anywhere;max-height:160px;overflow:auto"></pre></details>
 <div class="actions"><button type="button" id="stmtClose" class="ghost">Kapat</button><button type="button" id="stmtCommit" class="primary" disabled>Seçili işlemleri kaydet</button></div>
 </dialog>
-<dialog id="authDialog"><form id="authForm">
+<dialog id="privacyInfo" style="width:min(90vw,480px);max-height:85vh;overflow:auto"><h2>Bulut hesabı ve veri gizliliği</h2><p><strong>Veriler nerede saklanır?</strong><br>Finansal kayıtlar tarayıcıda yerel olarak, bulut hesabı bağlıysa Supabase veritabanında saklanır.</p><p><strong>Kimler erişebilir?</strong><br>Sistem hesap bazlı erişim için tasarlanmıştır. Yetkili altyapı yöneticilerinin teknik erişimi olabilir. Uçtan uca şifreleme garantisi verilmez.</p><p><strong>E-posta</strong><br>Giriş, doğrulama ve şifre sıfırlama için kullanılır. E-posta kutusunun içeriği okunmaz.</p><p><strong>Ekstre ve fişler</strong><br>Dosyalar tarayıcıda işlenir; onaylanan işlem kayıtları buluta eşitlenebilir. Fiş fotoğrafı saklanmaz.</p><p>Ortak cihazlarda kişisel kayıtlarını ve indirilen yedekleri koru.</p><button type="button" class="primary" onclick="document.getElementById('privacyInfo').close()">Anladım</button></dialog><dialog id="authDialog"><form id="authForm">
 <h3>Hesap & Bulut</h3>
 <div id="authLoggedOut">
   <div class="small" style="margin-bottom:10px">Aynı hesabı başka cihazda açtığında bütçe, işlemler, finans ve portföy verilerin senkronize edilir. Yerel kayıt ve manuel yedek sistemi çalışmaya devam eder.</div>
@@ -475,7 +475,7 @@ body[data-view="budget"] .v6-budget-only{display:block}
    <div class="v6-insight"><span>Günlük ortalama</span><strong id="v6DailyAvg">₺0</strong><small>Harcama temposu</small></div>
    <div class="v6-insight"><span>Ay sonu tahmini</span><strong id="v6Projection">₺0</strong><small id="v6ProjectionMeta">Mevcut tempoya göre</small></div>
    <div class="v6-insight"><span>En büyük harcama</span><strong id="v6Largest">—</strong><small id="v6LargestMeta">Henüz işlem yok</small></div>
-   <div class="v6-insight"><span>Harcamamasız gün</span><strong id="v6NoSpend">0 gün</strong><small>Seçili dönem</small></div>
+   <div class="v6-insight"><span>Harcamasız gün</span><strong id="v6NoSpend">0 gün</strong><small>Seçili dönem</small></div>
   </div>
   <div id="v6BudgetAlert" class="v6-alert"></div>
  </div>
@@ -558,7 +558,7 @@ body[data-view="budget"] .v6-budget-only{display:block}
 
 
  <div id="v8PerformancePanel" class="v8-panel">
-  <div class="v8-card"><div class="v8-cardhead"><div><strong>Portfolio Intelligence</strong><div class="v8-hint">Gerçek dönem getirisi · benchmark · kazandıran/kaybettiren</div></div><span class="v7-chip">V8.3.4</span></div>
+  <div class="v8-card"><div class="v8-cardhead"><div><strong>Portföy Analizi</strong><div class="v8-hint">Gerçek dönem getirisi · benchmark · kazandıran/kaybettiren</div></div></div>
    <div id="v83Periods" class="v83-periods"><button class="ghost active" data-v83p="1d">1G</button><button class="ghost" data-v83p="1w">1H</button><button class="ghost" data-v83p="1m">1A</button><button class="ghost" data-v83p="3m">3A</button><button class="ghost" data-v83p="6m">6A</button><button class="ghost" data-v83p="1y">1Y</button><button class="ghost" data-v83p="all">Tümü</button></div>
    <div class="v83-selectrow"><div><label>Karşılaştırılacak varlık</label><select id="v83AssetSelect"></select></div><button id="v83Refresh" class="ghost" type="button">↻ Güncelle</button></div>
    <div id="v83MainResult" style="margin-top:12px"></div>
@@ -593,7 +593,7 @@ body[data-view="budget"] .v6-budget-only{display:block}
 </section>
 
 <nav class="v5-nav" id="v5Nav"><button data-view="summary"><i>⌂</i>Özet</button><button data-view="transactions"><i>⇄</i>İşlemler</button><button data-view="budget"><i>◎</i>Bütçe</button><button data-view="assets"><i>◇</i>Varlıklar</button></nav>
-<div id="v5Onboarding" class="v5-onboarding v5-hide"><div><div class="v5-kicker">BÜTÇEM V5</div><h2>Bütçem'i ne için kullanacaksın?</h2><p class="v5-sub">Birden fazla seçebilirsin. Tercihlerini daha sonra değiştirebileceksin.</p>
+<div id="v5Onboarding" class="v5-onboarding v5-hide"><div><div class="v5-kicker">BÜTÇEM</div><h2>Bütçem'i ne için kullanacaksın?</h2><p class="v5-sub">Birden fazla seçebilirsin. Tercihlerini daha sonra değiştirebileceksin.</p>
 <label class="v5-choice"><input type="checkbox" value="budget" checked>💳 Harcama ve bütçe takibi</label>
 <label class="v5-choice"><input type="checkbox" value="networth">💰 Net servet takibi</label>
 <label class="v5-choice"><input type="checkbox" value="investments">📈 Yatırım takibi</label>
@@ -652,5 +652,5 @@ body[data-view="budget"] .v6-budget-only{display:block}
 <datalist id="stmtCategoryChoices"><option value="Hesaplar Arası Transfer"></option></datalist><script src="app.js?v=8.4.8"></script>
 <script src="statements.js?v=8.4.6"></script>
 <dialog id="receiptDialog" style="width:min(94vw,680px);max-height:90vh;overflow:auto"><h2>Akıllı fiş tarayıcı</h2><p class="small">Fotoğraf cihazında okunur. OCR hatalarını düzelt; sadece onaylanan ürün kayıtları buluta eşitlenebilir. Fotoğraf saklanmaz.</p><input id="receiptFile" type="file" accept="image/jpeg,image/png,image/webp"><button type="button" id="receiptScan" class="primary">Fotoğrafı oku</button><p id="receiptStatus" role="status"></p><details><summary>Okunan metin / elle giriş</summary><textarea id="receiptText" rows="5" placeholder="Süt 48,50"></textarea><button type="button" id="receiptParse">Metni ayrıştır</button></details><label>Market<input id="receiptStore" placeholder="Market adı"></label><label>Tarih<input id="receiptDate" type="date"></label><label>Hesap<input id="receiptAccount" list="accountSuggestions" placeholder="Nakit veya banka hesabı"></label><label>Fiş toplamı (TL)<input id="receiptTotal" type="number" min="0.01" step="0.01"></label><div style="overflow:auto"><table style="width:100%;min-width:350px"><thead><tr><th>Ürün</th><th>Tutar</th><th>Kategori</th><th></th></tr></thead><tbody id="receiptRows"></tbody></table></div><button type="button" id="receiptAdd">+ Ürün ekle</button><p id="receiptCheck" role="status"></p><button type="button" id="receiptCommit" class="primary" disabled>Onayla ve kaydet</button> <button type="button" id="receiptClose" class="ghost">Kapat</button></dialog>
-<script src="receipts.js?v=8.5.1"></script>
+<script src="receipts.js?v=8.5.2"></script>
 </body></html>
