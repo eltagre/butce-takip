@@ -40,12 +40,13 @@ function openTxn(type,txn=null){
  $("#amount").value=txn?.amount??"";
  $("#description").value=txn?.description||"";
  $("#date").value=txn?.date||today();
- $("#cardName").value=txn?.cardName||"";
+ const last=!txn?state.transactions.filter(t=>t.type===type&&budgetType(t)!=="transfer").sort((a,b)=>String(b.updatedAt||b.date).localeCompare(String(a.updatedAt||a.date)))[0]:null;
+ $("#cardName").value=txn?.cardName||last?.cardName||"";
  $("#txnNote").value=txn?.note||"";
- fillCategoryOptions(type,txn?.category||"");
+ fillCategoryOptions(type,txn?.category||last?.category||"");
  $("#payment").disabled=false;
- if(txn?.payment && ![...$("#payment").options].some(o=>o.value===txn.payment)){let o=document.createElement("option");o.value=txn.payment;o.textContent=txn.payment;$("#payment").appendChild(o)}
- $("#payment").value=txn?.payment||"Nakit";
+ const pay=txn?.payment||last?.payment||"Nakit";if(![...$("#payment").options].some(o=>o.value===pay)){let o=document.createElement("option");o.value=pay;o.textContent=pay;$("#payment").appendChild(o)}
+ $("#payment").value=pay;
  $("#deleteTxnBtn").style.display=txn?"inline-block":"none";
  $("#duplicateTxnBtn").style.display=txn?"inline-block":"none";
  updateAccountSuggestions();
@@ -720,8 +721,9 @@ function v7Render(){
  $("#v7RecurringList").querySelectorAll("[data-rec-add]").forEach(b=>b.onclick=()=>v7ApplyRecurring(b.dataset.recAdd));
 
  const monthTx=state.transactions.filter(t=>t.date&&t.date.startsWith(selectedMonth)&&budgetType(t)==="expense");
- $("#v7CategoryBudgets").innerHTML=state.categories.map(cat=>{const lim=Number(v7.categoryBudgets[cat]||0),spent=monthTx.filter(t=>t.category===cat).reduce((s,t)=>s+Number(t.amount||0),0),pct=lim?Math.min(100,spent/lim*100):0;return `<div class="v7-budgetrow"><div class="v7-budgettop"><div><strong>${v51Esc(cat)}</strong><div class="v7-rowmeta">${money(spent)} harcandı${lim?` · ${money(Math.max(0,lim-spent))} kaldı`:""}</div></div><input data-catbudget="${v51Esc(cat)}" type="number" min="0" step="100" value="${lim||""}" placeholder="Limit" style="width:110px;margin:0"></div>${lim?`<div class="v7-progress"><span style="width:${pct}%"></span></div>`:""}</div>`}).join("");
- $("#v7CategoryBudgets").querySelectorAll("[data-catbudget]").forEach(i=>i.onchange=()=>{const v=Math.max(0,Number(i.value)||0);if(v)v7.categoryBudgets[i.dataset.catbudget]=v;else delete v7.categoryBudgets[i.dataset.catbudget];v7Save(false)});
+ const totalLimit=Object.values(v7.categoryBudgets).reduce((s,x)=>s+Math.max(0,Number(x)||0),0);$("#v85CategoryLimit").textContent="Kategori limitleri toplamı: "+money(totalLimit)+(state.monthlyBudget&&totalLimit>state.monthlyBudget?" · Dikkat: aylık bütçeyi aşıyor.":"");
+ $("#v7CategoryBudgets").innerHTML=state.categories.map(cat=>{const lim=Number(v7.categoryBudgets[cat]||0),spent=monthTx.filter(t=>t.category===cat).reduce((s,t)=>s+Number(t.amount||0),0),pct=lim?Math.min(100,spent/lim*100):0;return `<div class="v7-budgetrow"><div class="v7-budgettop"><div><strong>${v51Esc(cat)}</strong><div class="v7-rowmeta">${money(spent)} harcandı${lim?` · ${money(Math.max(0,lim-spent))} kaldı${spent>=lim?" · Limit doldu":spent>=lim*.8?" · %80 uyarısı":""}`:""}</div></div><input data-catbudget="${v51Esc(cat)}" type="number" min="0" step="100" value="${lim||""}" placeholder="Limit" style="width:110px;margin:0"></div>${lim?`<div class="v7-progress"><span style="width:${pct}%"></span></div>`:""}</div>`}).join("");
+ $("#v7CategoryBudgets").querySelectorAll("[data-catbudget]").forEach(i=>i.onchange=()=>{const v=Math.max(0,Number(i.value)||0);if(v)v7.categoryBudgets[i.dataset.catbudget]=v;else delete v7.categoryBudgets[i.dataset.catbudget];v7Save(false);v7Render()});
 
  $("#v7GoalsList").innerHTML=v7.goals.length?v7.goals.map(g=>{const target=Number(g.target||0),cur=Number(g.current||0),pct=target?Math.min(100,cur/target*100):0;return `<div class="v7-goal"><strong>${v51Esc(g.name)}</strong><div class="amount">${money(cur)} <span style="font-size:11px;color:var(--muted)">/ ${money(target)}</span></div><div class="v7-progress"><span style="width:${pct}%"></span></div><div class="meta">%${Math.round(pct)}${g.date?` · ${v51Esc(g.date)}`:""}</div><div class="v7-goal-actions"><button class="primary" data-goal-add="${v51Esc(g.id)}">+ Para ekle</button><button class="ghost" data-goal-edit="${v51Esc(g.id)}">Düzenle</button></div></div>`}).join(""):`<div class="v7-empty">Tatil, acil durum fonu, araba veya başka bir hedef oluşturabilirsin.</div>`;
  $("#v7GoalsList").querySelectorAll("[data-goal-edit]").forEach(b=>b.onclick=()=>v7OpenGoal(b.dataset.goalEdit));
@@ -788,6 +790,9 @@ function v5Refresh(){
  const ex=tx.filter(t=>budgetType(t)==="expense").reduce((a,t)=>a+Number(t.amount||0),0);
  const net=inc-ex, budget=Number(state.monthlyBudget||0), remaining=budget?budget-ex:null;
  const q=s=>document.querySelector(s);
+ const prevTx=state.transactions.filter(t=>t.date?.startsWith(shift(key,-1))),prevEx=prevTx.filter(t=>budgetType(t)==="expense").reduce((s,t)=>s+Number(t.amount||0),0),prevInc=prevTx.filter(t=>budgetType(t)==="income").reduce((s,t)=>s+Number(t.amount||0),0);
+ q("#v85MonthlyCompare").textContent=prevTx.length?"Önceki ay (tam ay): Gelir "+money(prevInc)+" · Harcama "+money(prevEx)+" · Harcama farkı "+(ex-prevEx>0?"+":"")+money(ex-prevEx):"Önceki ay için kayıt yok.";
+ const warning=q("#v85BudgetWarning");warning.textContent=budget&&ex>=budget?"Bütçe limitine ulaştın: "+Math.round(ex/budget*100)+"%":budget&&ex>=budget*.8?"Bütçenin %80'i veya daha fazlası kullanıldı.":"";warning.hidden=!warning.textContent;
  q("#v5Income").textContent=money(inc);q("#v5Expense").textContent=money(ex);q("#v5Net").textContent=money(net);
  q("#v5Net").className=net>=0?"good":"bad";q("#v5Saving").textContent=inc>0?`%${Math.round(net/inc*100)}`:"—";
  document.querySelectorAll(".v51-stat-delta").forEach((el,i)=>{if(i<2)el.textContent=key===currentMonth()?"Bu ay":"Seçili ay"});
@@ -996,6 +1001,7 @@ async function v83Run(){const end=today(),start=v83.period==="all"?(v8.snapshots
 
 function v5Init(){
  $("#v85DeleteFiltered").onclick=v85DeleteFiltered;
+ $("#v85QuickExpense").onclick=()=>openTxn("expense");$("#v85QuickIncome").onclick=()=>openTxn("income");
  let p=v5GetPrefs();
  if(!p){document.querySelector("#v5Onboarding").classList.remove("v5-hide")}
  else{v5Theme(p.theme||"light");v5Show(p.startView||"summary")}
