@@ -440,7 +440,7 @@ function render(){
  const fIncome=filtered.filter(t=>budgetType(t)==="income").reduce((s,t)=>s+Number(t.amount||0),0),fExpense=filtered.filter(t=>budgetType(t)==="expense").reduce((s,t)=>s+Number(t.amount||0),0);
  if($("#txnFilterSummary"))$("#txnFilterSummary").textContent=`Gelir ${money(fIncome)} · Harcama ${money(fExpense)} · Net ${money(fIncome-fExpense)} · ${filtered.filter(t=>budgetType(t)==="transfer").length} transfer`;
  if(!filtered.length)list.innerHTML='<div class="small">Bu filtrelerde işlem bulunamadı.</div>';
- filtered.forEach(t=>{let r=document.createElement("div");r.className="item v52-item v6-tappable";r.onclick=e=>{if(!e.target.closest("button"))openTxn(t.type,t)};let l=document.createElement("div");l.className="v52-item-main";let title=document.createElement("div"),meta=document.createElement("div");title.className="v52-item-title";title.textContent=t.description||t.category;meta.className="meta";meta.textContent=`${t.category} • ${t.date} • ${t.payment}`;l.append(title,meta);if(t.cardName){let pill=document.createElement("span");pill.className="v6-account-pill";pill.textContent=t.cardName;l.appendChild(pill)}let side=document.createElement("div");side.className="v52-item-side";let a=document.createElement("div");a.className="amount "+(t.type==="income"?"good":"bad");a.textContent=(t.type==="income"?"+":"-")+money(t.amount);let acts=document.createElement("div");acts.className="v52-actions";let edit=document.createElement("button");edit.className="ghost";edit.type="button";edit.textContent="Düzenle";edit.onclick=()=>openTxn(t.type,t);let del=document.createElement("button");del.className="ghost v52-delete";del.type="button";del.textContent="Sil";del.onclick=()=>deleteTransaction(t.id);acts.append(edit,del);side.append(a,acts);r.append(l,side);list.appendChild(r)});
+ filtered.forEach(t=>{let r=document.createElement("div");r.className="item v52-item v6-tappable";r.onclick=e=>{if(!e.target.closest("button"))openTxn(t.type,t)};let l=document.createElement("div");l.className="v52-item-main";let title=document.createElement("div"),meta=document.createElement("div");title.className="v52-item-title";title.textContent=t.description||t.category;meta.className="meta";meta.textContent=`${t.category} • ${t.date} • ${t.payment}`;l.append(title,meta);if(t.cardName){let pill=document.createElement("span");pill.className="v6-account-pill";pill.textContent=t.cardName;l.appendChild(pill)}let side=document.createElement("div");side.className="v52-item-side";let a=document.createElement("div");a.className="amount "+(budgetType(t)==="transfer"?"":t.type==="income"?"good":"bad");a.textContent=(t.type==="income"?"+":"-")+money(t.amount);let acts=document.createElement("div");acts.className="v52-actions";let edit=document.createElement("button");edit.className="ghost";edit.type="button";edit.textContent="Düzenle";edit.onclick=()=>openTxn(t.type,t);let del=document.createElement("button");del.className="ghost v52-delete";del.type="button";del.textContent="Sil";del.onclick=()=>deleteTransaction(t.id);acts.append(edit,del);side.append(a,acts);r.append(l,side);list.appendChild(r)});
 }
 if("serviceWorker"in navigator){
   navigator.serviceWorker.register("sw.js?v=8.4.0").then(reg=>{
@@ -719,7 +719,7 @@ function v7Render(){
  $("#v7RecurringList").querySelectorAll("[data-rec-edit]").forEach(b=>b.onclick=()=>v7OpenRecurring(b.dataset.recEdit));
  $("#v7RecurringList").querySelectorAll("[data-rec-add]").forEach(b=>b.onclick=()=>v7ApplyRecurring(b.dataset.recAdd));
 
- const monthTx=state.transactions.filter(t=>t.date&&t.date.startsWith(selectedMonth)&&t.type==="expense");
+ const monthTx=state.transactions.filter(t=>t.date&&t.date.startsWith(selectedMonth)&&budgetType(t)==="expense");
  $("#v7CategoryBudgets").innerHTML=state.categories.map(cat=>{const lim=Number(v7.categoryBudgets[cat]||0),spent=monthTx.filter(t=>t.category===cat).reduce((s,t)=>s+Number(t.amount||0),0),pct=lim?Math.min(100,spent/lim*100):0;return `<div class="v7-budgetrow"><div class="v7-budgettop"><div><strong>${v51Esc(cat)}</strong><div class="v7-rowmeta">${money(spent)} harcandı${lim?` · ${money(Math.max(0,lim-spent))} kaldı`:""}</div></div><input data-catbudget="${v51Esc(cat)}" type="number" min="0" step="100" value="${lim||""}" placeholder="Limit" style="width:110px;margin:0"></div>${lim?`<div class="v7-progress"><span style="width:${pct}%"></span></div>`:""}</div>`}).join("");
  $("#v7CategoryBudgets").querySelectorAll("[data-catbudget]").forEach(i=>i.onchange=()=>{const v=Math.max(0,Number(i.value)||0);if(v)v7.categoryBudgets[i.dataset.catbudget]=v;else delete v7.categoryBudgets[i.dataset.catbudget];v7Save(false)});
 
@@ -888,7 +888,7 @@ function v5Refresh(){
 
  // Recent transactions
  const recent=[...tx].sort((a,b)=>String(b.date).localeCompare(String(a.date))).slice(0,5);
- q("#v51Recent").innerHTML=recent.length?recent.map(t=>`<div class="v51-recent-row" data-id="${v51Esc(t.id)}"><div class="v51-recent-main"><div class="v51-recent-title">${v51Esc(t.description||t.category||"İşlem")}</div><div class="v51-recent-meta">${v51Esc(t.category||"")} · ${v51Esc(t.cardName||t.payment||"")} · ${v51RecentDate(t.date)}</div></div><div class="v51-recent-amt ${t.type==="income"?"good":"bad"}">${t.type==="income"?"+":"−"}${money(t.amount)}</div></div>`).join(""):`<div class="v51-empty">Henüz işlem yok. Sağ alttaki + ile ilk kaydını ekleyebilirsin.</div>`;
+ q("#v51Recent").innerHTML=recent.length?recent.map(t=>`<div class="v51-recent-row" data-id="${v51Esc(t.id)}"><div class="v51-recent-main"><div class="v51-recent-title">${v51Esc(t.description||t.category||"İşlem")}</div><div class="v51-recent-meta">${v51Esc(t.category||"")} · ${v51Esc(t.cardName||t.payment||"")} · ${v51RecentDate(t.date)}</div></div><div class="v51-recent-amt ${budgetType(t)==="transfer"?"":t.type==="income"?"good":"bad"}">${t.type==="income"?"+":"−"}${money(t.amount)}</div></div>`).join(""):`<div class="v51-empty">Henüz işlem yok. Sağ alttaki + ile ilk kaydını ekleyebilirsin.</div>`;
  q("#v51Recent").querySelectorAll("[data-id]").forEach(row=>row.onclick=()=>{const t=findTxn(row.dataset.id);if(t)openTxn(t.type,t)});
 }
 function v5Show(view){
@@ -939,7 +939,7 @@ function v83UpsertSnapshot(date,total,{auto=false,force=false}={}){
  if(!(Number.isFinite(total)&&total>0))throw new Error("Geçerli bir servet değeri gerekli");
  if(auto&&!force&&!v83SnapshotReasonable(total,date))return false;
  const i=v8.snapshots.findIndex(x=>x.date===date);
- const snap={date,total,auto:!!auto,updatedAt:new Date().toISOString(),breakdown:v83SnapshotBreakdown(),usdtry:Number(v8.rates.usdtry)||null,gramGold:Number(v8.rates.gramGold)||null};
+ const snap={date,total,auto:!!auto,updatedAt:new Date().toISOString(),breakdown:v83SnapshotBreakdown(),usdtry:v8.market?.fxUpdatedAt?Number(v8.rates.usdtry)||null:null,gramGold:v8.market?.fxUpdatedAt?Number(v8.rates.gramGold)||null:null};
  if(i>=0)v8.snapshots[i]={...v8.snapshots[i],...snap};else v8.snapshots.push(snap);
  v8.snapshots.sort((a,b)=>a.date.localeCompare(b.date));
  return true;
@@ -1002,7 +1002,7 @@ function v5Init(){
  document.querySelector("#v6SummarySettings").onclick=()=>$("#settingsBtn").click();
  document.querySelector("#v6AssetsSettings").onclick=()=>$("#settingsBtn").click();
  document.querySelectorAll("[data-v8tab]").forEach(b=>b.onclick=()=>{v8OpenTab(b.dataset.v8tab);if(b.dataset.v8tab==="performance"){v83Populate();v83Run().catch(e=>v6Toast(e.message))}});
- document.querySelectorAll("[data-v83p]").forEach(b=>b.onclick=()=>{v83.period=b.dataset.v83p;v83Save();v83Populate();v83Run().catch(e=>v6Toast(e.message))});
+ document.querySelectorAll("[data-v83p]").forEach(b=>b.onclick=()=>{$("#v84ManualCpi").value="";v83.period=b.dataset.v83p;v83Save();v83Populate();v83Run().catch(e=>v6Toast(e.message))});
  $("#v83AssetSelect").onchange=()=>v83Run().catch(e=>v6Toast(e.message));
  $("#v83Refresh").onclick=()=>{v81Cache={};v81CacheSave();v83Run().catch(e=>v6Toast(e.message))};
  $("#v83RunCustom").onclick=()=>{v83.customStart=$("#v83CustomStart").value;v83.customEnd=$("#v83CustomEnd").value;v83Save();if(!v83.customStart||!v83.customEnd||v83.customStart>=v83.customEnd){v6Toast("Tarih aralığını kontrol et");return}v83Analyze(v83.customStart,v83.customEnd).catch(e=>v6Toast(e.message))};
