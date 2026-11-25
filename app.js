@@ -17,13 +17,15 @@ function shift(mk,n){let [y,m]=mk.split("-").map(Number),d=new Date(y,m-1+n,1);r
 function mname(mk){let [y,m]=mk.split("-").map(Number);return new Intl.DateTimeFormat("tr-TR",{month:"long",year:"numeric"}).format(new Date(y,m-1,1))}
 function day(s){return Number(s.slice(8,10))}
 function download(name,text,type){let b=new Blob([text],{type}),a=document.createElement("a");a.href=URL.createObjectURL(b);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
+const TRANSFER_CAT="Hesaplar Arası Transfer";
+function budgetType(t){return t.category===TRANSFER_CAT?"transfer":t.type}
 const INCOME_CATS=["Maaş","Aile Desteği","Burs","Ek Gelir","Satış","Kira Geliri","Faiz / Getiri","Temettü","İade","Hediye","Diğer Gelir"];
 const DELETE_QUEUE_KEY="butcem_v5_deleted_ids";
 function deletedIds(){try{return new Set(JSON.parse(localStorage.getItem(DELETE_QUEUE_KEY)||"[]").map(String))}catch(e){return new Set()}}
 function queueDeletedId(id){const s=deletedIds();s.add(String(id));localStorage.setItem(DELETE_QUEUE_KEY,JSON.stringify([...s]))}
 function unqueueDeletedIds(ids){const s=deletedIds();ids.forEach(id=>s.delete(String(id)));localStorage.setItem(DELETE_QUEUE_KEY,JSON.stringify([...s]))}
 function fillCategoryOptions(type,selected=""){
- const cats=type==="expense"?state.categories:INCOME_CATS;
+ const cats=[...new Set([...(type==="expense"?state.categories:INCOME_CATS),...(selected?[selected]:[]),TRANSFER_CAT])];
  $("#category").innerHTML="";
  cats.forEach(c=>{let o=document.createElement("option");o.value=c;o.textContent=c;if(c===selected)o.selected=true;$("#category").appendChild(o)});
 }
@@ -160,7 +162,7 @@ $("#csvImportFile").onchange=async e=>{
     const safety=backupObject();
     download(`butcem-csv-aktarim-oncesi-${today()}.json`,JSON.stringify(safety,null,2),"application/json;charset=utf-8");
     state.transactions.push(...fresh);
-    state.categories=[...new Set([...state.categories,...fresh.filter(t=>t.type==="expense").map(t=>t.category)])];
+    state.categories=[...new Set([...state.categories,...fresh.filter(t=>budgetType(t)==="expense").map(t=>t.category)])];
     save(); updateBackupStatus();
     alert(`${fresh.length} işlem başarıyla içe aktarıldı. Şimdi eski uygulamayla toplamları karşılaştır.`);
   }catch(err){alert("CSV içe aktarılamadı: "+err.message)}
@@ -410,13 +412,13 @@ if(initCloudClient()){
 
 function render(){
  $("#monthLabel").textContent=mname(selectedMonth);$("#next").disabled=selectedMonth>=currentMonth();
- let tx=state.transactions.filter(t=>t.date&&t.date.startsWith(selectedMonth)),ex=tx.filter(t=>t.type==="expense"),inc=tx.filter(t=>t.type==="income");
+ let tx=state.transactions.filter(t=>t.date&&t.date.startsWith(selectedMonth)),ex=tx.filter(t=>budgetType(t)==="expense"),inc=tx.filter(t=>budgetType(t)==="income");
  let et=ex.reduce((s,t)=>s+Number(t.amount||0),0),it=inc.reduce((s,t)=>s+Number(t.amount||0),0),net=it-et;
  $("#expenseTotal").textContent=money(et);$("#incomeTotal").textContent=money(it);$("#netTotal").textContent=money(net);$("#netTotal").className="value "+(net>=0?"good":"bad");
  let rem=state.monthlyBudget?state.monthlyBudget-et:null;$("#remaining").textContent=rem===null?"—":money(rem);$("#remaining").className="value "+(rem===null?"":rem>=0?"good":"bad");
  let pct=state.monthlyBudget?Math.round(et/state.monthlyBudget*100):0;$("#budgetPct").textContent=pct+"%";$("#budgetBar").style.width=Math.min(100,pct)+"%";$("#budgetText").textContent=state.monthlyBudget?`${money(et)} / ${money(state.monthlyBudget)}`:"Belirlenmedi";
 
- let prev=shift(selectedMonth,-1),pex=state.transactions.filter(t=>t.type==="expense"&&t.date&&t.date.startsWith(prev)),pt=pex.reduce((s,t)=>s+Number(t.amount||0),0),diff=et-pt;
+ let prev=shift(selectedMonth,-1),pex=state.transactions.filter(t=>budgetType(t)==="expense"&&t.date&&t.date.startsWith(prev)),pt=pex.reduce((s,t)=>s+Number(t.amount||0),0),diff=et-pt;
  $("#compare").textContent=pex.length?(diff===0?`Önceki ayla aynı: ${money(et)}`:`Önceki aya göre ${money(Math.abs(diff))} ${diff>0?"daha fazla":"daha az"} harcadın.`):"Önceki ay için yeterli veri yok.";
  let ins=$("#insights");ins.innerHTML="";
  let cmpDay=selectedMonth===currentMonth()?new Date().getDate():31,curSame=ex.filter(t=>day(t.date)<=cmpDay).reduce((s,t)=>s+t.amount,0),preSame=pex.filter(t=>day(t.date)<=cmpDay).reduce((s,t)=>s+t.amount,0);
@@ -431,12 +433,12 @@ function render(){
  let catSelect=$("#txnFilterCategory"),paySelect=$("#txnFilterPayment");
  if(catSelect){const before=catSelect.value;const allCats=[...new Set(baseTx.map(t=>t.category).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"tr"));catSelect.innerHTML='<option value="all">Tüm kategoriler</option>'+allCats.map(c=>`<option value="${v51Esc(c)}">${v51Esc(c)}</option>`).join("");catSelect.value=allCats.includes(before)?before:"all";fc=catSelect.value}
  if(paySelect){const before=paySelect.value;const pays=[...new Set(baseTx.map(t=>t.cardName||t.payment).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"tr"));paySelect.innerHTML='<option value="all">Tüm hesaplar</option>'+pays.map(c=>`<option value="${v51Esc(c)}">${v51Esc(c)}</option>`).join("");paySelect.value=pays.includes(before)?before:"all";fp=paySelect.value}
- let filtered=baseTx.filter(t=>(ft==="all"||t.type===ft)&&(fc==="all"||t.category===fc)&&(fp==="all"||(t.cardName||t.payment)===fp)&&(!search||[t.description,t.category,t.payment,t.cardName,t.note,String(t.amount)].join(" ").toLocaleLowerCase("tr-TR").includes(search)));
+ let filtered=baseTx.filter(t=>(ft==="all"||budgetType(t)===ft)&&(fc==="all"||t.category===fc)&&(fp==="all"||(t.cardName||t.payment)===fp)&&(!search||[t.description,t.category,t.payment,t.cardName,t.note,String(t.amount)].join(" ").toLocaleLowerCase("tr-TR").includes(search)));
  const sorters={date_desc:(a,b)=>String(b.date).localeCompare(String(a.date)),date_asc:(a,b)=>String(a.date).localeCompare(String(b.date)),amount_desc:(a,b)=>Number(b.amount)-Number(a.amount),amount_asc:(a,b)=>Number(a.amount)-Number(b.amount)};
  filtered.sort(sorters[sort]||sorters.date_desc);
  list.innerHTML="";if($("#txnCount"))$("#txnCount").textContent=`${filtered.length} işlem`;
- const fIncome=filtered.filter(t=>t.type==="income").reduce((s,t)=>s+Number(t.amount||0),0),fExpense=filtered.filter(t=>t.type==="expense").reduce((s,t)=>s+Number(t.amount||0),0);
- if($("#txnFilterSummary"))$("#txnFilterSummary").textContent=`Gelir ${money(fIncome)} · Harcama ${money(fExpense)} · Net ${money(fIncome-fExpense)}`;
+ const fIncome=filtered.filter(t=>budgetType(t)==="income").reduce((s,t)=>s+Number(t.amount||0),0),fExpense=filtered.filter(t=>budgetType(t)==="expense").reduce((s,t)=>s+Number(t.amount||0),0);
+ if($("#txnFilterSummary"))$("#txnFilterSummary").textContent=`Gelir ${money(fIncome)} · Harcama ${money(fExpense)} · Net ${money(fIncome-fExpense)} · ${filtered.filter(t=>budgetType(t)==="transfer").length} transfer`;
  if(!filtered.length)list.innerHTML='<div class="small">Bu filtrelerde işlem bulunamadı.</div>';
  filtered.forEach(t=>{let r=document.createElement("div");r.className="item v52-item v6-tappable";r.onclick=e=>{if(!e.target.closest("button"))openTxn(t.type,t)};let l=document.createElement("div");l.className="v52-item-main";let title=document.createElement("div"),meta=document.createElement("div");title.className="v52-item-title";title.textContent=t.description||t.category;meta.className="meta";meta.textContent=`${t.category} • ${t.date} • ${t.payment}`;l.append(title,meta);if(t.cardName){let pill=document.createElement("span");pill.className="v6-account-pill";pill.textContent=t.cardName;l.appendChild(pill)}let side=document.createElement("div");side.className="v52-item-side";let a=document.createElement("div");a.className="amount "+(t.type==="income"?"good":"bad");a.textContent=(t.type==="income"?"+":"-")+money(t.amount);let acts=document.createElement("div");acts.className="v52-actions";let edit=document.createElement("button");edit.className="ghost";edit.type="button";edit.textContent="Düzenle";edit.onclick=()=>openTxn(t.type,t);let del=document.createElement("button");del.className="ghost v52-delete";del.type="button";del.textContent="Sil";del.onclick=()=>deleteTransaction(t.id);acts.append(edit,del);side.append(a,acts);r.append(l,side);list.appendChild(r)});
 }
@@ -623,7 +625,7 @@ function v8Render(){
  const typeTotals={};v8.assets.forEach(a=>typeTotals[a.type]=(typeTotals[a.type]||0)+v8AssetValueTry(a));const alloc=Object.entries(typeTotals).sort((a,b)=>b[1]-a[1]);
  $("#v8Allocation").innerHTML=alloc.map(([t,val],i)=>`<span style="width:${total?val/total*100:0}%;background:${v8Color(i)}"></span>`).join("");
  $("#v8AllocationLegend").innerHTML=alloc.length?alloc.map(([t,val],i)=>`<div class="v8-legendrow"><span><i class="v8-dot" style="background:${v8Color(i)}"></i>${v8TypeName(t)}</span><strong>%${total?(val/total*100).toFixed(1):0}</strong></div>`).join(""):`<div class="v7-empty">Henüz varlık eklenmedi.</div>`;
- $("#v8Snapshots").innerHTML=v8.snapshots.length?v8.snapshots.slice(-8).reverse().map(s=>`<div class="v8-snap"><span>${v51RecentDate(s.date)}${s.auto?" · otomatik":""}</span><strong>${v8FormatTryValue(s.total,"TRY")}</strong><div class="v8-snap-actions"><button class="ghost" type="button" data-v8snapedit="${v51Esc(s.date)}">Düzenle</button><button class="ghost" type="button" data-v8snapdel="${v51Esc(s.date)}">Sil</button></div></div>`).join(""):`<div class="v7-empty">Henüz anlık görüntü yok.</div>`;
+ $("#v8Snapshots").innerHTML=v8.snapshots.length?[...v8.snapshots].sort((a,b)=>b.date.localeCompare(a.date)).map(s=>`<div class="v8-snap"><span>${v51RecentDate(s.date)}${s.auto?" · otomatik":""}</span><strong>${v8FormatTryValue(s.total,"TRY")}<br><small>${s.usdtry>0?new Intl.NumberFormat("tr-TR",{style:"currency",currency:"USD"}).format(s.total/s.usdtry):"USD: veri yok"} · ${s.gramGold>0?(s.total/s.gramGold).toLocaleString("tr-TR",{maximumFractionDigits:2})+" gr":"Altın: veri yok"}</small></strong><div class="v8-snap-actions"><button class="ghost" type="button" data-v8snapedit="${v51Esc(s.date)}">Düzenle</button><button class="ghost" type="button" data-v8snapdel="${v51Esc(s.date)}">Sil</button></div></div>`).join(""):`<div class="v7-empty">Henüz anlık görüntü yok.</div>`;
  $("#v8Snapshots").querySelectorAll("[data-v8snapedit]").forEach(b=>b.onclick=()=>{const d=b.dataset.v8snapedit,s=v8.snapshots.find(x=>x.date===d);if(!s)return;const raw=prompt(`${d} servet değeri (TL)`,String(Number(s.total||0)));if(raw===null)return;const n=Number(String(raw).replace(/\s/g,"").replace(/\./g,"").replace(",", "."));if(!(n>0)){v6Toast("Geçerli bir tutar gir");return}s.total=n;s.auto=false;s.updatedAt=new Date().toISOString();v8Save();});
  $("#v8Snapshots").querySelectorAll("[data-v8snapdel]").forEach(b=>b.onclick=()=>{const d=b.dataset.v8snapdel;if(!confirm(`${d} tarihli servet görüntüsü silinsin mi?`))return;v8.snapshots=v8.snapshots.filter(x=>x.date!==d);v8Save();});
 
@@ -751,7 +753,7 @@ function v6Toast(text,actionText="",actionFn=null){
 function v6CsvCell(v){const s=String(v??"");return /[",\n]/.test(s)?`"${s.replace(/"/g,'""')}"`:s}
 function v6CurrentFiltered(){
  const scope=$("#txnScope")?.value||"month",search=($("#txnSearch")?.value||"").trim().toLocaleLowerCase("tr-TR"),ft=$("#txnFilterType")?.value||"all",fc=$("#txnFilterCategory")?.value||"all",fp=$("#txnFilterPayment")?.value||"all",sort=$("#txnSort")?.value||"date_desc";
- let arr=(scope==="all"?state.transactions:state.transactions.filter(t=>t.date&&t.date.startsWith(selectedMonth))).filter(t=>(ft==="all"||t.type===ft)&&(fc==="all"||t.category===fc)&&(fp==="all"||(t.cardName||t.payment)===fp)&&(!search||[t.description,t.category,t.payment,t.cardName,t.note,String(t.amount)].join(" ").toLocaleLowerCase("tr-TR").includes(search)));
+ let arr=(scope==="all"?state.transactions:state.transactions.filter(t=>t.date&&t.date.startsWith(selectedMonth))).filter(t=>(ft==="all"||budgetType(t)===ft)&&(fc==="all"||t.category===fc)&&(fp==="all"||(t.cardName||t.payment)===fp)&&(!search||[t.description,t.category,t.payment,t.cardName,t.note,String(t.amount)].join(" ").toLocaleLowerCase("tr-TR").includes(search)));
  const sorters={date_desc:(a,b)=>String(b.date).localeCompare(String(a.date)),date_asc:(a,b)=>String(a.date).localeCompare(String(b.date)),amount_desc:(a,b)=>Number(b.amount)-Number(a.amount),amount_asc:(a,b)=>Number(a.amount)-Number(b.amount)};
  return arr.sort(sorters[sort]||sorters.date_desc);
 }
@@ -775,8 +777,8 @@ function v51RecentDate(s){if(!s)return "";let [y,m,d]=s.split("-").map(Number);r
 
 function v5Refresh(){
  const key=selectedMonth, tx=state.transactions.filter(t=>t.date&&t.date.startsWith(key));
- const inc=tx.filter(t=>t.type==="income").reduce((a,t)=>a+Number(t.amount||0),0);
- const ex=tx.filter(t=>t.type==="expense").reduce((a,t)=>a+Number(t.amount||0),0);
+ const inc=tx.filter(t=>budgetType(t)==="income").reduce((a,t)=>a+Number(t.amount||0),0);
+ const ex=tx.filter(t=>budgetType(t)==="expense").reduce((a,t)=>a+Number(t.amount||0),0);
  const net=inc-ex, budget=Number(state.monthlyBudget||0), remaining=budget?budget-ex:null;
  const q=s=>document.querySelector(s);
  q("#v5Income").textContent=money(inc);q("#v5Expense").textContent=money(ex);q("#v5Net").textContent=money(net);
@@ -802,7 +804,7 @@ function v5Refresh(){
  }
 
  // Donut
- const cats={};tx.filter(t=>t.type==="expense").forEach(t=>cats[t.category||"Diğer"]=(cats[t.category||"Diğer"]||0)+Number(t.amount||0));
+ const cats={};tx.filter(t=>budgetType(t)==="expense").forEach(t=>cats[t.category||"Diğer"]=(cats[t.category||"Diğer"]||0)+Number(t.amount||0));
  const rows=Object.entries(cats).sort((a,b)=>b[1]-a[1]).slice(0,6);
  const palette=["#2563eb","#059669","#d97706","#7c3aed","#db2777","#64748b"];
  const donut=q("#v51Donut"),total=q("#v51DonutTotal"),label=total.nextElementSibling;
@@ -838,8 +840,8 @@ function v5Refresh(){
      k,
      label:d.toLocaleDateString("tr-TR",{month:"short"}),
      full:d.toLocaleDateString("tr-TR",{month:"long",year:"numeric"}),
-     inc:mts.filter(t=>t.type==="income").reduce((a,t)=>a+Number(t.amount||0),0),
-     ex:mts.filter(t=>t.type==="expense").reduce((a,t)=>a+Number(t.amount||0),0)
+     inc:mts.filter(t=>budgetType(t)==="income").reduce((a,t)=>a+Number(t.amount||0),0),
+     ex:mts.filter(t=>budgetType(t)==="expense").reduce((a,t)=>a+Number(t.amount||0),0)
    });
  }
  const max=Math.max(1,...months.flatMap(x=>[x.inc,x.ex]));
@@ -871,7 +873,7 @@ function v5Refresh(){
  const elapsed=v6ElapsedDays(key),daysTotal=v6DaysInMonth(key),daily=ex/elapsed,projection=isCurrent?daily*daysTotal:ex;
  q("#v6DailyAvg").textContent=money(daily);q("#v6Projection").textContent=money(projection);
  q("#v6ProjectionMeta").textContent=isCurrent?"Mevcut tempoya göre":(ex?"Gerçekleşen ay toplamı":"Bu ay veri yok");
- const expTx=tx.filter(t=>t.type==="expense").sort((a,b)=>Number(b.amount)-Number(a.amount)),largest=expTx[0];
+ const expTx=tx.filter(t=>budgetType(t)==="expense").sort((a,b)=>Number(b.amount)-Number(a.amount)),largest=expTx[0];
  q("#v6Largest").textContent=largest?money(largest.amount):"—";q("#v6LargestMeta").textContent=largest?(largest.description||largest.category):"Henüz harcama yok";
  const spendingDays=new Set(expTx.map(t=>t.date)).size;q("#v6NoSpend").textContent=Math.max(0,elapsed-spendingDays)+" gün";
  const alertBox=q("#v6BudgetAlert");
@@ -911,6 +913,15 @@ const V83_KEY="butcem_v83_intelligence";
 function v83Load(){try{return {...{period:"1m",customStart:"",customEnd:"",cloudUpdatedAt:null},...JSON.parse(localStorage.getItem(V83_KEY)||"{}")}}catch(e){return {period:"1m",customStart:"",customEnd:"",cloudUpdatedAt:null}}}
 let v83=v83Load();
 function v83Save(){v83.cloudUpdatedAt=new Date().toISOString();localStorage.setItem(V83_KEY,JSON.stringify(v83));queueCloudSync()}
+async function v84FillRates(){
+ const missing=v8.snapshots.filter(s=>!(s.usdtry>0&&s.gramGold>0));if(!missing.length){v6Toast("Eksik geçmiş kur yok");return}
+ const btn=$("#v84FillRates"),original=v8,owner=currentUser?.id;btn.disabled=true;
+ try{const dates=missing.map(s=>s.date).sort(),d=new Date(dates[0]+"T12:00:00Z");d.setUTCDate(d.getUTCDate()-7);
+ const [u,x]=await Promise.all([v83History("USD/TRY",d.toISOString().slice(0,10),dates.at(-1)),v83History("XAU/USD",d.toISOString().slice(0,10),dates.at(-1))]);
+ if(v8!==original||currentUser?.id!==owner)return;
+ let count=0;for(const s of missing){if(!v8.snapshots.includes(s))continue;const uu=u.filter(z=>z.date<=s.date).at(-1),xx=x.filter(z=>z.date<=s.date).at(-1);if(!uu||!xx||Date.parse(s.date)-Date.parse(uu.date)>7*86400000||Date.parse(s.date)-Date.parse(xx.date)>7*86400000)continue;s.usdtry=uu.close;s.gramGold=uu.close*xx.close/31.1034768;s.rateDates=[uu.date,xx.date];count++}if(count)v8Save();v6Toast(count+" geçmiş kayıt güncellendi")
+ }catch(e){v6Toast("Geçmiş kur alınamadı: "+e.message)}finally{btn.disabled=false}
+}
 function v83SnapshotBreakdown(){
  return v8.assets.map(a=>({id:a.id,name:a.name,symbol:a.symbol||"",type:a.type,qty:Number(a.qty||0),price:Number(a.price||0),currency:a.currency||"TRY",valueTry:v8AssetValueTry(a)}));
 }
@@ -928,7 +939,7 @@ function v83UpsertSnapshot(date,total,{auto=false,force=false}={}){
  if(!(Number.isFinite(total)&&total>0))throw new Error("Geçerli bir servet değeri gerekli");
  if(auto&&!force&&!v83SnapshotReasonable(total,date))return false;
  const i=v8.snapshots.findIndex(x=>x.date===date);
- const snap={date,total,auto:!!auto,updatedAt:new Date().toISOString(),breakdown:v83SnapshotBreakdown()};
+ const snap={date,total,auto:!!auto,updatedAt:new Date().toISOString(),breakdown:v83SnapshotBreakdown(),usdtry:Number(v8.rates.usdtry)||null,gramGold:Number(v8.rates.gramGold)||null};
  if(i>=0)v8.snapshots[i]={...v8.snapshots[i],...snap};else v8.snapshots.push(snap);
  v8.snapshots.sort((a,b)=>a.date.localeCompare(b.date));
  return true;
@@ -954,8 +965,8 @@ async function v83History(symbol,start,end,extra={}){
  const out=await v81Market("history",params,V81_HISTORY_TTL);return v83Series(out)
 }
 async function v83Return(symbol,start,end,extra={}){const s=await v83History(symbol,start,end,extra),a=v83Closest(s,start,"after"),b=v83Closest(s,end,"before");if(!a||!b)throw new Error(`${symbol} geçmişi bulunamadı`);return {pct:v83Pct(b.close,a.close),start:a,end:b,series:s}}
-async function v83ReturnAsset(asset,start,end){return v83Return(v83Symbol(asset),start,end,v83MarketParamsForAsset(asset))}
-async function v83Inflation(start,end){try{const out=await v81Market("inflation",{start_date:start,end_date:end},24*60*60*1000);const d=out?.data||{};return {pct:Number(d.percent_change),start:d.start_date,end:d.end_date,latest:d.latest_date,ok:isFinite(Number(d.percent_change))}}catch(e){return {pct:null,ok:false,error:e.message}}}
+async function v83ReturnAsset(asset,start,end){const r=await v83Return(v83Symbol(asset),start,end,v83MarketParamsForAsset(asset));if(asset.currency==="TRY"||asset.type==="gold")return r;if(asset.currency!=="USD")throw Error("Para birimi desteklenmiyor");const fx=await v83History("USD/TRY",start,end),f1=fx.filter(z=>z.date<=r.start.date).at(-1),f2=fx.filter(z=>z.date<=r.end.date).at(-1);if(!f1||!f2)throw Error("Dönem kuru yok");return {...r,pct:v83Pct(r.end.close*f2.close,r.start.close*f1.close),start:{...r.start,close:r.start.close*f1.close},end:{...r.end,close:r.end.close*f2.close}}}
+async function v83Inflation(start,end){try{const out=await v81Market("inflation",{start_date:start,end_date:end},24*60*60*1000);const d=out?.data||{};return {pct:d.percent_change!=null&&d.percent_change!==""&&Number.isFinite(Number(d.percent_change))&&Number(d.percent_change)>-100?Number(d.percent_change):null,start:d.start_date,end:d.end_date,latest:d.latest_date,ok:d.percent_change!=null&&d.percent_change!==""&&Number.isFinite(Number(d.percent_change))&&Number(d.percent_change)>-100}}catch(e){return {pct:null,ok:false,error:e.message}}}
 function v83Symbol(a){if(a.type==="gold")return "GRAM";return String(a.symbol||"").toUpperCase()}
 function v83AssetLabel(a){return `${a.name}${a.symbol?` · ${a.symbol}`:""}`}
 function v83Populate(){const sel=$("#v83AssetSelect");if(!sel)return;const old=sel.value;sel.innerHTML=v8.assets.map(a=>`<option value="${a.id}">${v51Esc(v83AssetLabel(a))}</option>`).join("")||'<option value="">Önce portföye varlık ekle</option>';if(v8.assets.some(a=>a.id===old))sel.value=old;$("#v83CustomEnd").value=v83.customEnd||today();$("#v83CustomStart").value=v83.customStart||v83PeriodStart("1y");document.querySelectorAll("[data-v83p]").forEach(b=>b.classList.toggle("active",b.dataset.v83p===v83.period))}
@@ -964,15 +975,16 @@ async function v83Analyze(start,end,force=false){
  const sym=v83Symbol(a); if(!sym){$("#v83MainResult").innerHTML='<div class="v8-warning">Bu varlığın sembolünü eklemen gerekiyor.</div>';return}
  $("#v83MainResult").innerHTML='<div class="v8-hint">Geçmiş fiyatlar ve benchmarklar hesaplanıyor…</div>';
  const safe=async(fn)=>{try{return await fn()}catch(e){return {pct:null,error:e.message}}};
- const [asset,gold,usd,inf]=await Promise.all([safe(()=>v83ReturnAsset(a,start,end)),safe(()=>v83Return("GRAM",start,end)),safe(()=>v83Return("USD/TRY",start,end)),v83Inflation(start,end)]);
+ const [asset,gold,usd,apiInf]=await Promise.all([safe(()=>v83ReturnAsset(a,start,end)),safe(()=>v83Return("GRAM",start,end)),safe(()=>v83Return("USD/TRY",start,end)),v83Inflation(start,end)]);
+ const manual=$("#v84ManualCpi").value.trim(),n=Number(manual),inf=manual!==""&&Number.isFinite(n)&&n>-100?{pct:n,ok:true,manual:true}:apiInf;
  const real=(asset.pct!=null&&inf.pct!=null)?(((1+asset.pct/100)/(1+inf.pct/100)-1)*100):null;
  $("#v83Range").textContent=`${asset.start?.date||start} → ${asset.end?.date||end}`;
- $("#v83MainResult").innerHTML=`<div class="v5-kicker">${v51Esc(v83AssetLabel(a))}</div><div class="v83-herochange ${v83Class(asset.pct)}">${v83FmtPct(asset.pct)}</div><div class="v83-real ${v83Class(real)}">Reel getiri: <b>${v83FmtPct(real)}</b>${asset.pct!=null&&gold.pct!=null?` · Altına karşı ${(asset.pct-gold.pct)>=0?"+":""}${(asset.pct-gold.pct).toFixed(2)} puan`:""}</div>`;
- const cards=[['Seçili varlık',asset.pct,asset.start?.close&&asset.end?.close?`${asset.start.close.toFixed(2)} → ${asset.end.close.toFixed(2)}`:''],['Gram altın',gold.pct,'XAU/USD × USD/TRY'],['USD / TRY',usd.pct,'TL karşısında'],['TÜFE',inf.pct,inf.ok?'Açıklanan endeks verisi':'EVDS bağlantısı bekleniyor']];
+ $("#v83MainResult").innerHTML=`<div class="v5-kicker">${v51Esc(v83AssetLabel(a))}</div><div class="v83-herochange ${v83Class(asset.pct)}">${v83FmtPct(asset.pct)}</div><div class="v83-real ${v83Class(real)}">Reel getiri: <b>${v83FmtPct(real)}</b>${asset.pct!=null&&gold.pct!=null?` · Altın bazında ${v83FmtPct((1+asset.pct/100)/(1+gold.pct/100)*100-100)}`:""}</div>`;
+ const cards=[['Seçili varlık',asset.pct,asset.start?.close&&asset.end?.close?`${asset.start.close.toFixed(2)} → ${asset.end.close.toFixed(2)}`:''],['Gram altın',gold.pct,'XAU/USD × USD/TRY'],['USD / TRY',usd.pct,'TL karşısında'],['TÜFE',inf.pct,inf.manual?'Manuel dönem TÜFE':inf.ok?'Açıklanan endeks verisi':'EVDS bağlantısı bekleniyor']];
  $("#v83Benchmarks").innerHTML=cards.map(([n,p,s])=>`<div class="v83-bench"><span>${n}</span><strong class="${v83Class(p)}">${v83FmtPct(p)}</strong><small>${s}</small></div>`).join('');
- $("#v83InflationNote").textContent=inf.ok?`TÜFE aylık açıklandığı için dönem, seçilen tarihlere en yakın açıklanmış endeks değerleriyle hesaplanır. Reel getiri bileşik formülle hesaplanır.`:`TÜFE henüz bağlanmadı: ${inf.error||'EVDS_API_KEY secret + V8.3 market-data fonksiyonu gerekli.'}`;
+ $("#v83InflationNote").textContent=inf.manual?`Manuel TÜFE (${start} → ${end}); dönem oranını doğrula.`:inf.ok?`TÜFE aylık açıklandığı için dönem, seçilen tarihlere en yakın açıklanmış endeks değerleriyle hesaplanır. Reel getiri bileşik formülle hesaplanır.`:`TÜFE henüz bağlanmadı: ${inf.error||'EVDS_API_KEY secret + V8.3 market-data fonksiyonu gerekli.'}`;
  const rows=[];for(const x of v8.assets){const xs=v83Symbol(x);if(!xs)continue;const r=await safe(()=>v83ReturnAsset(x,start,end));const total=v83AssetTotalPL(x).pct;rows.push({x,p:r.pct,total,value:v8AssetValueTry(x),error:r.error||null})}
- rows.sort((a,b)=>(b.p??-999)-(a.p??-999));$("#v83AssetTable").innerHTML=`<table class="v83-table"><thead><tr><th>Varlık</th><th>Dönem</th><th>Toplam</th><th>Güncel değer</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${v51Esc(v83AssetLabel(r.x))}</td><td class="${v83Class(r.p)}"><b>${v83FmtPct(r.p)}</b></td><td class="${v83Class(r.total)}">${v83FmtPct(r.total)}</td><td>${money(r.value)}</td></tr>`).join('')}</tbody></table>`;
+ rows.sort((a,b)=>(b.p??-999)-(a.p??-999));$("#v83AssetTable").innerHTML=`<table class="v83-table"><thead><tr><th>Varlık</th><th>Dönem (TL)</th><th>Reel (TÜFE)</th><th>Toplam</th><th>Güncel değer</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${v51Esc(v83AssetLabel(r.x))}</td><td class="${v83Class(r.p)}"><b>${v83FmtPct(r.p)}</b></td><td>${v83FmtPct(r.p!=null&&inf.pct!=null?((1+r.p/100)/(1+inf.pct/100)-1)*100:null)}</td><td class="${v83Class(r.total)}">${v83FmtPct(r.total)}</td><td>${money(r.value)}</td></tr>`).join('')}</tbody></table>`;
 }
 async function v83Run(){const end=today(),start=v83.period==="all"?(v8.snapshots[0]?.date||v83PeriodStart("all")):v83PeriodStart(v83.period);await v83Analyze(start,end)}
 
@@ -1005,6 +1017,7 @@ function v5Init(){
  $("#v8AssetForm").onsubmit=e=>{e.preventDefault();const id=$("#v8AssetId").value,existing=v8.assets.find(x=>x.id===id)||{},a={...existing,id:id||v7Id(),name:$("#v8AssetName").value.trim(),type:$("#v8AssetType").value,symbol:$("#v8AssetSymbol").value.trim().toUpperCase(),qty:Number($("#v8AssetQty").value)||0,price:Number($("#v8AssetPrice").value)||0,currency:$("#v8AssetCurrency").value,cost:Number($("#v8AssetCost").value)||0,prev:Number($("#v8AssetPrev").value)||0,note:$("#v8AssetNote").value.trim(),exchange:v81PickedMarket?.exchange||existing.exchange||"",mic_code:v81PickedMarket?.mic_code||existing.mic_code||""};if(a.type==="gold"){a.symbol=a.symbol||"GRAM";a.currency="TRY";if(Number(v8.rates.gramGold)>0)a.price=Number(v8.rates.gramGold);if(Number(v8.market?.gramGoldPrev)>0)a.prev=Number(v8.market.gramGoldPrev)}const i=v8.assets.findIndex(x=>x.id===id);if(i>=0)v8.assets[i]=a;else v8.assets.push(a);$("#v8AssetDialog").close();v8Save()};
  $("#v8DeleteAsset").onclick=()=>{const id=$("#v8AssetId").value;if(!id||!confirm("Bu varlık silinsin mi?"))return;v8.assets=v8.assets.filter(a=>a.id!==id);$("#v8AssetDialog").close();v8Save()};
  $("#v8SaveRates").onclick=()=>{v8.rates.usdtry=Math.max(.0001,Number($("#v8UsdTry").value)||1);v8.rates.gramGold=Math.max(.0001,Number($("#v8GramGold").value)||1);v8Save()};
+ $("#v84FillRates").onclick=v84FillRates;
  $("#v8TakeSnapshot").onclick=()=>{try{v83UpsertSnapshot(today(),v8TotalTry(),{auto:false,force:true});v8Save()}catch(e){v6Toast(e.message)}};
  $("#v8PriceCsv").onchange=async e=>{const f=e.target.files?.[0];if(!f)return;try{const parsed=v8ParseCsv(await f.text());v8Prices={...v8Prices,...parsed};localStorage.setItem(V8_PRICE_KEY,JSON.stringify(v8Prices));v8PriceInfo();v6Toast("Fiyat geçmişi yüklendi")}catch(err){alert("CSV okunamadı. date,symbol,close başlıklarını kontrol et.")}finally{e.target.value=""}};
  $("#v8ClearPrices").onclick=()=>{if(confirm("Yüklenen backtest fiyat geçmişi silinsin mi?")){v8Prices={};localStorage.removeItem(V8_PRICE_KEY);v8PriceInfo();v8DrawChart(null)}};
