@@ -378,7 +378,7 @@ body[data-view="budget"] .v6-budget-only{display:block}
 <dialog id="settingsDialog"><form id="settingsForm">
 <h3>Ayarlar ve verilerim</h3>
 <label>Aylık bütçe</label><input id="monthlyBudget" type="number" min="0" step="100">
-<div class="row"><div><label>Başlangıç ekranı</label><select id="v6StartView"><option value="summary">Finansal Özet</option><option value="transactions">İşlemler</option><option value="budget">Bütçe</option><option value="finance">Finans</option><option value="assets">Varlıklar</option></select></div><div><label>Tema</label><select id="v6ThemeSelect"><option value="light">Açık</option><option value="dark">Koyu</option></select></div></div>
+<div class="row"><div><label>Başlangıç ekranı</label><select id="v6StartView"><option value="summary">Özet</option><option value="transactions">İşlemler</option><option value="budget">Bütçe</option><option value="finance">Finans</option><option value="assets">Varlıklar</option></select></div><div><label>Tema</label><select id="v6ThemeSelect"><option value="light">Açık</option><option value="dark">Koyu</option></select></div></div>
 <label>Harcama kategorileri</label><textarea id="categoriesText" rows="5"></textarea>
 <div class="v52-helper">Virgülle ayırabilirsin. Örn: Yemek, Kahve, Market, Benzin, Araç, Faturalar, Abonelikler, Sağlık, Eğitim, Seyahat, Hediye, Kişisel Bakım.</div>
 <div class="backupbox">
@@ -444,7 +444,7 @@ body[data-view="budget"] .v6-budget-only{display:block}
   <div><div id="v53HeroKicker" class="v5-kicker">BU AY KALAN</div><div id="v5MainValue" class="v5-hero-value">₺0</div><div id="v53PeriodTag" class="v53-period-tag">Seçili ay özeti</div></div>
   <div class="v53-monthnav"><button id="v53PrevMonth" class="ghost" type="button" aria-label="Önceki ay">‹</button><button id="v51Month" class="v53-monthtitle v6-tappable" type="button" title="Ay seç"></button><button id="v53NextMonth" class="ghost" type="button" aria-label="Sonraki ay">›</button><input id="v6MonthPicker" class="v6-month-picker" type="month"><button id="v6ThisMonth" class="ghost v6-thismonth" type="button">Bu aya dön</button></div>
  </div>
-  <div id="v5MainSub" class="v5-sub">Aylık bütçeni belirlediğinde kalan tutarı burada göreceksin.</div>
+  <div id="v5MainSub" class="v5-sub">Aylık bütçeni belirlediğinde kalan tutarı burada göreceksin.</div><p id="v85BudgetWarning" class="bad" role="status" hidden></p><p id="v85MonthlyCompare" class="small"></p><div class="row"><button type="button" id="v85QuickExpense" class="primary">+ Harcama</button><button type="button" id="v85QuickIncome" class="ghost">+ Gelir</button></div>
   <div class="v51-budget-track"><span id="v51BudgetBar" style="width:0%"></span></div>
  </div>
  <div class="v5-mini-grid">
@@ -521,7 +521,7 @@ body[data-view="budget"] .v6-budget-only{display:block}
  </div>
 
  <div id="v7CatbudgetsPanel" class="v7-panel">
-  <div class="v7-card"><div class="v7-cardhead"><strong>Kategori bütçeleri</strong><span class="v7-chip">Seçili ay</span></div><div class="v7-hint" style="margin-bottom:10px">Toplam aylık bütçeden bağımsız olarak kategori bazında limit koyabilirsin.</div><div id="v7CategoryBudgets"></div></div>
+  <div class="v7-card"><div class="v7-cardhead"><strong>Kategori bütçeleri</strong><span class="v7-chip">Seçili ay</span></div><div class="v7-hint" style="margin-bottom:10px">Toplam aylık bütçeden bağımsız olarak kategori bazında limit koyabilirsin.</div><p id="v85CategoryLimit" class="small"></p><div id="v7CategoryBudgets"></div></div>
  </div>
 
  <div id="v7GoalsPanel" class="v7-panel">
@@ -599,7 +599,7 @@ body[data-view="budget"] .v6-budget-only{display:block}
 <label class="v5-choice"><input type="checkbox" value="investments">📈 Yatırım takibi</label>
 <label class="v5-choice"><input type="checkbox" value="compare">⚖️ Portföy karşılaştırma / backtest</label>
 <label class="v5-choice"><input type="checkbox" value="goals">🎯 Birikim hedefleri</label>
-<label>Başlangıç ekranı</label><select id="v5Start"><option value="summary">Finansal Özet</option><option value="transactions">İşlemler</option><option value="budget">Bütçe</option><option value="finance">Finans</option><option value="assets">Varlıklar</option></select>
+<label>Başlangıç ekranı</label><select id="v5Start"><option value="summary">Özet</option><option value="transactions">İşlemler</option><option value="budget">Bütçe</option><option value="finance">Finans</option><option value="assets">Varlıklar</option></select>
 <button id="v5Done" class="primary" style="width:100%;margin-top:16px">Bütçem'i aç</button></div></div>
 
 
@@ -649,7 +649,7 @@ body[data-view="budget"] .v6-budget-only{display:block}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-config.js?v=8.2"></script>
 
-<datalist id="stmtCategoryChoices"><option value="Hesaplar Arası Transfer"></option></datalist><script src="app.js?v=8.4.8"></script>
+<datalist id="stmtCategoryChoices"><option value="Hesaplar Arası Transfer"></option></datalist><script src="app.js?v=8.5.4"></script>
 <script src="statements.js?v=8.4.6"></script>
 <dialog id="receiptDialog" style="width:min(94vw,680px);max-height:90vh;overflow:auto"><h2>Akıllı fiş tarayıcı <span class="v7-chip">BETA</span></h2><p class="small">Bu özellik geliştirme aşamasındadır. Okuyamadığımız alanları elle tamamlayabilir, yanlış ürünleri düzeltebilirsin.</p><p class="small">Fotoğraf cihazında okunur. OCR hatalarını düzelt; sadece onaylanan ürün kayıtları buluta eşitlenebilir. Fotoğraf saklanmaz.</p><input id="receiptFile" type="file" accept="image/jpeg,image/png,image/webp"><button type="button" id="receiptScan" class="primary">Fotoğrafı oku</button><p id="receiptStatus" role="status"></p><details><summary>Okunan metin / elle giriş</summary><textarea id="receiptText" rows="5" placeholder="Süt 48,50"></textarea><button type="button" id="receiptParse">Metni ayrıştır</button></details><label>Market<input id="receiptStore" placeholder="Market adı"></label><label>Tarih<input id="receiptDate" type="date"></label><label>Hesap<input id="receiptAccount" list="accountSuggestions" placeholder="Nakit veya banka hesabı"></label><label>Fiş toplamı (TL)<input id="receiptTotal" type="number" min="0.01" step="0.01"></label><div style="overflow:auto"><table style="width:100%;min-width:350px"><thead><tr><th>Ürün</th><th>Tutar</th><th>Kategori</th><th></th></tr></thead><tbody id="receiptRows"></tbody></table></div><button type="button" id="receiptAdd">+ Ürün ekle</button><p id="receiptCheck" role="status"></p><p id="receiptHelp" role="status" style="font-weight:600"></p><button type="button" id="receiptCommit" class="primary" disabled>Onayla ve kaydet</button> <button type="button" id="receiptClose" class="ghost">Kapat</button></dialog>
 <script src="receipts.js?v=8.5.3"></script>
