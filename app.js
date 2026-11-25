@@ -10,7 +10,7 @@ function normalize(raw){
 }
 function load(){try{return normalize(JSON.parse(localStorage.getItem(KEY)))}catch(e){return normalize(null)}}
 let state=load();
-function save(renderNow=true,queueSync=true){state.dataVersion=DATA_VERSION;localStorage.setItem(KEY,JSON.stringify(state));if(renderNow)render();if(queueSync)queueCloudSync()}
+function save(renderNow=true,queueSync=true){const bound=localStorage.getItem("butcem_local_owner_v1");if(bound&&bound!==currentUser?.id)throw Error("Yerel kayıtlar başka hesaba bağlı.");state.dataVersion=DATA_VERSION;localStorage.setItem(KEY,JSON.stringify(state));if(renderNow)render();if(queueSync)queueCloudSync()}
 function money(n){return new Intl.NumberFormat("tr-TR",{style:"currency",currency:"TRY",maximumFractionDigits:2}).format(n||0)}
 function today(){let d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`}
 function shift(mk,n){let [y,m]=mk.split("-").map(Number),d=new Date(y,m-1+n,1);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`}
@@ -198,6 +198,7 @@ function setCloudUI(main,detail){
 function updateAuthDialog(){
   const owner=localStorage.getItem("butcem_local_owner_v1");
   const blocked=!!owner&&owner!==currentUser?.id;
+  document.body.classList.remove("v870-session-pending");
   document.body.classList.toggle("v865-account-locked",blocked);
   if(blocked){document.querySelectorAll("dialog[open]").forEach(d=>{if(d.id!=="authDialog")d.close()});if(!$("#authDialog").open)$("#authDialog").showModal();}
   const logged=!!currentUser;
@@ -205,7 +206,7 @@ function updateAuthDialog(){
   $("#authLoggedIn").style.display=logged?"block":"none";
   if(logged)$("#accountEmail").textContent=currentUser.email||"Hesabım";
 }
-function openAuth(){updateAuthDialog();$("#authDialog").showModal()}
+function openAuth(){updateAuthDialog();if(!$("#authDialog").open)$("#authDialog").showModal()}
 $("#cloudBtn").onclick=openAuth;$("#cloudCardBtn").onclick=openAuth;
 $("#authCancel").onclick=()=>{if(!document.body.classList.contains("v865-account-locked"))$("#authDialog").close()};$("#authCancel2").onclick=$("#authCancel").onclick;$("#authDialog").addEventListener("cancel",e=>{if(document.body.classList.contains("v865-account-locked"))e.preventDefault()});
 
@@ -389,7 +390,8 @@ function queueCloudSync(){
 }
 async function refreshSession(){
  if(!sb)return;
- const {data}=await sb.auth.getSession();
+ const {data,error}=await sb.auth.getSession();
+ if(error){currentUser=null;updateAuthDialog();return}
  currentUser=data.session?.user||null;
  updateAuthDialog();
  if(currentUser){
@@ -412,7 +414,7 @@ $("#signUpBtn").onclick=async()=>{
  if(data.session){currentUser=data.user;updateAuthDialog();await syncCloud(true);alert("Hesabın oluşturuldu ve bu cihazdaki veriler hesabına aktarılıyor.");}
  else alert("Hesap oluşturuldu. Supabase e-posta doğrulaması açıksa gelen kutundaki bağlantıya basıp sonra giriş yap.");
 };
-$("#signOutBtn").onclick=async()=>{if(sb)await sb.auth.signOut();currentUser=null;updateAuthDialog();setCloudUI("📱 Bu cihazda kayıtlı","Hesaptan çıkıldı. Yerel bütçe, finans ve portföy verilerin cihazda kalır.");};
+$("#signOutBtn").onclick=async()=>{if(sb){const {error}=await sb.auth.signOut();if(error){alert("Çıkış yapılamadı: "+error.message);return}}currentUser=null;updateAuthDialog();setCloudUI("📱 Bu cihazda kayıtlı","Hesaptan çıkıldı. Yerel bütçe, finans ve portföy verilerin cihazda kalır.");};
 $("#syncNowBtn").onclick=()=>syncCloud(true);
 
  // Password recovery uses an isolated, memory-only auth client; no budget sync.
