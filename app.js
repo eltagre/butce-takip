@@ -1,9 +1,36 @@
 const scopedKeys=["butcem_v1","butcem_v5_deleted_ids","butcem_v8_wealth","butcem_v8_prices","butcem_v81_market_cache","butcem_v7_finance","butcem_v5_preferences","butcem_v83_intelligence"];
 const ownerMarker="butcem_local_owner_v1";
-const bootOwner=localStorage.getItem(ownerMarker);
-function scopedKey(k){return bootOwner?"butcem_account:"+bootOwner+":"+k:k}
-function migrateScoped(){if(!bootOwner)return;for(const k of scopedKeys){const old=localStorage.getItem(k),dest=scopedKey(k);if(old!==null&&localStorage.getItem(dest)===null)localStorage.setItem(dest,old)}}
-migrateScoped();
+const activeAccountKey="butcem_active_account_v1";
+const legacyOwner=localStorage.getItem(ownerMarker);
+const bootOwner=sessionStorage.getItem(activeAccountKey) ?? legacyOwner ?? "";
+function scopedKey(key, owner=bootOwner){
+ return owner ? "butcem_account:"+owner+":"+key : legacyOwner ? "butcem_guest:"+key : key;
+}
+function migrateLegacy(owner){
+ const marker="butcem_account:"+owner+":legacy-imported";
+ if(localStorage.getItem(marker))return;
+ for(const key of scopedKeys){
+  const old=localStorage.getItem(key), dest=scopedKey(key,owner);
+  if(old!==null&&localStorage.getItem(dest)===null)localStorage.setItem(dest,old);
+ }
+ const templates=localStorage.getItem("butcem_templates_local");
+ if(templates!==null&&localStorage.getItem("butcem_templates_"+owner)===null){
+  localStorage.setItem("butcem_templates_"+owner,templates);
+ }
+ localStorage.setItem(marker,"1");
+}
+if(bootOwner&&bootOwner===legacyOwner)migrateLegacy(bootOwner);
+let switchingAccount=false;
+function accountMatches(){
+ return !switchingAccount&&bootOwner===(currentUser?.id||"")&&localStorage.getItem(ownerMarker)===legacyOwner;
+}
+window.addEventListener("storage", event=>{
+ if(event.key===ownerMarker&&event.newValue!==legacyOwner){
+  switchingAccount=true;
+  document.body.classList.add("v870-session-pending");
+  location.reload();
+ }
+});
 const KEY = scopedKey("butcem_v1");
 const DATA_VERSION=4;
 const DEFAULT_CATS=["Yemek","Kahve","Market","Benzin","Ulaşım","Alışveriş","Eğlence","Ev / Kira","Faturalar","Abonelikler","Sağlık","Eğitim","Seyahat / Tatil","Hediye","Kişisel Bakım","Araç","Evcil Hayvan","Vergi / Harç","Bağış","Diğer"];
@@ -16,7 +43,7 @@ function normalize(raw){
 }
 function load(){try{return normalize(JSON.parse(localStorage.getItem(KEY)))}catch(e){return normalize(null)}}
 let state=load();
-function save(renderNow=true,queueSync=true){const bound=localStorage.getItem("butcem_local_owner_v1");if(bound&&bound!==currentUser?.id)throw Error("Yerel kayıtlar başka hesaba bağlı.");state.dataVersion=DATA_VERSION;localStorage.setItem(KEY,JSON.stringify(state));if(renderNow)render();if(queueSync)queueCloudSync()}
+function save(renderNow=true,queueSync=true){if(!accountMatches())throw Error("Yerel kayıtlar başka hesaba bağlı.");state.dataVersion=DATA_VERSION;localStorage.setItem(KEY,JSON.stringify(state));if(renderNow)render();if(queueSync)queueCloudSync()}
 function money(n){return new Intl.NumberFormat("tr-TR",{style:"currency",currency:"TRY",maximumFractionDigits:2}).format(n||0)}
 function today(){let d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`}
 function shift(mk,n){let [y,m]=mk.split("-").map(Number),d=new Date(y,m-1+n,1);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`}
@@ -97,6 +124,7 @@ $("#restoreFile").onchange=async e=>{
  const f=e.target.files[0];if(!f)return;
  try{
    const parsed=JSON.parse(await f.text());
+   if(!accountMatches())return;
    if(parsed.format!=="butcem-backup"||!parsed.data||!Array.isArray(parsed.data.transactions))throw new Error();
    const safety=backupObject();
    download(`butcem-geri-yukleme-oncesi-guvenlik-${today()}.json`,JSON.stringify(safety,null,2),"application/json;charset=utf-8");
@@ -138,6 +166,7 @@ $("#csvImportFile").onchange=async e=>{
   const f=e.target.files[0]; if(!f)return;
   try{
     const rows=parseCSV(await f.text());
+    if(!accountMatches())return;
     if(rows.length<2)throw new Error("CSV boş");
     const headers=rows[0].map(normHeader);
     const idx=(...names)=>{for(const n of names){let i=headers.indexOf(normHeader(n));if(i>=0)return i}return -1};
@@ -176,7 +205,7 @@ $("#csvImportFile").onchange=async e=>{
   e.target.value="";
 };
 
-$("#csvBtn").onclick=()=>{let rows=[["Tarih","Tür","Kategori","Tutar","Ödeme","Açıklama"]];state.transactions.forEach(t=>rows.push([t.date,t.type,t.category,t.amount,t.payment,t.description||""]));let csv=rows.map(r=>r.map(v=>`"${String(v).replaceAll('"','""')}"`).join(",")).join("\n");download(`butcem-${today()}.csv`,"\ufeff"+csv,"text/csv;charset=utf-8")};
+$("#csvBtn").onclick=()=>{let rows=[["Tarih","Tür","Kategori","Tutar","Ödeme","Açıklama"]];state.transactions.forEach(t=>rows.push([t.date,t.type,t.category,t.amount,t.payment,t.description||""]));let csv=rows.map(r=>r.map(v=>`"${safeCsvValue(v).replaceAll('"','""')}"`).join(",")).join("\n");download(`butcem-${today()}.csv`,"\ufeff"+csv,"text/csv;charset=utf-8")};
 function updateBackupStatus(){let el=$("#backupStatus");if(!el)return;if(state.lastBackupAt){let d=new Date(state.lastBackupAt);el.textContent=`Son manuel tam yedek: ${d.toLocaleString("tr-TR")}. Yerel kayıtlar ayrıca cihazda tutuluyor.`}else el.textContent="Henüz tam yedek alınmadı. Kayıtların şu anda bu cihazda saklanıyor."}
 
 
@@ -202,8 +231,7 @@ function setCloudUI(main,detail){
   if($("#accountSyncInfo"))$("#accountSyncInfo").textContent=detail||main;
 }
 function updateAuthDialog(){
-  const owner=localStorage.getItem("butcem_local_owner_v1");
-  const blocked=!!owner&&owner!==currentUser?.id;
+  const blocked=!accountMatches();
   document.body.classList.remove("v870-session-pending");
   document.body.classList.toggle("v865-account-locked",blocked);
   if(blocked){document.querySelectorAll("dialog[open]").forEach(d=>{if(d.id!=="authDialog")d.close()});if(!$("#authDialog").open)$("#authDialog").showModal();}
@@ -234,51 +262,72 @@ function mergeTransactions(local,remote){
  for(const t of remote)m.set(txKey(t),t);
  for(const t of local){
    const k=txKey(t), old=m.get(k);
-   if(!old || String(t.updatedAt||"")>=String(old.updatedAt||""))m.set(k,t);
+   if(!old || syncTime(t.updatedAt)>syncTime(old.updatedAt))m.set(k,t);
  }
  return [...m.values()];
 }
-async function processPendingDeletes(){
- if(!sb||!currentUser)return;
- const owner=currentUser.id;const guard=()=>{if(currentUser?.id!==owner)throw Error('Hesap değişti; eşitleme durduruldu.')};
- const ids=[...deletedIds()];if(!ids.length)return;
+function syncTime(value){return Date.parse(value)||0}
+
+async function cloudPages(table, columns, order, owner){
+ const rows=[];
+ let cursor;
+ for(;;){
+  let query=sb.from(table).select(columns).eq("user_id",owner).order(order).limit(500);
+  if(cursor!==undefined)query=query.gt(order,cursor);
+  const {data,error}=await query;
+  if(!accountMatches()||currentUser?.id!==owner)throw Error("Hesap değişti");
+  if(error)throw error;
+  rows.push(...data);
+  if(data.length<500)return rows;
+  cursor=data.at(-1)[order];
+ }
+}
+async function processPendingDeletes(owner){
+ const ids=[...deletedIds()].sort();
  for(let i=0;i<ids.length;i+=100){
-   const batch=ids.slice(i,i+100);
-   guard();
-   const {error}=await sb.from("butcem_transactions").delete().eq("user_id",owner).in("id",batch);
-   guard();
-   if(error)throw error;
-   unqueueDeletedIds(batch);
+  const batch=ids.slice(i,i+100);
+  if(!accountMatches()||currentUser?.id!==owner)throw Error("Hesap değişti");
+  const {error}=await sb.rpc("butcem_delete_transactions",{expected_owner:owner,transaction_ids:batch});
+  if(error)throw error;
+  if(!accountMatches()||currentUser?.id!==owner)throw Error("Hesap değişti");
+  unqueueDeletedIds(batch);
  }
 }
 async function pullCloud(){
- if(!sb||!currentUser)return;
- const owner=currentUser.id;const guard=()=>{if(currentUser?.id!==owner)throw Error('Hesap değişti; eşitleme durduruldu.')};
- const [{data:txs,error:txErr},{data:settings,error:setErr}]=await Promise.all([
-   sb.from("butcem_transactions").select("*").eq("user_id",owner),
-   sb.from("butcem_settings").select("*").eq("user_id",owner).maybeSingle()
+ const owner=currentUser.id;
+ const [removed,txs,{data:settings,error}]=await Promise.all([
+  cloudPages("butcem_transaction_tombstones","transaction_id","transaction_id",owner),
+  cloudPages("butcem_transactions","*","id",owner),
+  sb.from("butcem_settings").select("*").eq("user_id",owner).maybeSingle()
  ]);
- guard();
- if(txErr)throw txErr;if(setErr)throw setErr;
- const tomb=deletedIds();const remote=(txs||[]).map(txFromCloud).filter(t=>!tomb.has(String(t.id)));
- state.transactions=mergeTransactions(state.transactions,remote);
+ if(!accountMatches()||currentUser?.id!==owner)throw Error("Hesap değişti");
+ if(error)throw error;
+ const tomb=deletedIds();
+ for(const row of removed)tomb.add(row.transaction_id);
+ const alive=t=>!tomb.has(String(t.id));
+ const remote=txs.map(txFromCloud).filter(alive);
+ state.transactions=mergeTransactions(state.transactions.filter(alive),remote);
  if(settings){
    const remoteStamp=settings.settings_updated_at||settings.updated_at||"";
    const localStamp=state.settingsUpdatedAt||"";
-   if(!localStamp || remoteStamp>localStamp){
+   if(!localStamp || syncTime(remoteStamp)>=syncTime(localStamp)){
      state.monthlyBudget=Number(settings.monthly_budget)||0;
      if(Array.isArray(settings.categories)&&settings.categories.length)state.categories=settings.categories;
      state.settingsUpdatedAt=remoteStamp;
    }
  }
  save(false,false);
+ return {remote,settings};
 }
-async function pushCloud(){
+async function pushCloud({remote,settings}){
  if(!sb||!currentUser)return;
- const owner=currentUser.id;const guard=()=>{if(currentUser?.id!==owner)throw Error('Hesap değişti; eşitleme durduruldu.')};
+ const owner=currentUser.id;const guard=()=>{if(!accountMatches()||currentUser?.id!==owner)throw Error('Hesap değişti; eşitleme durduruldu.')};
  if(state.transactions.length){
-   const rows=state.transactions.map(t=>txToCloud(t,owner));
-   // Küçük kişisel bütçe uygulaması için tüm yerel kayıtları idempotent upsert ediyoruz.
+   const versions=new Map(remote.map(t=>[txKey(t),syncTime(t.updatedAt)]));
+   const pending=deletedIds();
+   const rows=state.transactions.filter(t=>!pending.has(String(t.id))&&
+       (!versions.has(txKey(t))||syncTime(t.updatedAt)>versions.get(txKey(t))))
+     .map(t=>txToCloud(t,owner));
    for(let i=0;i<rows.length;i+=500){
      guard();
      const {error}=await sb.from("butcem_transactions").upsert(rows.slice(i,i+500),{onConflict:"user_id,id"});
@@ -287,6 +336,7 @@ async function pushCloud(){
    }
  }
  guard();
+ if(settings&&syncTime(state.settingsUpdatedAt)<=syncTime(settings.settings_updated_at||settings.updated_at))return;
  const {error:sErr}=await sb.from("butcem_settings").upsert({
    user_id:owner,monthly_budget:Number(state.monthlyBudget)||0,categories:state.categories,
    settings_updated_at:state.settingsUpdatedAt||new Date().toISOString(),updated_at:new Date().toISOString()
@@ -296,87 +346,107 @@ async function pushCloud(){
 }
 
 // ---------- V8.3.1 Unified Cloud: Finans + Varlıklar + Performans ----------
-let extendedCloudPresence={finance:false,wealth:false,intelligence:false};
-function cloudStamp(x){return String(x?.cloudUpdatedAt||"")}
-function remoteStamp(x){return String(x?.updated_at||"")}
-function chooseRemote(localObj,remoteRow){
- if(!remoteRow)return false;
- const ls=cloudStamp(localObj),rs=remoteStamp(remoteRow);
- // Eski local-only cihaz ilk kez buluta bağlanıyorsa mevcut bulut kaydı kanonik kabul edilir.
- if(!ls)return true;
- return rs>=ls;
+const extendedTables=["butcem_finance_state","butcem_wealth_state","butcem_intelligence_state"];
+const extendedBaseKey=scopedKey("butcem_sync_baseline_v1");
+function extendedBaselines(){
+ try{return JSON.parse(localStorage.getItem(extendedBaseKey)||"{}")}catch{return {}}
 }
-function persistExtendedLocal(){
- try{localStorage.setItem(V7_KEY,JSON.stringify(v7))}catch{}
- try{localStorage.setItem(V8_KEY,JSON.stringify(v8))}catch{}
- try{localStorage.setItem(V83_KEY,JSON.stringify(v83))}catch{}
+function extendedPayload(index){
+ const source=[v7,v8,v83][index];
+ const {cloudUpdatedAt,templateRecords,...payload}=source;
+ return index===0?{...payload,templateRecords:v87Records()}:payload;
+}
+function applyExtendedPayload(index,payload,stamp){
+ const {templateRecords,...data}=payload;
+ if(index===0){
+  localStorage.setItem(v87TemplateKey(),JSON.stringify(templateRecords||[]));
+  v7={...v7Defaults(),...data,cloudUpdatedAt:stamp};
+  localStorage.setItem(V7_KEY,JSON.stringify(v7));
+ }else if(index===1){
+  const defaults=v8Defaults();
+  v8={...defaults,...data,rates:{...defaults.rates,...data.rates},profile:{...defaults.profile,...data.profile},
+   market:{...defaults.market,...data.market},cloudUpdatedAt:stamp};
+  localStorage.setItem(V8_KEY,JSON.stringify(v8));
+ }else{
+  v83={period:"1m",customStart:"",customEnd:"",...data,cloudUpdatedAt:stamp};
+  localStorage.setItem(V83_KEY,JSON.stringify(v83));
+ }
 }
 async function pullExtendedCloud(){
- if(!sb||!currentUser)return;
- const owner=currentUser.id;const guard=()=>{if(currentUser?.id!==owner)throw Error('Hesap değişti; eşitleme durduruldu.')};
- const [fr,wr,ir]=await Promise.all([
-  sb.from("butcem_finance_state").select("payload,updated_at").eq("user_id",owner).maybeSingle(),
-  sb.from("butcem_wealth_state").select("payload,updated_at").eq("user_id",owner).maybeSingle(),
-  sb.from("butcem_intelligence_state").select("payload,updated_at").eq("user_id",owner).maybeSingle()
- ]);
- guard();
- for(const r of [fr,wr,ir])if(r.error)throw r.error;
- extendedCloudPresence={finance:!!fr.data,wealth:!!wr.data,intelligence:!!ir.data};
- localStorage.setItem(v87TemplateKey(),JSON.stringify(v87MergeRecords(v87Records(),fr.data?.payload?.templateRecords)));
- if(fr.data&&chooseRemote(v7,fr.data)){
-  const x=fr.data.payload||{};v7={...v7Defaults(),...x,accounts:Array.isArray(x.accounts)?x.accounts:[],transfers:Array.isArray(x.transfers)?x.transfers:[],recurring:Array.isArray(x.recurring)?x.recurring:[],categoryBudgets:x.categoryBudgets&&typeof x.categoryBudgets==="object"?x.categoryBudgets:{},goals:Array.isArray(x.goals)?x.goals:[],cloudUpdatedAt:fr.data.updated_at};
+ const owner=currentUser.id;
+ const responses=await Promise.all(extendedTables.map(table=>
+  sb.from(table).select("payload,updated_at").eq("user_id",owner).maybeSingle()));
+ if(!accountMatches()||currentUser?.id!==owner)throw Error("Hesap değişti");
+ for(const response of responses)if(response.error)throw response.error;
+ const baselines=extendedBaselines();
+ for(const [index,{data:row}] of responses.entries()){
+  if(!row)continue;
+  const table=extendedTables[index],local=extendedPayload(index);
+  const listed=[v7,v8,v83][index].cloudUpdatedAt;
+  const {cloudUpdatedAt:unused,...remote}=row.payload||{};
+  const base=baselines[table];
+  const merged=base||listed
+   ? mergeCloudPayload(base,local,remote,syncTime(listed)>syncTime(row.updated_at))
+   : {...local,...remote};
+  if(index===0)merged.templateRecords=v87MergeRecords(remote.templateRecords,local.templateRecords);
+  applyExtendedPayload(index,merged,sameSyncValue(merged,remote)?row.updated_at:listed);
+  baselines[table]=remote;
  }
- if(wr.data&&chooseRemote(v8,wr.data)){
-  const x=wr.data.payload||{};v8={...v8Defaults(),...x,assets:Array.isArray(x.assets)?x.assets:[],rates:{...v8Defaults().rates,...(x.rates||{})},profile:{...v8Defaults().profile,...(x.profile||{})},market:{...v8Defaults().market,...(x.market||{})},snapshots:Array.isArray(x.snapshots)?x.snapshots:[],btRows:Array.isArray(x.btRows)&&x.btRows.length?x.btRows:v8Defaults().btRows,compare:Array.isArray(x.compare)?x.compare:v8Defaults().compare,cloudUpdatedAt:wr.data.updated_at};
- }
- if(ir.data&&chooseRemote(v83,ir.data)){
-  v83={...{period:"1m",customStart:"",customEnd:""},...(ir.data.payload||{}),cloudUpdatedAt:ir.data.updated_at};
- }
- persistExtendedLocal();
+ localStorage.setItem(extendedBaseKey,JSON.stringify(baselines));
+ return responses.map(response=>response.data);
 }
-async function pushExtendedCloud(){
- if(!sb||!currentUser)return;
- const owner=currentUser.id;const guard=()=>{if(currentUser?.id!==owner)throw Error('Hesap değişti; eşitleme durduruldu.')};
- const now=new Date().toISOString();
- if(!v7.cloudUpdatedAt)v7.cloudUpdatedAt=now;
- if(!v8.cloudUpdatedAt)v8.cloudUpdatedAt=now;
- if(!v83.cloudUpdatedAt)v83.cloudUpdatedAt=now;
- const rows=[
-  ["butcem_finance_state",{...v7,templateRecords:v87Records()}],
-  ["butcem_wealth_state",v8],
-  ["butcem_intelligence_state",v83]
- ];
- for(const [table,payload] of rows){
+async function pushExtendedCloud(snapshot){
+ const owner=currentUser.id;
+ const guard=()=>{if(!accountMatches()||currentUser?.id!==owner)throw Error("Hesap değişti")};
+ const baselines=extendedBaselines();
+ for(const [index,table] of extendedTables.entries()){
   guard();
-  const {error}=await sb.from(table).upsert({user_id:owner,payload,updated_at:payload.cloudUpdatedAt||now},{onConflict:"user_id"});
+  const payload=extendedPayload(index),row=snapshot[index];
+  if(row&&sameSyncValue(payload,baselines[table]))continue;
+  const updated_at=new Date(Math.max(Date.now(),syncTime(row?.updated_at)+1)).toISOString();
+  const query=sb.from(table);
+  let operation;
+  if(!row){
+   operation=query.insert({user_id:owner,payload,updated_at});
+  }else{
+   operation=query.update({payload,updated_at}).eq("user_id",owner);
+   operation=row.updated_at?operation.eq("updated_at",row.updated_at):operation.is("updated_at",null);
+  }
+  const {data,error}=await operation.select("updated_at");
   guard();
-  if(error)throw error;
+  if(error&&error.code!=="23505")throw error;
+  if(error||!data?.length){
+   cloudSyncAgain=true;
+   return false;
+  }
+  baselines[table]=payload;
+  localStorage.setItem(extendedBaseKey,JSON.stringify(baselines));
  }
- persistExtendedLocal();
+ return true;
 }
 function renderExtendedAfterSync(){
  try{v7Render();updateAccountSuggestions()}catch{}
  try{v8Render();v83Populate()}catch{}
 }
 
+let cloudSyncAgain=false,cloudConflictRetries=0;
 async function syncCloud(manual=false){
- if(!sb||!currentUser||cloudBusy)return;
- const ownerKey="butcem_local_owner_v1";
- const owner=localStorage.getItem(ownerKey);
- if(owner&&owner!==currentUser.id){setCloudUI("⚠️ Eşitleme engellendi","Bu tarayıcıdaki kayıtlar başka bir hesaba bağlı. Veri karışmasını önlemek için ayrı tarayıcı profili kullan.");if(manual)alert("Bu cihazdaki yerel kayıtlar başka bir hesaba bağlı. Eşitleme yapılmadı.");return}
- if(!owner){if(!confirm("Bu tarayıcıdaki mevcut bütçe, finans ve portföy kayıtlarını "+(currentUser.email||"bu hesap")+" hesabına bağlamak istiyor musun? Yalnızca kayıtlar sana aitse onayla.")){setCloudUI("📱 Eşitleme bekliyor","Yerel kayıtların hesap sahipliği onaylanmadı.");return}localStorage.setItem(ownerKey,currentUser.id);location.reload();return}
+ if(!sb||!currentUser)return;
+ if(cloudBusy){cloudSyncAgain=true;return;}
+ if(!accountMatches())return;
  cloudBusy=true;
- const syncOwner=currentUser.id;const assertOwner=()=>{if(currentUser?.id!==syncOwner)throw Error('Hesap değişti')};
+ const syncOwner=currentUser.id;const assertOwner=()=>{if(!accountMatches()||currentUser?.id!==syncOwner)throw Error('Hesap değişti')};
  if(manual) setCloudUI("☁️ Senkronize ediliyor…","Cihaz ve hesabındaki veriler karşılaştırılıyor.");
  try{
-   // Bekleyen silmeleri önce buluta uygula; böylece silinen kayıt başka cihazdan geri dirilmez.
-   await processPendingDeletes();assertOwner();
+   await processPendingDeletes(syncOwner);assertOwner();
+   const snapshot=await pullCloud();assertOwner();
+   const extendedSnapshot=await pullExtendedCloud();assertOwner();
+   await pushCloud(snapshot);assertOwner();
+   if(!await pushExtendedCloud(extendedSnapshot))return;
+   assertOwner();
    await pullCloud();assertOwner();
    await pullExtendedCloud();assertOwner();
-   await pushCloud();assertOwner();
-   await pushExtendedCloud();assertOwner();
-   await pullCloud();assertOwner();
-   await pullExtendedCloud();assertOwner();
+   cloudConflictRetries=0;
    state.lastCloudSyncAt=new Date().toISOString();
    localStorage.setItem(KEY,JSON.stringify(state));
    const when=new Date(state.lastCloudSyncAt).toLocaleString("tr-TR");
@@ -385,42 +455,72 @@ async function syncCloud(manual=false){
    renderExtendedAfterSync();
    if(manual)alert("Tüm Bütçem verileri bulutla senkronize edildi.");
  }catch(e){
+   if(!accountMatches())return;
+   if(["40P01","40001"].includes(e.code)&&cloudConflictRetries<3){
+    cloudConflictRetries++;
+    cloudSyncAgain=true;
+    return;
+   }
    console.error(e);
-   setCloudUI("📱 Cihazda kaydedildi","Buluta bağlanılamadı. Bütçe, finans ve portföy verilerin cihazda duruyor; bağlantı gelince tekrar deneyebilirsin.");
+   setCloudUI("📱 Cihazda kaydedildi",["42P01","PGRST202","PGRST205"].includes(e.code)?"Bulut şeması güncellemesi bekleniyor. Yerel kayıtlar cihazda duruyor.":"Buluta bağlanılamadı. Bütçe, finans ve portföy verilerin cihazda duruyor; bağlantı gelince tekrar deneyebilirsin.");
    if(manual)alert("Bulut senkronizasyonu yapılamadı: "+(e.message||"Bağlantı hatası"));
- }finally{cloudBusy=false}
+ }finally{
+   cloudBusy=false;
+   if(cloudSyncAgain){cloudSyncAgain=false;queueCloudSync();}
+ }
 }
+window.addEventListener("online",()=>queueCloudSync());
 function queueCloudSync(){
  if(!currentUser||!sb)return;
  clearTimeout(cloudTimer);cloudTimer=setTimeout(()=>syncCloud(false),2500);
 }
-async function refreshSession(){
- if(!sb)return;
- const {data,error}=await sb.auth.getSession();
- if(error){currentUser=null;updateAuthDialog();return}
- currentUser=data.session?.user||null;
+function applySession(user){
+ if(switchingAccount)return false;
+ currentUser=user||null;
+ const next=currentUser?.id||"";
+ if(next!==bootOwner){
+  switchingAccount=true;
+  document.body.classList.add("v870-session-pending");
+  if(next&&!bootOwner&&!legacyOwner&&(hasGuestBudget()||scopedKeys.some(key=>key!=="butcem_v1"&&localStorage.getItem(key)!==null))){
+   if(confirm("Bu cihazdaki misafir kayıtları hesabına kopyalansın mı? Yalnızca kayıtlar sana aitse onayla.")){
+    if(!localStorage.getItem(ownerMarker)){
+     localStorage.setItem(ownerMarker,next);
+     migrateLegacy(next);
+    }
+   }
+  }
+  sessionStorage.setItem(activeAccountKey,next);
+  location.reload();
+  return false;
+ }
  updateAuthDialog();
- if(currentUser){
-   setCloudUI("☁️ Hesap bağlı",currentUser.email||"Giriş yapıldı");
-   await syncCloud(false);
- }else setCloudUI("📱 Bu cihazda kayıtlı","Bulut hesabı bağlı değil.");
+ setCloudUI(next?"☁️ Hesap bağlı":"📱 Bu cihazda kayıtlı",currentUser?.email||"Bulut hesabı bağlı değil.");
+ return true;
+}
+function hasGuestBudget(){
+ return state.transactions.length>0||state.monthlyBudget>0||!!localStorage.getItem("butcem_templates_local");
+}
+async function refreshSession(){
+ const {data,error}=await sb.auth.getSession();
+ if(error){updateAuthDialog();return}
+ if(applySession(data.session?.user)&&currentUser)await syncCloud(false);
 }
 $("#signInBtn").onclick=async()=>{
  if(!sb){alert("Bulut bağlantısı henüz yapılandırılmadı.");return}
  const email=$("#authEmail").value.trim(),password=$("#authPassword").value;
  const {data,error}=await sb.auth.signInWithPassword({email,password});
  if(error){alert(error.message);return}
- currentUser=data.user;updateAuthDialog();await syncCloud(true);
+ if(applySession(data.user))await syncCloud(true);
 };
 $("#signUpBtn").onclick=async()=>{
  if(!sb){alert("Bulut bağlantısı henüz yapılandırılmadı.");return}
  const email=$("#authEmail").value.trim(),password=$("#authPassword").value;
  const {data,error}=await sb.auth.signUp({email,password});
  if(error){alert(error.message);return}
- if(data.session){currentUser=data.user;updateAuthDialog();await syncCloud(true);alert("Hesabın oluşturuldu ve bu cihazdaki veriler hesabına aktarılıyor.");}
+ if(data.session){if(applySession(data.user))await syncCloud(true);alert("Hesabın oluşturuldu ve bu cihazdaki veriler hesabına aktarılıyor.");}
  else alert("Hesap oluşturuldu. Supabase e-posta doğrulaması açıksa gelen kutundaki bağlantıya basıp sonra giriş yap.");
 };
-$("#signOutBtn").onclick=async()=>{if(sb){const {error}=await sb.auth.signOut();if(error){alert("Çıkış yapılamadı: "+error.message);return}}currentUser=null;updateAuthDialog();setCloudUI("📱 Bu cihazda kayıtlı","Hesaptan çıkıldı. Yerel bütçe, finans ve portföy verilerin cihazda kalır.");};
+$("#signOutBtn").onclick=async()=>{if(sb){const {error}=await sb.auth.signOut();if(error){alert("Çıkış yapılamadı: "+error.message);return}}applySession(null);};
 $("#syncNowBtn").onclick=()=>syncCloud(true);
 
  // Password recovery uses an isolated, memory-only auth client; no budget sync.
@@ -438,9 +538,10 @@ $("#syncNowBtn").onclick=()=>syncCloud(true);
 
 
 if(initCloudClient()){
- sb.auth.onAuthStateChange((_event,session)=>{currentUser=session?.user||null;updateAuthDialog();if(currentUser)setTimeout(()=>syncCloud(false),400);});
+ sb.auth.onAuthStateChange((_event,session)=>{if(applySession(session?.user)&&currentUser)setTimeout(()=>syncCloud(false),400);});
  refreshSession();
 }else{
+ updateAuthDialog();
  setCloudUI("📱 Bu cihazda kayıtlı","V4 hazır; Supabase bağlantısı yapıldığında hesap ve bulut aktif olacak.");
 }
 
@@ -461,7 +562,7 @@ function render(){
  }
  if(!ins.children.length){let b=document.createElement("div");b.className="item";b.textContent="Yeni aylar biriktikçe burada otomatik karşılaştırmalar oluşacak.";ins.appendChild(b)}
 
- let sums={};ex.forEach(t=>sums[t.category]=(sums[t.category]||0)+t.amount);let arr=Object.entries(sums).sort((a,b)=>b[1]-a[1]),cat=$("#categories");cat.innerHTML="";if(!arr.length)cat.innerHTML='<div class="small">Bu ay harcama yok.</div>';let max=arr[0]?.[1]||1;arr.forEach(([k,v])=>{let r=document.createElement("div");r.className="barrow";r.innerHTML=`<div>${k}</div><div class="bar"><span style="width:${v/max*100}%"></span></div><div class="small">${money(v)}</div>`;cat.appendChild(r)});
+ let sums=Object.create(null);ex.forEach(t=>sums[t.category]=(sums[t.category]||0)+t.amount);let arr=Object.entries(sums).sort((a,b)=>b[1]-a[1]),cat=$("#categories");cat.innerHTML="";if(!arr.length)cat.innerHTML='<div class="small">Bu ay harcama yok.</div>';let max=arr[0]?.[1]||1;arr.forEach(([k,v])=>{let r=document.createElement("div");r.className="barrow";r.innerHTML=`<div>${k}</div><div class="bar"><span style="width:${v/max*100}%"></span></div><div class="small">${money(v)}</div>`;cat.appendChild(r)});
  let list=$("#transactions"),search=($("#txnSearch")?.value||"").trim().toLocaleLowerCase("tr-TR"),scope=$("#txnScope")?.value||"month",ft=$("#txnFilterType")?.value||"all",fc=$("#txnFilterCategory")?.value||"all",fp=$("#txnFilterPayment")?.value||"all",sort=$("#txnSort")?.value||"date_desc";
  let baseTx=scope==="all"?[...state.transactions]:[...tx];
  let catSelect=$("#txnFilterCategory"),paySelect=$("#txnFilterPayment");
@@ -477,7 +578,7 @@ function render(){
  filtered.forEach(t=>{let r=document.createElement("div");r.className="item v52-item v6-tappable";r.onclick=e=>{if(!e.target.closest("button"))openTxn(t.type,t)};let l=document.createElement("div");l.className="v52-item-main";let title=document.createElement("div"),meta=document.createElement("div");title.className="v52-item-title";title.textContent=t.description||t.category;meta.className="meta";meta.textContent=`${t.category} • ${t.date} • ${t.payment}`;l.append(title,meta);if(t.cardName){let pill=document.createElement("span");pill.className="v6-account-pill";pill.textContent=t.cardName;l.appendChild(pill)}let side=document.createElement("div");side.className="v52-item-side";let a=document.createElement("div");a.className="amount "+(budgetType(t)==="transfer"?"":t.type==="income"?"good":"bad");a.textContent=(t.type==="income"?"+":"-")+money(t.amount);let acts=document.createElement("div");acts.className="v52-actions";let edit=document.createElement("button");edit.className="ghost";edit.type="button";edit.textContent="Düzenle";edit.onclick=()=>openTxn(t.type,t);let del=document.createElement("button");del.className="ghost v52-delete";del.type="button";del.textContent="Sil";del.onclick=()=>deleteTransaction(t.id);acts.append(edit,del);side.append(a,acts);r.append(l,side);list.appendChild(r)});
 }
 if("serviceWorker"in navigator){
-  navigator.serviceWorker.register("sw.js?v=8.4.0").then(reg=>{
+  navigator.serviceWorker.register("sw.js?v=8.8.0").then(reg=>{
     reg.update().catch(()=>{});
     if(reg.waiting) reg.waiting.postMessage("SKIP_WAITING");
     reg.addEventListener("updatefound",()=>{
@@ -490,14 +591,15 @@ if("serviceWorker"in navigator){
       });
     });
   }).catch(()=>{});
-  let reloaded=false;
+  let hadController=!!navigator.serviceWorker.controller,reloaded=false;
   navigator.serviceWorker.addEventListener("controllerchange",()=>{
+    if(!hadController){hadController=true;return}
     if(reloaded)return;
     reloaded=true;
     location.reload();
   });
 }
-state.dataVersion=DATA_VERSION;localStorage.setItem(KEY,JSON.stringify(state));render();
+render();
 ["txnSearch","txnScope","txnFilterType","txnFilterCategory","txnFilterPayment","txnSort"].forEach(id=>{const el=$("#"+id);if(el)el.addEventListener(id==="txnSearch"?"input":"change",()=>render())});
 $("#v6ExportFiltered").onclick=()=>v6ExportCurrentFilter();
 
@@ -557,12 +659,13 @@ async function v81Market(action,params={},ttl=0){
  const cfg=window.BUTCEM_SUPABASE||window.SUPABASE_CONFIG||{};
  const client=(typeof sb!=="undefined"&&sb)||window.supabaseClient||window.sb||null;
  if(!client)throw new Error("Supabase bağlantısı hazır değil");
- const {data:{session}}=await client.auth.getSession();if(!session)throw new Error("Piyasa verisi için hesaba giriş yap");
+ const {data:{session}}=await client.auth.getSession();if(!accountMatches()||session?.user?.id!==bootOwner)throw new Error("Piyasa verisi için hesaba giriş yap");
  const base=String(cfg.url||window.SUPABASE_URL||"").replace(/\/$/,"");
  const anon=cfg.anonKey||cfg.publishableKey||cfg.key||window.SUPABASE_ANON_KEY||"";
  if(!base)throw new Error("Supabase URL bulunamadı");
  const res=await fetch(`${base}/functions/v1/market-data?${q.toString()}`,{headers:{Authorization:`Bearer ${session.access_token}`,apikey:anon}});
  let out;try{out=await res.json()}catch(e){throw new Error(`Piyasa sunucusu HTTP ${res.status}: geçersiz yanıt`)}if(!res.ok||!out.ok)throw new Error(out?.error||out?.message||`Piyasa verisi alınamadı (HTTP ${res.status})`);if(out.cache?.stale)throw new Error("Piyasa kaynağı eski veri döndürdü; mevcut fiyat korundu");
+ if(!accountMatches())throw Error("Hesap değişti");
  v81Cache[key]={at:Date.now(),data:out};v81CacheSave();return out;
 }
 function v81QuoteToAsset(a,q){const d=q?.data||{};const px=Number(d.close||d.price||0),prev=Number(d.previous_close||0);if(!Number.isFinite(px)||px<=0)throw new Error("Geçerli fiyat alınamadı");a.price=px;if(prev>0)a.prev=prev;a.marketUpdatedAt=q.fetchedAt||new Date().toISOString();a.marketName=d.name||a.marketName;a.exchange=d.exchange||a.exchange;a.currency=d.currency||a.currency||"USD";return a}
@@ -786,7 +889,11 @@ function v6Toast(text,actionText="",actionFn=null){
  $("#v6ToastText").textContent=text;btn.style.display=actionFn?"inline-block":"none";btn.textContent=actionText||"Geri al";btn.onclick=()=>{clearTimeout(v6ToastTimer);el.classList.remove("show");actionFn?.()};
  el.classList.add("show");clearTimeout(v6ToastTimer);v6ToastTimer=setTimeout(()=>el.classList.remove("show"),2600);
 }
-function v6CsvCell(v){const s=String(v??"");return /[",\n]/.test(s)?`"${s.replace(/"/g,'""')}"`:s}
+function safeCsvValue(value){
+ const cell=String(value??"");
+ return typeof value==="string"&&/^\s*[=+@-]|^[\t\r\n]/.test(cell)?"'"+cell:cell;
+}
+function v6CsvCell(v){const s=safeCsvValue(v);return /[",\n]/.test(s)?`"${s.replace(/"/g,'""')}"`:s}
 function v6CurrentFiltered(){
  const scope=$("#txnScope")?.value||"month",search=($("#txnSearch")?.value||"").trim().toLocaleLowerCase("tr-TR"),ft=$("#txnFilterType")?.value||"all",fc=$("#txnFilterCategory")?.value||"all",fp=$("#txnFilterPayment")?.value||"all",sort=$("#txnSort")?.value||"date_desc";
  let arr=(scope==="all"?state.transactions:state.transactions.filter(t=>t.date&&t.date.startsWith(selectedMonth))).filter(t=>(ft==="all"||budgetType(t)===ft)&&(fc==="all"||t.category===fc)&&(fp==="all"||(t.cardName||t.payment)===fp)&&(!search||[t.description,t.category,t.payment,t.cardName,t.note,String(t.amount)].join(" ").toLocaleLowerCase("tr-TR").includes(search)));
@@ -1016,7 +1123,7 @@ async function v83ReturnAsset(asset,start,end){const r=await v83Return(v83Symbol
 async function v83Inflation(start,end){try{const out=await v81Market("inflation",{start_date:start,end_date:end},24*60*60*1000);const d=out?.data||{};return {pct:d.percent_change!=null&&d.percent_change!==""&&Number.isFinite(Number(d.percent_change))&&Number(d.percent_change)>-100?Number(d.percent_change):null,start:d.start_date,end:d.end_date,latest:d.latest_date,ok:d.percent_change!=null&&d.percent_change!==""&&Number.isFinite(Number(d.percent_change))&&Number(d.percent_change)>-100}}catch(e){return {pct:null,ok:false,error:e.message}}}
 function v83Symbol(a){if(a.type==="gold")return "GRAM";return String(a.symbol||"").toUpperCase()}
 function v83AssetLabel(a){return `${a.name}${a.symbol?` · ${a.symbol}`:""}`}
-function v83Populate(){const sel=$("#v83AssetSelect");if(!sel)return;const old=sel.value;sel.innerHTML=v8.assets.map(a=>`<option value="${a.id}">${v51Esc(v83AssetLabel(a))}</option>`).join("")||'<option value="">Önce portföye varlık ekle</option>';if(v8.assets.some(a=>a.id===old))sel.value=old;$("#v83CustomEnd").value=v83.customEnd||today();$("#v83CustomStart").value=v83.customStart||v83PeriodStart("1y");document.querySelectorAll("[data-v83p]").forEach(b=>b.classList.toggle("active",b.dataset.v83p===v83.period))}
+function v83Populate(){const sel=$("#v83AssetSelect");if(!sel)return;const old=sel.value;sel.innerHTML=v8.assets.map(a=>`<option value="${v51Esc(a.id)}">${v51Esc(v83AssetLabel(a))}</option>`).join("")||'<option value="">Önce portföye varlık ekle</option>';if(v8.assets.some(a=>a.id===old))sel.value=old;$("#v83CustomEnd").value=v83.customEnd||today();$("#v83CustomStart").value=v83.customStart||v83PeriodStart("1y");document.querySelectorAll("[data-v83p]").forEach(b=>b.classList.toggle("active",b.dataset.v83p===v83.period))}
 async function v83Analyze(start,end,force=false){
  const sel=$("#v83AssetSelect"),a=v8.assets.find(x=>x.id===sel?.value)||v8.assets[0]; if(!a){$("#v83MainResult").innerHTML='<div class="v8-warning">Önce portföye bir varlık ekle.</div>';return}
  const sym=v83Symbol(a); if(!sym){$("#v83MainResult").innerHTML='<div class="v8-warning">Bu varlığın sembolünü eklemen gerekiyor.</div>';return}
@@ -1027,7 +1134,7 @@ async function v83Analyze(start,end,force=false){
  $("#v83Range").textContent=`${asset.start?.date||start} → ${asset.end?.date||end}`;
  $("#v83MainResult").innerHTML=`<div class="v5-kicker">${v51Esc(v83AssetLabel(a))}</div><div class="v83-herochange ${v83Class(asset.pct)}">${v83FmtPct(asset.pct)}</div><div class="v83-real ${v83Class(real)}">Reel getiri: <b>${v83FmtPct(real)}</b>${asset.pct!=null&&gold.pct!=null?` · Altın bazında ${v83FmtPct((1+asset.pct/100)/(1+gold.pct/100)*100-100)}`:""}</div>`;
  const cards=[['Seçili varlık',asset.pct,asset.start?.close&&asset.end?.close?`${asset.start.close.toFixed(2)} → ${asset.end.close.toFixed(2)}`:''],['Gram altın',gold.pct,'XAU/USD × USD/TRY'],['USD / TRY',usd.pct,'TL karşısında'],['TÜFE',inf.pct,inf.ok?'Açıklanan endeks verisi':'EVDS bağlantısı bekleniyor']];
- $("#v83Benchmarks").innerHTML=cards.map(([n,p,s])=>`<div class="v83-bench"><span>${n}</span><strong class="${v83Class(p)}">${v83FmtPct(p)}</strong><small>${s}</small></div>`).join('');
+ $("#v83Benchmarks").innerHTML=cards.map(([n,p,s])=>`<div class="v83-bench"><span>${n}</span><strong class="${v83Class(p)}">${v83FmtPct(p)}</strong><small>${v51Esc(s)}</small></div>`).join('');
  $("#v83InflationNote").textContent=inf.ok?`TCMB EVDS · TÜFE endeks dönemi: ${inf.start||"—"} → ${inf.end||"—"}. Reel getiri bileşik formülle hesaplanır.`:`TÜFE henüz bağlanmadı: ${inf.error||'Enflasyon veri bağlantısı henüz hazır değil.'}`;
  const rows=[];for(const x of v8.assets){const xs=v83Symbol(x);if(!xs)continue;const r=await safe(()=>v83ReturnAsset(x,start,end));const total=v83AssetTotalPL(x).pct;rows.push({x,p:r.pct,total,value:v8AssetValueTry(x),error:r.error||null})}
  rows.sort((a,b)=>(b.p??-999)-(a.p??-999));$("#v83AssetTable").innerHTML=`<table class="v83-table"><thead><tr><th>Varlık</th><th>Dönem (TL)</th><th>Reel (TÜFE)</th><th>Toplam</th><th>Güncel değer</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${v51Esc(v83AssetLabel(r.x))}</td><td class="${v83Class(r.p)}"><b>${v83FmtPct(r.p)}</b></td><td>${v83FmtPct(r.p!=null&&inf.pct!=null?((1+r.p/100)/(1+inf.pct/100)-1)*100:null)}</td><td class="${v83Class(r.total)}">${v83FmtPct(r.total)}</td><td>${money(r.value)}</td></tr>`).join('')}</tbody></table>`;
@@ -1068,14 +1175,14 @@ function v5Init(){
  $("#v8SaveRates").onclick=()=>{v8.rates.usdtry=Math.max(.0001,Number($("#v8UsdTry").value)||1);v8.rates.gramGold=Math.max(.0001,Number($("#v8GramGold").value)||1);v8Save()};
  $("#v84FillRates").onclick=v84FillRates;
  $("#v8TakeSnapshot").onclick=()=>{try{v83UpsertSnapshot(today(),v8TotalTry(),{auto:false,force:true});v8Save()}catch(e){v6Toast(e.message)}};
- $("#v8PriceCsv").onchange=async e=>{const f=e.target.files?.[0];if(!f)return;try{const parsed=v8ParseCsv(await f.text());v8Prices={...v8Prices,...parsed};localStorage.setItem(V8_PRICE_KEY,JSON.stringify(v8Prices));v8PriceInfo();v6Toast("Fiyat geçmişi yüklendi")}catch(err){alert("CSV okunamadı. date,symbol,close başlıklarını kontrol et.")}finally{e.target.value=""}};
+ $("#v8PriceCsv").onchange=async e=>{const f=e.target.files?.[0];if(!f)return;try{const parsed=v8ParseCsv(await f.text());if(!accountMatches())return;v8Prices={...v8Prices,...parsed};localStorage.setItem(V8_PRICE_KEY,JSON.stringify(v8Prices));v8PriceInfo();v6Toast("Fiyat geçmişi yüklendi")}catch(err){alert("CSV okunamadı. date,symbol,close başlıklarını kontrol et.")}finally{e.target.value=""}};
  $("#v8ClearPrices").onclick=()=>{if(confirm("Yüklenen backtest fiyat geçmişi silinsin mi?")){v8Prices={};localStorage.removeItem(V8_PRICE_KEY);v8PriceInfo();v8DrawChart(null)}};
  $("#v8AddBtRow").onclick=()=>{v8.btRows.push({symbol:"",weight:0});v8Save(false)};
  $("#v8RunBacktest").onclick=async()=>{try{const start=$("#v8BtStart").value,end=$("#v8BtEnd").value;await v81PrepareHistories(v8.btRows.map(x=>x.symbol),start,end);const r=v8Backtest(v8.btRows,start,end,Math.max(1,Number($("#v8BtCapital").value)||100000),Math.max(0,Number($("#v8BtContribution").value)||0),$("#v8BtFrequency").value,$("#v8BtRebalance").value);v8ShowBacktest(r)}catch(err){alert(err.message||"Backtest çalıştırılamadı.")}};
  $("#v8AddCompare").onclick=()=>{v8.compare.push({name:"Yeni senaryo",symbol:""});v8Save(false)};
  $("#v8RunCompare").onclick=async()=>{const start=$("#v8BtStart").value,end=$("#v8BtEnd").value;try{await v81PrepareHistories(v8.compare.map(x=>x.symbol),start,end)}catch(e){alert(e.message);return}const capital=Math.max(1,Number($("#v8BtCapital").value)||100000),contrib=Math.max(0,Number($("#v8BtContribution").value)||0),freq=$("#v8BtFrequency").value;const rows=[];for(const c of v8.compare){try{const r=v8Backtest([{symbol:c.symbol,weight:100}],start,end,capital,contrib,freq,"none");rows.push({name:c.name,symbol:c.symbol,r})}catch(err){rows.push({name:c.name,symbol:c.symbol,error:err.message})}}$("#v8CompareTable").innerHTML=`<table class="v8-table"><thead><tr><th>Senaryo</th><th>Son değer</th><th>Getiri</th><th>CAGR</th><th>Max DD</th></tr></thead><tbody>${rows.map(x=>x.error?`<tr><td>${v51Esc(x.name)} (${v51Esc(x.symbol)})</td><td colspan="4">${v51Esc(x.error)}</td></tr>`:`<tr><td>${v51Esc(x.name)} (${v51Esc(x.symbol)})</td><td>${money(x.r.final)}</td><td>${(x.r.totalReturn*100).toFixed(1)}%</td><td>${(x.r.cagr*100).toFixed(1)}%</td><td>${(x.r.mdd*100).toFixed(1)}%</td></tr>`).join("")}</tbody></table>`};
  if($("#v8Backup"))$("#v8Backup").onclick=()=>download(`butcem-v8-${today()}.json`,JSON.stringify({app:"Bütçem",version:8,exportedAt:new Date().toISOString(),wealth:v8,prices:v8Prices},null,2),"application/json");
- if($("#v8Restore"))$("#v8Restore").onchange=async e=>{const f=e.target.files?.[0];if(!f)return;try{const x=JSON.parse(await f.text()),data=x.wealth||x;if(!data||!Array.isArray(data.assets))throw new Error();if(!confirm("V8 yatırım verisi bu yedekle değiştirilsin mi?"))return;v8={...v8Defaults(),...data};v8Prices=x.prices||v8Prices;localStorage.setItem(V8_PRICE_KEY,JSON.stringify(v8Prices));v8Save()}catch(err){alert("V8 yedeği okunamadı.")}finally{e.target.value=""}};
+ if($("#v8Restore"))$("#v8Restore").onchange=async e=>{const f=e.target.files?.[0];if(!f)return;try{const x=JSON.parse(await f.text()),data=x.wealth||x;if(!accountMatches())return;if(!data||!Array.isArray(data.assets))throw new Error();if(!confirm("V8 yatırım verisi bu yedekle değiştirilsin mi?"))return;v8={...v8Defaults(),...data};v8Prices=x.prices||v8Prices;localStorage.setItem(V8_PRICE_KEY,JSON.stringify(v8Prices));v8Save()}catch(err){alert("V8 yedeği okunamadı.")}finally{e.target.value=""}};
  v8Render();
  document.querySelector("#v7Theme").onclick=()=>v5Theme(document.documentElement.dataset.theme==="dark"?"light":"dark");
  document.querySelector("#v7Cloud").onclick=openAuth;document.querySelector("#v7Settings").onclick=()=>$("#settingsBtn").click();
@@ -1092,7 +1199,7 @@ function v5Init(){
  $("#v7GoalAddForm").onsubmit=e=>{e.preventDefault();const g=v7.goals.find(x=>x.id===$("#v7GoalAddId").value),amt=Number($("#v7GoalAddAmount").value);if(g&&amt>0){g.current=Number(g.current||0)+amt;$("#v7GoalAddDialog").close();v7Save()}};
  v7Render();
  if($("#v7FinanceBackup"))$("#v7FinanceBackup").onclick=()=>download(`butcem-finans-v7-${today()}.json`,JSON.stringify({app:"Bütçem",version:7,exportedAt:new Date().toISOString(),finance:v7},null,2),"application/json");
- if($("#v7FinanceRestore"))$("#v7FinanceRestore").onchange=async e=>{const f=e.target.files?.[0];if(!f)return;try{const x=JSON.parse(await f.text()),data=x.finance||x;if(!data||!Array.isArray(data.accounts))throw new Error();if(!confirm("V7 finans verisi bu yedekle değiştirilsin mi? Ana işlemler etkilenmez."))return;v7={...v7Defaults(),...data};v7Save()}catch(err){alert("Finans yedeği okunamadı.")}finally{e.target.value=""}};
+ if($("#v7FinanceRestore"))$("#v7FinanceRestore").onchange=async e=>{const f=e.target.files?.[0];if(!f)return;try{const x=JSON.parse(await f.text()),data=x.finance||x;if(!accountMatches())return;if(!data||!Array.isArray(data.accounts))throw new Error();if(!confirm("V7 finans verisi bu yedekle değiştirilsin mi? Ana işlemler etkilenmez."))return;v7={...v7Defaults(),...data};v7Save()}catch(err){alert("Finans yedeği okunamadı.")}finally{e.target.value=""}};
  document.querySelector("#v51AllTx").onclick=()=>v5Show("transactions");
  document.querySelector("#v53NextMonth").onclick=()=>{const n=shift(selectedMonth,1);if(n<=currentMonth()){selectedMonth=n;v5Refresh();v6SummaryPulse()}};
  document.querySelector("#v53PrevMonth").onclick=()=>{selectedMonth=shift(selectedMonth,-1);v5Refresh();v6SummaryPulse()};
@@ -1112,10 +1219,10 @@ function v86Apply(){const m=v86Modules(),p=v5GetPrefs()||{},tabs=v86AllowedTabs(
 function v86Guide(){const m=v86Modules(),steps=[["İlk işlemini ekle","Özet ekranında + Harcama veya + Gelir düğmesine bas. Tutar, kategori ve hesabı seç."],["Bütçeni belirle","Ayarlar bölümünden aylık limitini gir. Özet ekranında kalan tutarı ve bütçe uyarılarını gör."],["İşlemlerini yönet","İşlemler ekranında kayıtlarını filtrele, düzenle veya sil. Etiketlerle notlarını gruplandır."],["Fiş ve ekstre","Ayarlar bölümünden banka ekstresi veya BETA fiş tarayıcısını aç. Okunan bilgileri kontrol et ve onayla."],["Bulut ve gizlilik","Bulut hesabını bağlamadan önce veri gizliliği kartını oku."]];if(m.some(x=>["investments","networth","compare"].includes(x)))steps.push(["Varlıklar","Varlıklar ekranında yatırımlarını ekle ve fiyatlarını güncelle."]);if(m.includes("goals"))steps.push(["Hedefler","Yan menüden Finans ve hedefler bölümünü aç."]);steps.push(["Kişiselleştir","Sol üst menüden modülleri açıp kapat. Kapatmak kayıtlarını silmez."]);let i=0;const render=()=>{$("#v86GuideTitle").textContent=steps[i][0];$("#v86GuideText").textContent=steps[i][1];$("#v86GuideCount").textContent=(i+1)+" / "+steps.length;$("#v86GuidePrev").disabled=i===0;$("#v86GuideNext").textContent=i===steps.length-1?"Bitir":"İleri"};$("#v86GuidePrev").onclick=()=>{if(i>0)i--;render()};$("#v86GuideNext").onclick=()=>{if(i===steps.length-1)$("#v86Guide").close();else{i++;render()}};render();$("#v86Guide").showModal()}
 function v86Init(){ $("#v86Open").onclick=()=>$("#v86Menu").showModal();$("#v86Close").onclick=()=>$("#v86Menu").close();$("#v86Help").onclick=()=>{$("#v86Menu").close();v86Guide()};$("#v86Finance").onclick=()=>{$("#v86Menu").close();v5Show("finance")};$("#v86Settings").onclick=()=>{$("#v86Menu").close();$("#settingsBtn").click()};$("#v86Menu").querySelectorAll("input").forEach(e=>e.onchange=()=>{const p=v5GetPrefs()||{};p.modules=["budget",...Array.from($("#v86Menu").querySelectorAll("input[data-module]:checked"),x=>x.dataset.module)];p.wealthOptIn=$("#v86Wealth").checked;v5SetPrefs(p);v86Apply()});v86Apply();}
 
-function v87TemplateKey(){return "butcem_templates_"+(currentUser?.id||"local")}
+function v87TemplateKey(){return "butcem_templates_"+(bootOwner||(legacyOwner?"guest":"local"))}
 function v87MergeRecords(...lists){const m=new Map();for(const list of lists)for(const t of Array.isArray(list)?list:[]){if(!t||typeof t.id!=="string")continue;const old=m.get(t.id);if(!old||String(t.updatedAt||"")>String(old.updatedAt||"")||(String(t.updatedAt||"")===String(old.updatedAt||"")&&t.deleted))m.set(t.id,t)}return [...m.values()]}
 function v87Records(){try{return v87MergeRecords(JSON.parse(localStorage.getItem(v87TemplateKey())||"[]"))}catch(e){return []}}
-function v87WriteRecords(records){if(localStorage.getItem(ownerMarker)&&localStorage.getItem(ownerMarker)!==currentUser?.id)throw Error("Hesap kilitli");localStorage.setItem(v87TemplateKey(),JSON.stringify(records));queueCloudSync()}
+function v87WriteRecords(records){if(!accountMatches())throw Error("Hesap kilitli");localStorage.setItem(v87TemplateKey(),JSON.stringify(records));queueCloudSync()}
 function v87ReadTemplates(){return v87Records().filter(t=>!t.deleted).sort((a,b)=>String(b.updatedAt||"").localeCompare(String(a.updatedAt||""))).slice(0,30)}
 
 function v87SaveTemplate(){if($("#txnType").value!=="expense"||$("#category").value===TRANSFER_CAT)return v6Toast("Yalnızca harcama şablonu oluşturulabilir");const amount=Number($("#amount").value),description=$("#description").value.trim();if(!(amount>0)||!description)return v6Toast("Tutar ve açıklama gir");const t={id:crypto.randomUUID(),amount,description,category:$("#category").value,payment:$("#payment").value,cardName:$("#cardName").value.trim()};try{if(v87ReadTemplates().length>=30)return v6Toast("En fazla 30 şablon oluşturabilirsin");t.updatedAt=new Date().toISOString();v87WriteRecords(v87MergeRecords(v87Records(),[t]));v6Toast("Şablon kaydedildi; bağlı hesapta eşitleme bekliyor")}catch(e){v6Toast("Şablon kaydedilemedi")}}
