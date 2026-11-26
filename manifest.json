@@ -1,10 +1,10 @@
 {
-  "name": "Bütçem - Kişisel Bütçe Takibi",
+  "name": "Bütçem – Finans Merkezi",
   "short_name": "Bütçem",
   "start_url": "./",
   "display": "standalone",
-  "background_color": "#f5f7fb",
-  "theme_color": "#111827",
+  "background_color": "#f1f4f2",
+  "theme_color": "#18392e",
   "icons": [
     {
       "src": "icon.svg",

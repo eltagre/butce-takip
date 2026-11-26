@@ -363,11 +363,11 @@ async function syncCloud(manual=false){
  if(!sb||!currentUser||cloudBusy)return;
  const ownerKey="butcem_local_owner_v1";
  const owner=localStorage.getItem(ownerKey);
- if(owner&&owner!==currentUser.id){setCloudUI("⚠️ Eşitleme engellendi","Bu tarayıcıdaki kayıtlar başka bir hesaba bağlı. Veri karışmasını önlemek için ayrı tarayıcı profili kullan.");if(manual)alert("Bu cihazdaki yerel kayıtlar başka bir hesaba bağlı. Eşitleme yapılmadı.");return}
- if(!owner){if(!confirm("Bu tarayıcıdaki mevcut bütçe, finans ve portföy kayıtlarını "+(currentUser.email||"bu hesap")+" hesabına bağlamak istiyor musun? Yalnızca kayıtlar sana aitse onayla.")){setCloudUI("📱 Eşitleme bekliyor","Yerel kayıtların hesap sahipliği onaylanmadı.");return}localStorage.setItem(ownerKey,currentUser.id);location.reload();return}
+ if(owner&&owner!==currentUser.id){setCloudUI("Eşitleme engellendi","Bu tarayıcıdaki kayıtlar başka bir hesaba bağlı. Veri karışmasını önlemek için ayrı tarayıcı profili kullan.");if(manual)alert("Bu cihazdaki yerel kayıtlar başka bir hesaba bağlı. Eşitleme yapılmadı.");return}
+ if(!owner){if(!confirm("Bu tarayıcıdaki mevcut bütçe, finans ve portföy kayıtlarını "+(currentUser.email||"bu hesap")+" hesabına bağlamak istiyor musun? Yalnızca kayıtlar sana aitse onayla.")){setCloudUI("Eşitleme bekliyor","Yerel kayıtların hesap sahipliği onaylanmadı.");return}localStorage.setItem(ownerKey,currentUser.id);location.reload();return}
  cloudBusy=true;
  const syncOwner=currentUser.id;const assertOwner=()=>{if(currentUser?.id!==syncOwner)throw Error('Hesap değişti')};
- if(manual) setCloudUI("☁️ Senkronize ediliyor…","Cihaz ve hesabındaki veriler karşılaştırılıyor.");
+ if(manual) setCloudUI("Senkronize ediliyor…","Cihaz ve hesabındaki veriler karşılaştırılıyor.");
  try{
    // Bekleyen silmeleri önce buluta uygula; böylece silinen kayıt başka cihazdan geri dirilmez.
    await processPendingDeletes();assertOwner();
@@ -380,13 +380,13 @@ async function syncCloud(manual=false){
    state.lastCloudSyncAt=new Date().toISOString();
    localStorage.setItem(KEY,JSON.stringify(state));
    const when=new Date(state.lastCloudSyncAt).toLocaleString("tr-TR");
-   setCloudUI("☁️ Senkronize edildi",`Son senkronizasyon: ${when}`);
+   setCloudUI("Senkronize edildi",`Son senkronizasyon: ${when}`);
    render();
    renderExtendedAfterSync();
    if(manual)alert("Tüm Bütçem verileri bulutla senkronize edildi.");
  }catch(e){
    console.error(e);
-   setCloudUI("📱 Cihazda kaydedildi","Buluta bağlanılamadı. Bütçe, finans ve portföy verilerin cihazda duruyor; bağlantı gelince tekrar deneyebilirsin.");
+   setCloudUI("Cihazda kaydedildi","Buluta bağlanılamadı. Bütçe, finans ve portföy verilerin cihazda duruyor; bağlantı gelince tekrar deneyebilirsin.");
    if(manual)alert("Bulut senkronizasyonu yapılamadı: "+(e.message||"Bağlantı hatası"));
  }finally{cloudBusy=false}
 }
@@ -401,9 +401,9 @@ async function refreshSession(){
  currentUser=data.session?.user||null;
  updateAuthDialog();
  if(currentUser){
-   setCloudUI("☁️ Hesap bağlı",currentUser.email||"Giriş yapıldı");
+   setCloudUI("Hesap bağlı",currentUser.email||"Giriş yapıldı");
    await syncCloud(false);
- }else setCloudUI("📱 Bu cihazda kayıtlı","Bulut hesabı bağlı değil.");
+ }else setCloudUI("Bu cihazda kayıtlı","Bulut hesabı bağlı değil.");
 }
 $("#signInBtn").onclick=async()=>{
  if(!sb){alert("Bulut bağlantısı henüz yapılandırılmadı.");return}
@@ -420,7 +420,7 @@ $("#signUpBtn").onclick=async()=>{
  if(data.session){currentUser=data.user;updateAuthDialog();await syncCloud(true);alert("Hesabın oluşturuldu ve bu cihazdaki veriler hesabına aktarılıyor.");}
  else alert("Hesap oluşturuldu. Supabase e-posta doğrulaması açıksa gelen kutundaki bağlantıya basıp sonra giriş yap.");
 };
-$("#signOutBtn").onclick=async()=>{if(sb){const {error}=await sb.auth.signOut();if(error){alert("Çıkış yapılamadı: "+error.message);return}}currentUser=null;updateAuthDialog();setCloudUI("📱 Bu cihazda kayıtlı","Hesaptan çıkıldı. Yerel bütçe, finans ve portföy verilerin cihazda kalır.");};
+$("#signOutBtn").onclick=async()=>{if(sb){const {error}=await sb.auth.signOut();if(error){alert("Çıkış yapılamadı: "+error.message);return}}currentUser=null;updateAuthDialog();setCloudUI("Bu cihazda kayıtlı","Hesaptan çıkıldı. Yerel bütçe, finans ve portföy verilerin cihazda kalır.");};
 $("#syncNowBtn").onclick=()=>syncCloud(true);
 
  // Password recovery uses an isolated, memory-only auth client; no budget sync.
@@ -441,7 +441,7 @@ if(initCloudClient()){
  sb.auth.onAuthStateChange((_event,session)=>{currentUser=session?.user||null;updateAuthDialog();if(currentUser)setTimeout(()=>syncCloud(false),400);});
  refreshSession();
 }else{
- setCloudUI("📱 Bu cihazda kayıtlı","V4 hazır; Supabase bağlantısı yapıldığında hesap ve bulut aktif olacak.");
+ setCloudUI("Bu cihazda kayıtlı","V4 hazır; Supabase bağlantısı yapıldığında hesap ve bulut aktif olacak.");
 }
 
 function render(){
@@ -477,7 +477,7 @@ function render(){
  filtered.forEach(t=>{let r=document.createElement("div");r.className="item v52-item v6-tappable";r.onclick=e=>{if(!e.target.closest("button"))openTxn(t.type,t)};let l=document.createElement("div");l.className="v52-item-main";let title=document.createElement("div"),meta=document.createElement("div");title.className="v52-item-title";title.textContent=t.description||t.category;meta.className="meta";meta.textContent=`${t.category} • ${t.date} • ${t.payment}`;l.append(title,meta);if(t.cardName){let pill=document.createElement("span");pill.className="v6-account-pill";pill.textContent=t.cardName;l.appendChild(pill)}let side=document.createElement("div");side.className="v52-item-side";let a=document.createElement("div");a.className="amount "+(budgetType(t)==="transfer"?"":t.type==="income"?"good":"bad");a.textContent=(t.type==="income"?"+":"-")+money(t.amount);let acts=document.createElement("div");acts.className="v52-actions";let edit=document.createElement("button");edit.className="ghost";edit.type="button";edit.textContent="Düzenle";edit.onclick=()=>openTxn(t.type,t);let del=document.createElement("button");del.className="ghost v52-delete";del.type="button";del.textContent="Sil";del.onclick=()=>deleteTransaction(t.id);acts.append(edit,del);side.append(a,acts);r.append(l,side);list.appendChild(r)});
 }
 if("serviceWorker"in navigator){
-  navigator.serviceWorker.register("sw.js?v=8.4.0").then(reg=>{
+  navigator.serviceWorker.register("sw.js?v=8.7.3").then(reg=>{
     reg.update().catch(()=>{});
     if(reg.waiting) reg.waiting.postMessage("SKIP_WAITING");
     reg.addEventListener("updatefound",()=>{
@@ -490,8 +490,9 @@ if("serviceWorker"in navigator){
       });
     });
   }).catch(()=>{});
-  let reloaded=false;
+  let hadController=!!navigator.serviceWorker.controller,reloaded=false;
   navigator.serviceWorker.addEventListener("controllerchange",()=>{
+    if(!hadController){hadController=true;return;}
     if(reloaded)return;
     reloaded=true;
     location.reload();
@@ -669,7 +670,7 @@ function v8Render(){
 
  const profile=v8.profile||v8Defaults().profile,personalUsd=profile.mode==="household"?usd/Math.max(1,Number(profile.adults||1)):usd,gr=v8WealthEstimateUSD(personalUsd,"global"),tr=v8WealthEstimateUSD(personalUsd,"tr"),fmtTop=x=>x<.1?`ilk %${x.toFixed(2)}`:x<1?`ilk %${x.toFixed(1)}`:`ilk %${Math.round(x)}`;
  $("#v81Age").value=profile.age||"";$("#v81WealthMode").value=profile.mode||"personal";$("#v81Adults").value=profile.adults||1;$("#v81AdultsWrap").style.display=profile.mode==="household"?"block":"none";const age=Number(profile.age||0),ageNote=age?`Yaş ${age}: yaş grubuna özel güvenilir eşik seti henüz bağlı değil. Genel yetişkin sonucu gösteriliyor; yaş verisi ileride yaş-kohort modeli için saklanıyor.`:"Yaşını girersen ileride yaş grubuna göre deneysel karşılaştırmayı da ayrı gösterebiliriz.";$("#v81AgeRank").textContent=(profile.mode==="household"?`Hane serveti ${profile.adults||1} yetişkine bölünerek kişi başı normalize edildi. `:"")+ageNote;
- $("#v8WealthRanks").innerHTML=`<div class="v8-rank"><div class="flag">🇹🇷</div><div class="rankbig">${fmtTop(tr.top)}</div><div class="rankmeta">Türkiye’de tahmini servet konumu · deneysel interpolasyon</div></div><div class="v8-rank"><div class="flag">🌍</div><div class="rankbig">${fmtTop(gr.top)}</div><div class="rankmeta">Dünya yetişkin servet dağılımında yaklaşık konum</div></div>`;
+ $("#v8WealthRanks").innerHTML=`<div class="v8-rank"><div class="flag"><svg aria-hidden="true"><use href="#icon-globe"/></svg></div><div class="rankbig">${fmtTop(tr.top)}</div><div class="rankmeta">Türkiye’de tahmini servet konumu · deneysel interpolasyon</div></div><div class="v8-rank"><div class="flag"><svg aria-hidden="true"><use href="#icon-globe"/></svg></div><div class="rankbig">${fmtTop(gr.top)}</div><div class="rankmeta">Dünya yetişkin servet dağılımında yaklaşık konum</div></div>`;
  const ladd=[["Alt %50",50],["%50–75",75],["%75–90",90],["%90–99",99],["İlk %1",100]];
  $("#v8WealthLadder").innerHTML=ladd.map(([label,p])=>`<div class="v8-ladderrow"><span>${label}</span><div class="v8-ladderbar">${gr.pct<=p&&gr.pct>(p===50?0:(p===75?50:p===90?75:p===99?90:99))?`<i style="left:${Math.max(2,Math.min(98,(gr.pct-(p===50?0:(p===75?50:p===90?75:p===99?90:99)))/(p-(p===50?0:(p===75?50:p===90?75:p===99?90:99)))*100))}%"></i>`:""}</div><strong>${p}%</strong></div>`).join("");
 
@@ -812,7 +813,13 @@ function v6ElapsedDays(key){if(key!==currentMonth())return v6DaysInMonth(key);re
 const V5_PREF_KEY = scopedKey("butcem_v5_preferences");
 function v5GetPrefs(){try{return JSON.parse(localStorage.getItem(V5_PREF_KEY))}catch(e){return null}}
 function v5SetPrefs(p){localStorage.setItem(V5_PREF_KEY,JSON.stringify(p))}
-function v5Theme(t){document.documentElement.dataset.theme=t;let p=v5GetPrefs()||{modules:["budget"],startView:"summary"};p.theme=t;v5SetPrefs(p);const icon=t==="dark"?"☀":"◐";if($("#v5Theme")){$("#v5Theme").textContent=icon;$("#v5Theme").title=t==="dark"?"Açık tema":"Koyu tema"}if($("#v6ThemeTop")){$("#v6ThemeTop").textContent=icon;$("#v6ThemeTop").title=t==="dark"?"Açık tema":"Koyu tema"}if($("#v6AssetsTheme")){$("#v6AssetsTheme").textContent=icon;$("#v6AssetsTheme").title=t==="dark"?"Açık tema":"Koyu tema"}if($("#v7Theme")){$("#v7Theme").textContent=icon;$("#v7Theme").title=t==="dark"?"Açık tema":"Koyu tema"}if($("#v6ThemeSelect"))$("#v6ThemeSelect").value=t}
+function v5Theme(t){document.documentElement.dataset.theme=t;let p=v5GetPrefs()||{modules:["budget"],startView:"summary"};p.theme=t;v5SetPrefs(p);for(const id of ["v5Theme","v6ThemeTop","v6AssetsTheme","v7Theme"]){
+ const button=document.getElementById(id);
+ button.querySelector("use")?.setAttribute("href",t==="dark"?"#icon-sun":"#icon-theme");
+ button.setAttribute("aria-label",t==="dark"?"Açık temaya geç":"Koyu temaya geç");
+ }
+ $("#v6ThemeSelect").value=t;
+}
 function v51MonthKey(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`}
 function v51MonthLabel(key){let [y,m]=key.split("-").map(Number);return new Date(y,m-1,1).toLocaleDateString("tr-TR",{month:"long",year:"numeric"})}
 function v51Esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
@@ -850,9 +857,9 @@ function v5Refresh(){
  }
 
  // Donut
- const cats={};tx.filter(t=>budgetType(t)==="expense").forEach(t=>cats[t.category||"Diğer"]=(cats[t.category||"Diğer"]||0)+Number(t.amount||0));
+ const cats=Object.create(null);tx.filter(t=>budgetType(t)==="expense").forEach(t=>cats[t.category||"Diğer"]=(cats[t.category||"Diğer"]||0)+Number(t.amount||0));
  const rows=Object.entries(cats).sort((a,b)=>b[1]-a[1]).slice(0,6);
- const palette=["#2563eb","#059669","#d97706","#7c3aed","#db2777","#64748b"];
+ const palette=["#2d977b","#bc694e","#587f9e","#ad8760","#8276a5","#647b70"];
  const donut=q("#v51Donut"),total=q("#v51DonutTotal"),label=total.nextElementSibling;
  donut.style.background="none";
  donut.querySelector("svg")?.remove();
@@ -893,7 +900,7 @@ function v5Refresh(){
  const max=Math.max(1,...months.flatMap(x=>[x.inc,x.ex]));
  const compact=n=>new Intl.NumberFormat("tr-TR",{notation:"compact",maximumFractionDigits:1}).format(n||0);
  q("#v51Chart").innerHTML=months.map(x=>`
-   <div class="v51-monthcol" data-month="${x.k}" tabindex="0">
+   <div class="v51-monthcol" data-month="${x.k}" tabindex="0" role="button" aria-pressed="false">
      <div class="v53-tooltip">
        <strong>${v51Esc(x.full)}</strong>
        <div class="v53-tooltip-row"><span>Gelir</span><b class="good">${money(x.inc)}</b></div>
@@ -908,11 +915,15 @@ function v5Refresh(){
    </div>`).join("");
  q("#v51Chart").querySelectorAll(".v51-monthcol").forEach(col=>{
    const tip=col.querySelector(".v53-tooltip");
-   const show=()=>{q("#v51Chart").querySelectorAll(".v51-monthcol").forEach(c=>{if(c!==col){c.classList.remove("active");c.querySelector(".v53-tooltip")?.classList.remove("show")}});col.classList.add("active");tip.classList.add("show")};
-   const hide=()=>{col.classList.remove("active");tip.classList.remove("show")};
+   const show=()=>{q("#v51Chart").querySelectorAll(".v51-monthcol").forEach(c=>{if(c!==col){c.classList.remove("active");c.setAttribute("aria-pressed","false");c.querySelector(".v53-tooltip")?.classList.remove("show")}});col.classList.add("active");col.setAttribute("aria-pressed","true");tip.classList.add("show")};
+   const hide=()=>{col.classList.remove("active");col.setAttribute("aria-pressed","false");tip.classList.remove("show")};
    col.addEventListener("mouseenter",show);col.addEventListener("mouseleave",hide);
    col.addEventListener("focus",show);col.addEventListener("blur",hide);
    col.addEventListener("click",e=>{e.stopPropagation();show()});
+   col.addEventListener("keydown",event=>{
+    if(event.key==="Escape"){hide();return;}
+    if(event.key==="Enter"||event.key===" "){event.preventDefault();show();}
+   });
  });
 
  // Smart insights
@@ -949,7 +960,11 @@ function v5Show(view){
  if(view==="summary")v5Refresh();
  if(view==="finance")v7Render();
  if(view==="budget"||view==="transactions"){render();window.scrollTo({top:0,behavior:"smooth"})}
- document.querySelectorAll("#v5Nav button").forEach(b=>b.classList.toggle("active",b.dataset.view===view));
+ document.querySelectorAll("#v5Nav [data-view]").forEach(button=>{
+  const active=button.dataset.view===view;
+  button.classList.toggle("active",active);
+  if(active)button.setAttribute("aria-current","page");else button.removeAttribute("aria-current");
+ });
  let p=v5GetPrefs()||{modules:["budget"]};p.lastView=view;v5SetPrefs(p);
 }
 function v6SummaryPulse(){const el=$("#v5Summary");el.classList.remove("v6-summary-motion");void el.offsetWidth;el.classList.add("v6-summary-motion")}
@@ -1042,7 +1057,10 @@ function v5Init(){
  if(!p){document.querySelector("#v5Onboarding").classList.remove("v5-hide")}
  else{v5Theme(p.theme||"light");v5Show(p.startView||"summary")}
  document.querySelector("#v5Done").onclick=()=>{let modules=[...document.querySelectorAll("#v5Onboarding input:checked")].map(x=>x.value),startView=document.querySelector("#v5Start").value;p={modules:modules.length?modules:["budget"],startView,theme:"light"};v5SetPrefs(p);document.querySelector("#v5Onboarding").classList.add("v5-hide");v5Show(startView);v86Apply();v86Guide()};
- document.querySelectorAll("#v5Nav button").forEach(b=>b.onclick=()=>v5Show(b.dataset.view));
+ document.querySelectorAll("#v5Nav [data-view]").forEach(b=>b.onclick=()=>v5Show(b.dataset.view));
+ $("#desktopReceipt").onclick=()=>$("#receiptScanShortcut").click();
+ $("#desktopModules").onclick=()=>$("#v86Open").click();
+ $("#desktopAccount").onclick=openAuth;
  document.querySelector("#v5Theme").onclick=()=>v5Theme(document.documentElement.dataset.theme==="dark"?"light":"dark");
  document.querySelector("#v6ThemeTop").onclick=()=>v5Theme(document.documentElement.dataset.theme==="dark"?"light":"dark");
  document.querySelector("#v6AssetsTheme").onclick=()=>v5Theme(document.documentElement.dataset.theme==="dark"?"light":"dark");
@@ -1102,7 +1120,7 @@ function v5Init(){
  let sx=0,sy=0;const summary=$("#v5Summary");
  summary.addEventListener("touchstart",e=>{if(e.touches.length===1){sx=e.touches[0].clientX;sy=e.touches[0].clientY}},{passive:true});
  summary.addEventListener("touchend",e=>{if(!sx)return;const dx=e.changedTouches[0].clientX-sx,dy=e.changedTouches[0].clientY-sy;sx=0;if(Math.abs(dx)>65&&Math.abs(dx)>Math.abs(dy)*1.4&&!e.target.closest("button,input,select,textarea,dialog")){if(dx>0){selectedMonth=shift(selectedMonth,-1);v5Refresh();v6SummaryPulse()}else{const n=shift(selectedMonth,1);if(n<=currentMonth()){selectedMonth=n;v5Refresh();v6SummaryPulse()}}}},{passive:true});
- document.addEventListener("click",e=>{if(!e.target.closest(".v51-monthcol"))document.querySelectorAll(".v51-monthcol.active").forEach(c=>{c.classList.remove("active");c.querySelector(".v53-tooltip")?.classList.remove("show")})});
+ document.addEventListener("click",e=>{if(!e.target.closest(".v51-monthcol"))document.querySelectorAll(".v51-monthcol.active").forEach(c=>{c.classList.remove("active");c.setAttribute("aria-pressed","false");c.querySelector(".v53-tooltip")?.classList.remove("show")})});
 }
 setTimeout(v5Init,0);
 

@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#111827">
+<meta name="theme-color" content="#18392e">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Bütçem">
 <link rel="manifest" href="manifest.json">
-<title>Bütçem</title>
+<title>Bütçem – Finans Merkezi</title>
 <style>
 :root{--bg:#f5f7fb;--card:#fff;--text:#111827;--muted:#6b7280;--line:#e5e7eb;--accent:#2563eb;--good:#059669;--bad:#dc2626}
 *{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--text)}
@@ -309,12 +309,30 @@ body[data-view="budget"] .v6-budget-only{display:block}
 @media(max-width:700px){.v83-grid{grid-template-columns:1fr 1fr}.v83-custom{grid-template-columns:1fr 1fr}.v83-custom button{grid-column:1/-1}.v83-table th:nth-child(3),.v83-table td:nth-child(3){display:none}}
 
 </style>
-<style>body.v865-account-locked > :not(#authDialog):not(script):not(style){visibility:hidden!important}body.v865-account-locked #authDialog{visibility:visible!important}body.v865-account-locked #authDialog::backdrop{background:#18202b}body.v865-account-locked #authDialog::before{content:"Yerel kayıtlar bağlı hesaba özeldir. Kayıtları görüntülemek için kayıtların sahibi olan hesapla giriş yapın. Başka hesap için ayrı tarayıcı profili kullanın.";display:block;padding:12px;margin-bottom:12px;border:1px solid currentColor;border-radius:8px}</style><style>.v7-card[hidden]{display:none!important}</style><style>body.v870-session-pending{visibility:hidden!important}</style><script>try{if(localStorage.getItem("butcem_local_owner_v1"))document.documentElement.classList.add("v870-check-session")}catch(e){}</script></head>
-<body><script>if(document.documentElement.classList.contains("v870-check-session"))document.body.classList.add("v870-session-pending")</script><style>#v86Open{position:fixed;top:8px;left:8px;z-index:90}#v86Menu{margin:0 auto 0 0;height:100dvh;max-height:100dvh;width:min(320px,88vw);border-radius:0;overflow:auto;animation:v86slide .2s ease-out}#v86Menu label{display:flex;align-items:center;gap:10px;margin:12px 0}#v86Menu input{width:auto}#v5Nav [hidden],[data-v8tab][hidden]{display:none!important}@keyframes v86slide{from{transform:translateX(-100%)}to{transform:translateX(0)}} </style><button id="v86Open" class="ghost" type="button" aria-label="Modüller ve menü">☰</button><dialog id="v86Menu"><button id="v86Close" class="ghost" type="button">Kapat ×</button><h2>Modüllerim</h2><p>Gelir ve harcama takibi her zaman açık.</p><label><input type="checkbox" data-module="investments"> Yatırım ve portföy</label><label><input type="checkbox" data-module="networth"> Net servet</label><label><input type="checkbox" data-module="compare"> Portföy analizi</label><label><input type="checkbox" data-module="goals"> Birikim hedefleri</label><label><input type="checkbox" id="v86Wealth"> Servet Konumum (Net servet ile)</label><p>Modülleri kapatmak kayıtlarını silmez.</p><button id="v86Finance" type="button" class="ghost">Finans ve hedefler</button><button id="v86Settings" type="button" class="ghost">Ayarlar</button><button id="v86Help" type="button" class="ghost">Nasıl kullanılır?</button><details><summary>Uygulama hakkında</summary><p>Bütçem · Sürüm 8.7.2</p></details></dialog><dialog id="v87TemplateDialog"><h2>Harcama şablonları</h2><p>Bir harcama seç, bilgileri kontrol et ve kaydet.</p><div id="v87TemplateList" style="display:grid;gap:8px"></div><button type="button" class="ghost" onclick="this.closest('dialog').close()">Kapat</button></dialog><dialog id="v86Guide"><h2>Nasıl kullanılır?</h2><p id="v86GuideCount"></p><h3 id="v86GuideTitle"></h3><p id="v86GuideText"></p><div class="row"><button type="button" id="v86GuidePrev" class="ghost">Geri</button><button type="button" id="v86GuideNext" class="primary">İleri</button></div><button type="button" class="ghost" onclick="this.closest('dialog').close()">Atla / Kapat</button></dialog>
+<style>body.v865-account-locked > :not(#authDialog):not(script):not(style){visibility:hidden!important}body.v865-account-locked #authDialog{visibility:visible!important}body.v865-account-locked #authDialog::backdrop{background:#18202b}body.v865-account-locked #authDialog::before{content:"Yerel kayıtlar bağlı hesaba özeldir. Kayıtları görüntülemek için kayıtların sahibi olan hesapla giriş yapın. Başka hesap için ayrı tarayıcı profili kullanın.";display:block;padding:12px;margin-bottom:12px;border:1px solid currentColor;border-radius:8px}</style><style>.v7-card[hidden]{display:none!important}</style><style>body.v870-session-pending{visibility:hidden!important}</style><script>try{if(localStorage.getItem("butcem_local_owner_v1"))document.documentElement.classList.add("v870-check-session")}catch(e){}</script><link rel="stylesheet" href="design.css?v=8.7.3"></head>
+<body><svg class="app-icons" width="0" height="0" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+ <symbol id="icon-brand" viewBox="0 0 24 24"><path d="M5 18V6h6a3 3 0 0 1 0 6H5m6 0h3a3 3 0 0 1 0 6H5m13-12h1m0-1v2"/></symbol>
+ <symbol id="icon-grid" viewBox="0 0 24 24"><path d="M3 3h7v7H3zm11 0h7v7h-7zM3 14h7v7H3zm11 0h7v7h-7z"/></symbol>
+ <symbol id="icon-swap" viewBox="0 0 24 24"><path d="M4 7h15m-4-4 4 4-4 4M20 17H5m4 4-4-4 4-4"/></symbol>
+ <symbol id="icon-budget" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 4v8h8"/></symbol>
+ <symbol id="icon-chart" viewBox="0 0 24 24"><path d="M3 4v16h18M6 15l5-5 4 2 5-6"/></symbol>
+ <symbol id="icon-wallet" viewBox="0 0 24 24"><path d="M3 7h16a2 2 0 0 1 2 2v9H5a2 2 0 0 1-2-2V7Zm0 0 14-3v3m4 4h-6v4h6"/></symbol>
+ <symbol id="icon-settings" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/><circle cx="8" cy="6" r="2" fill="var(--card)"/><circle cx="15" cy="12" r="2" fill="var(--card)"/><circle cx="10" cy="18" r="2" fill="var(--card)"/></symbol>
+ <symbol id="icon-cloud" viewBox="0 0 24 24"><path d="M6 18h12a4 4 0 0 0 .5-8 6 6 0 0 0-11.5-1.5A4.8 4.8 0 1 0 6 18Z"/></symbol>
+ <symbol id="icon-theme" viewBox="0 0 24 24"><path d="M20 14A8 8 0 0 1 10 4a8 8 0 1 0 10 10Z"/></symbol>
+ <symbol id="icon-scan" viewBox="0 0 24 24"><path d="M8 3H3v5m13-5h5v5m-18 8v5h5m13-5v5h-5M7 8h10M7 12h10M7 16h7"/></symbol>
+ <symbol id="icon-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+ <symbol id="icon-close" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
+ <symbol id="icon-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 10v7m4-7v7"/></symbol>
+ <symbol id="icon-menu" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></symbol>
+ <symbol id="icon-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l2 2m10 10 2 2M5 19l2-2m10-10 2-2"/></symbol>
+ <symbol id="icon-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c4 4 4 14 0 18-4-4-4-14 0-18Z"/></symbol>
+</svg>
+<script>if(document.documentElement.classList.contains("v870-check-session"))document.body.classList.add("v870-session-pending")</script><style>#v86Open{position:fixed;top:8px;left:8px;z-index:90}#v86Menu{margin:0 auto 0 0;height:100dvh;max-height:100dvh;width:min(320px,88vw);border-radius:0;overflow:auto;animation:v86slide .2s ease-out}#v86Menu label{display:flex;align-items:center;gap:10px;margin:12px 0}#v86Menu input{width:auto}#v5Nav [hidden],[data-v8tab][hidden]{display:none!important}@keyframes v86slide{from{transform:translateX(-100%)}to{transform:translateX(0)}} </style><button id="v86Open" class="ghost" type="button" aria-label="Modüller ve menü"><svg aria-hidden="true"><use href="#icon-menu"/></svg></button><dialog id="v86Menu"><button id="v86Close" class="ghost" type="button">Kapat ×</button><h2>Modüllerim</h2><p>Gelir ve harcama takibi her zaman açık.</p><label><input type="checkbox" data-module="investments"> Yatırım ve portföy</label><label><input type="checkbox" data-module="networth"> Net servet</label><label><input type="checkbox" data-module="compare"> Portföy analizi</label><label><input type="checkbox" data-module="goals"> Birikim hedefleri</label><label><input type="checkbox" id="v86Wealth"> Servet Konumum (Net servet ile)</label><p>Modülleri kapatmak kayıtlarını silmez.</p><button id="v86Finance" type="button" class="ghost">Finans ve hedefler</button><button id="v86Settings" type="button" class="ghost">Ayarlar</button><button id="v86Help" type="button" class="ghost">Nasıl kullanılır?</button><details><summary>Uygulama hakkında</summary><p>Bütçem · Sürüm 8.7.3</p></details></dialog><dialog id="v87TemplateDialog"><h2>Harcama şablonları</h2><p>Bir harcama seç, bilgileri kontrol et ve kaydet.</p><div id="v87TemplateList" style="display:grid;gap:8px"></div><button type="button" class="ghost" onclick="this.closest('dialog').close()">Kapat</button></dialog><dialog id="v86Guide"><h2>Nasıl kullanılır?</h2><p id="v86GuideCount"></p><h3 id="v86GuideTitle"></h3><p id="v86GuideText"></p><div class="row"><button type="button" id="v86GuidePrev" class="ghost">Geri</button><button type="button" id="v86GuideNext" class="primary">İleri</button></div><button type="button" class="ghost" onclick="this.closest('dialog').close()">Atla / Kapat</button></dialog>
 <div class="app">
 <div class="top v6-shell-top"><div><h1>Bütçem</h1><div class="monthnav"><button id="prev" class="ghost">‹</button><div id="monthLabel" class="month"></div><button id="next" class="ghost">›</button></div></div><div class="v6-top-actions">
-<button id="v6ThemeTop" class="ghost v6-iconbtn" type="button" aria-label="Tema" title="Tema">◐</button>
-<button id="cloudBtn" class="ghost" type="button">☁️ Bulut</button>
+<button id="v6ThemeTop" class="ghost v6-iconbtn" type="button" aria-label="Tema" title="Tema"><svg aria-hidden="true"><use href="#icon-theme"/></svg></button>
+<button id="cloudBtn" class="ghost" type="button"><svg aria-hidden="true"><use href="#icon-cloud"/></svg> Bulut</button>
 <button id="settingsBtn" class="ghost">Ayarlar</button>
 </div></div>
 
@@ -358,7 +376,7 @@ body[data-view="budget"] .v6-budget-only{display:block}
 <div id="transactions" class="list"></div>
 </div>
 </div>
-<button id="fab" class="primary fab v5-fab v6-fab-label" aria-label="Yeni işlem">+</button>
+<button id="fab" class="primary fab v5-fab v6-fab-label" aria-label="Yeni işlem"><svg aria-hidden="true"><use href="#icon-plus"/></svg></button>
 
 <dialog id="txnDialog"><form id="txnForm">
 <h3 id="txnTitle">Harcama ekle</h3><input id="txnType" type="hidden"><input id="txnEditId" type="hidden">
@@ -438,8 +456,8 @@ body[data-view="budget"] .v6-budget-only{display:block}
 
 
 <section id="v5Summary" class="v5-summary v5-hide">
- <div class="v6-page-head"><div><h1>Bütçem</h1><div class="v6-page-title">Finansal özet</div></div><div class="v6-top-actions"><button id="v6SummaryCloud" class="ghost v6-iconbtn" type="button" aria-label="Bulut" title="Hesap ve bulut">☁</button><button id="v6SummarySettings" class="ghost v6-iconbtn" type="button" aria-label="Ayarlar" title="Ayarlar">⚙</button><button id="v5Theme" class="ghost v6-iconbtn" type="button" aria-label="Tema" title="Tema">◐</button></div></div>
- <div class="v5-hero">
+ <div class="v6-page-head"><div><p class="app-wordmark">Bütçem</p><h1>Finansal özet</h1></div><div class="v6-top-actions"><button type="button" id="receiptScanShortcut" class="ghost scan-shortcut" aria-label="Fiş tara"><svg aria-hidden="true"><use href="#icon-scan"/></svg><span>Fiş tara</span></button><button id="v6SummaryCloud" class="ghost v6-iconbtn" type="button" aria-label="Bulut" title="Hesap ve bulut"><svg aria-hidden="true"><use href="#icon-cloud"/></svg></button><button id="v6SummarySettings" class="ghost v6-iconbtn" type="button" aria-label="Ayarlar" title="Ayarlar"><svg aria-hidden="true"><use href="#icon-settings"/></svg></button><button id="v5Theme" class="ghost v6-iconbtn" type="button" aria-label="Tema" title="Tema"><svg aria-hidden="true"><use href="#icon-theme"/></svg></button></div></div>
+ <div class="overview-ledger"><div class="v5-hero">
   <div class="v51-topline">
   <div><div id="v53HeroKicker" class="v5-kicker">BU AY KALAN</div><div id="v5MainValue" class="v5-hero-value">₺0</div><div id="v53PeriodTag" class="v53-period-tag">Seçili ay özeti</div></div>
   <div class="v53-monthnav"><button id="v53PrevMonth" class="ghost" type="button" aria-label="Önceki ay">‹</button><button id="v51Month" class="v53-monthtitle v6-tappable" type="button" title="Ay seç"></button><button id="v53NextMonth" class="ghost" type="button" aria-label="Sonraki ay">›</button><input id="v6MonthPicker" class="v6-month-picker" type="month"><button id="v6ThisMonth" class="ghost v6-thismonth" type="button">Bu aya dön</button></div>
@@ -452,7 +470,8 @@ body[data-view="budget"] .v6-budget-only{display:block}
   <div class="v5-mini"><span class="v51-stat-label">Harcama</span><strong id="v5Expense" class="bad">₺0</strong><div class="v51-stat-delta">Bu ay</div></div>
   <div class="v5-mini"><span class="v51-stat-label">Net durum</span><strong id="v5Net">₺0</strong><div class="v51-stat-delta">Gelir − harcama</div></div>
   <div class="v5-mini"><span class="v51-stat-label">Tasarruf oranı</span><strong id="v5Saving">—</strong><div class="v51-stat-delta">Gelire göre</div></div>
- </div>
+ </div></div>
+ <div class="overview-panels">
 
  <div class="v51-panel">
   <div class="v51-panel-head"><div class="v51-panel-title">Harcama dağılımı</div><span class="v51-soon">Bu ay</span></div>
@@ -466,7 +485,7 @@ body[data-view="budget"] .v6-budget-only{display:block}
   <div class="v51-panel-head"><div class="v51-panel-title">6 aylık görünüm</div><span class="v51-soon">Gelir / Gider</span></div>
   <div id="v51Chart" class="v51-chart"></div>
   <div class="v53-chart-note">Masaüstünde üzerine gel, telefonda aya dokun: detaylar anında görünür.</div>
-  <div class="v51-chart-legend"><span>● Gelir</span><span>● Harcama</span></div>
+  <div class="v51-chart-legend"><span class="chart-legend-income">● Gelir</span><span class="chart-legend-expense">● Harcama</span></div>
  </div>
 
  <div class="v51-panel">
@@ -489,11 +508,12 @@ body[data-view="budget"] .v6-budget-only{display:block}
   <div class="v51-panel-head"><div class="v51-panel-title">Son işlemler</div><button id="v51AllTx" class="ghost" type="button" style="padding:7px 9px;font-size:12px">Tümünü gör</button></div>
   <div id="v51Recent" class="v51-recent"></div>
  </div>
+</div>
 </section>
 
 
 <section id="v7Finance" class="v7-hub v5-hide">
- <div class="v7-pagehead"><div><h1>Bütçem</h1><div class="sub">Finans merkezi</div></div><div class="v6-top-actions"><button id="v7Cloud" class="ghost v6-iconbtn" type="button" title="Hesap ve bulut">☁</button><button id="v7Settings" class="ghost v6-iconbtn" type="button" title="Ayarlar">⚙</button><button id="v7Theme" class="ghost v6-iconbtn" type="button" title="Tema">◐</button></div></div>
+ <div class="v7-pagehead"><div><h1>Bütçem</h1><div class="sub">Finans merkezi</div></div><div class="v6-top-actions"><button id="v7Cloud" class="ghost v6-iconbtn" type="button" title="Hesap ve bulut"><svg aria-hidden="true"><use href="#icon-cloud"/></svg></button><button id="v7Settings" class="ghost v6-iconbtn" type="button" title="Ayarlar"><svg aria-hidden="true"><use href="#icon-settings"/></svg></button><button id="v7Theme" class="ghost v6-iconbtn" type="button" title="Tema"><svg aria-hidden="true"><use href="#icon-theme"/></svg></button></div></div>
  <div class="v7-tabs">
   <button class="ghost active" data-v7tab="accounts">Hesaplar</button>
   <button class="ghost" data-v7tab="recurring">Düzenli İşlemler</button>
@@ -531,7 +551,7 @@ body[data-view="budget"] .v6-budget-only{display:block}
 
 
 <section id="v6Assets" class="v8-wrap v5-hide">
- <div class="v8-head"><div><h1>Bütçem</h1><div class="sub">Net servet & yatırım laboratuvarı</div></div><div class="v6-top-actions"><button id="v6AssetsCloud" class="ghost v6-iconbtn" type="button" title="Hesap ve bulut">☁</button><button id="v6AssetsSettings" class="ghost v6-iconbtn" type="button" title="Ayarlar">⚙</button><button id="v6AssetsTheme" class="ghost v6-iconbtn" type="button" title="Tema">◐</button></div></div>
+ <div class="v8-head"><div><p class="app-wordmark">Bütçem</p><h1>Varlıklar ve yatırımlar</h1></div><div class="v6-top-actions"><button id="v6AssetsCloud" class="ghost v6-iconbtn" type="button" title="Hesap ve bulut"><svg aria-hidden="true"><use href="#icon-cloud"/></svg></button><button id="v6AssetsSettings" class="ghost v6-iconbtn" type="button" title="Ayarlar"><svg aria-hidden="true"><use href="#icon-settings"/></svg></button><button id="v6AssetsTheme" class="ghost v6-iconbtn" type="button" title="Tema"><svg aria-hidden="true"><use href="#icon-theme"/></svg></button></div></div>
  <div class="v8-tabs">
   <button class="ghost active" data-v8tab="overview">Genel Bakış</button>
   <button class="ghost" data-v8tab="portfolio">Portföy</button>
@@ -592,13 +612,13 @@ body[data-view="budget"] .v6-budget-only{display:block}
  </div>
 </section>
 
-<nav class="v5-nav" id="v5Nav"><button data-view="summary"><i>⌂</i>Özet</button><button data-view="transactions"><i>⇄</i>İşlemler</button><button data-view="budget"><i>◎</i>Bütçe</button><button data-view="assets"><i>◇</i>Varlıklar</button></nav>
+<nav class="v5-nav" id="v5Nav" aria-label="Ana gezinme"><div class="product-brand"><svg aria-hidden="true"><use href="#icon-brand"/></svg><span>Bütçem</span></div><div class="nav-destinations"><button type="button" data-view="summary"><svg aria-hidden="true"><use href="#icon-grid"/></svg><span>Özet</span></button><button type="button" data-view="transactions"><svg aria-hidden="true"><use href="#icon-swap"/></svg><span>İşlemler</span></button><button type="button" data-view="budget"><svg aria-hidden="true"><use href="#icon-budget"/></svg><span>Bütçe</span></button><button type="button" data-view="assets"><svg aria-hidden="true"><use href="#icon-chart"/></svg><span>Varlıklar</span></button><button type="button" data-view="finance"><svg aria-hidden="true"><use href="#icon-wallet"/></svg><span>Hesaplar</span></button></div><div class="nav-tools"><button id="desktopReceipt" type="button"><svg aria-hidden="true"><use href="#icon-scan"/></svg>Fiş tara</button><button id="desktopModules" type="button"><svg aria-hidden="true"><use href="#icon-settings"/></svg>Modüller ve ayarlar</button><button id="desktopAccount" type="button"><svg aria-hidden="true"><use href="#icon-cloud"/></svg>Hesap ve eşitleme</button></div></nav>
 <div id="v5Onboarding" class="v5-onboarding v5-hide"><div><div class="v5-kicker">BÜTÇEM</div><h2>Bütçem'i ne için kullanacaksın?</h2><p class="v5-sub">Birden fazla seçebilirsin. Tercihlerini daha sonra değiştirebileceksin.</p>
-<label class="v5-choice"><input type="checkbox" value="budget" checked>💳 Harcama ve bütçe takibi</label>
-<label class="v5-choice"><input type="checkbox" value="networth">💰 Net servet takibi</label>
-<label class="v5-choice"><input type="checkbox" value="investments">📈 Yatırım takibi</label>
-<label class="v5-choice"><input type="checkbox" value="compare">⚖️ Portföy karşılaştırma / backtest</label>
-<label class="v5-choice"><input type="checkbox" value="goals">🎯 Birikim hedefleri</label>
+<label class="v5-choice"><input type="checkbox" value="budget" checked><svg aria-hidden="true"><use href="#icon-budget"/></svg> Harcama ve bütçe takibi</label>
+<label class="v5-choice"><input type="checkbox" value="networth"><svg aria-hidden="true"><use href="#icon-wallet"/></svg> Net servet takibi</label>
+<label class="v5-choice"><input type="checkbox" value="investments"><svg aria-hidden="true"><use href="#icon-chart"/></svg> Yatırım takibi</label>
+<label class="v5-choice"><input type="checkbox" value="compare"><svg aria-hidden="true"><use href="#icon-swap"/></svg> Portföy karşılaştırma / backtest</label>
+<label class="v5-choice"><input type="checkbox" value="goals"><svg aria-hidden="true"><use href="#icon-budget"/></svg> Birikim hedefleri</label>
 <label>Başlangıç ekranı</label><select id="v5Start"><option value="summary">Özet</option><option value="transactions">İşlemler</option><option value="budget">Bütçe</option><option value="finance">Finans</option><option value="assets">Varlıklar</option></select>
 <button id="v5Done" class="primary" style="width:100%;margin-top:16px">Bütçem'i aç</button></div></div>
 
@@ -646,12 +666,45 @@ body[data-view="budget"] .v6-budget-only{display:block}
 </form></dialog>
 <div id="v6Toast" class="v6-toast"><span id="v6ToastText">Kaydedildi</span><button id="v6ToastAction" type="button" style="display:none">Geri al</button></div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="vendor/supabase-2.119.2.js" integrity="sha384-A97u3Qnt9GZHURO9YJZRe7VQgGUeFzcv6I1oIGnUTxQrCxnpQMwR0/G8F2zt9abZ"></script>
 <script src="supabase-config.js?v=8.2"></script>
 
-<datalist id="stmtCategoryChoices"><option value="Hesaplar Arası Transfer"></option></datalist><script src="app.js?v=8.7.2"></script>
+<datalist id="stmtCategoryChoices"><option value="Hesaplar Arası Transfer"></option></datalist><script src="app.js?v=8.7.3"></script>
 <script src="statements.js?v=8.6.1"></script>
-<dialog id="receiptDialog" style="width:min(94vw,680px);max-height:90vh;overflow:auto"><h2>Akıllı fiş tarayıcı <span class="v7-chip">BETA</span></h2><p class="small">Bu özellik geliştirme aşamasındadır. Okuyamadığımız alanları elle tamamlayabilir, yanlış ürünleri düzeltebilirsin.</p><p class="small">Fotoğraf cihazında okunur. OCR hatalarını düzelt; sadece onaylanan ürün kayıtları buluta eşitlenebilir. Fotoğraf yalnızca saklama seçeneğini işaretlersen bu cihazda tutulur.</p><input id="receiptFile" type="file" accept="image/jpeg,image/png,image/webp"><label><input type="checkbox" id="receiptKeepPhoto"> Fotoğrafı bu cihazda sakla</label><button type="button" id="receiptArchiveOpen">Fotoğraf arşivi</button><button type="button" id="receiptScan" class="primary">Fotoğrafı oku</button><p id="receiptStatus" role="status"></p><details><summary>Okunan metin / elle giriş</summary><textarea id="receiptText" rows="5" placeholder="Süt 48,50"></textarea><button type="button" id="receiptParse">Metni ayrıştır</button></details><label>Market<input id="receiptStore" placeholder="Market adı"></label><label>Tarih<input id="receiptDate" type="date"></label><label>Hesap<input id="receiptAccount" list="accountSuggestions" placeholder="Nakit veya banka hesabı"></label><label>Fiş toplamı (TL)<input id="receiptTotal" type="number" min="0.01" step="0.01"></label><div style="overflow:auto"><table style="width:100%;min-width:350px"><thead><tr><th>Ürün</th><th>Tutar</th><th>Kategori</th><th></th></tr></thead><tbody id="receiptRows"></tbody></table></div><button type="button" id="receiptAdd">+ Ürün ekle</button><p id="receiptCheck" role="status"></p><p id="receiptHelp" role="status" style="font-weight:600"></p><button type="button" id="receiptCommit" class="primary" disabled>Onayla ve kaydet</button> <button type="button" id="receiptClose" class="ghost">Kapat</button></dialog>
+<dialog id="receiptDialog" class="receipt-dialog" aria-labelledby="receiptTitle">
+ <header class="receipt-head"><div><h2 id="receiptTitle">Fiş tarayıcı</h2><p>Fotoğrafı tara, ürünleri ve indirimleri doğrula.</p></div><button type="button" id="receiptClose" class="ghost icon-action" aria-label="Kapat"><svg aria-hidden="true"><use href="#icon-close"/></svg></button></header>
+ <div class="receipt-workspace">
+  <section class="receipt-capture" aria-label="Belge">
+   <label class="receipt-upload"><svg aria-hidden="true"><use href="#icon-scan"/></svg><span>Fiş fotoğrafı</span><input id="receiptFile" type="file" accept="image/jpeg,image/png,image/webp"></label>
+   <div id="receiptPhotoTools" hidden>
+    <canvas id="receiptPreview" aria-label="Fiş önizlemesi"></canvas>
+    <div class="receipt-tool-row">
+     <button id="receiptRotate" class="ghost" type="button">Döndür</button>
+     <button id="receiptPerspective" class="ghost" type="button">Köşeleri seç</button>
+     <button id="receiptResetCorners" class="ghost" type="button">Sıfırla</button>
+    </div>
+   </div>
+   <label>Görüntü işleme<select id="receiptMode"><option value="contrast">Kontrast</option><option value="shadow">Gölge azaltma</option><option value="original">Orijinal</option></select></label>
+   <button type="button" id="receiptScan" class="primary">Fotoğrafı oku</button>
+   <p id="receiptStatus" role="status"></p>
+   <details id="receiptTextPanel"><summary>Fiş metnini düzenle veya yapıştır</summary><textarea id="receiptText" aria-label="Fiş metni" rows="6" placeholder="Süt 48,50"></textarea><button type="button" id="receiptParse" class="ghost">Metni ayrıştır</button></details>
+   <label class="receipt-check-line"><input type="checkbox" id="receiptKeepPhoto"> Fotoğrafı bu cihazda sakla</label>
+   <button type="button" id="receiptArchiveOpen" class="ghost">Fotoğraf arşivi</button>
+  </section>
+  <section class="receipt-data" aria-label="Fiş doğrulama">
+   <div class="receipt-metadata"><label>Market<input id="receiptStore" placeholder="Market adı"></label><label>Tarih<input id="receiptDate" type="date"></label><label>Hesap<input id="receiptAccount" list="accountSuggestions" placeholder="Nakit veya banka hesabı"></label><label>Fişte yazan toplam (TL)<input id="receiptTotal" type="number" min="0.01" step="0.01"></label></div>
+   <table class="receipt-table"><thead><tr><th>Ürün / kategori</th><th>Miktar / birim</th><th>Normal fiyat</th><th>İndirim</th><th>Net fiyat</th><th><span class="sr-only">İşlem</span></th></tr></thead><tbody id="receiptRows"></tbody></table>
+   <button type="button" id="receiptAdd" class="ghost"><svg aria-hidden="true"><use href="#icon-plus"/></svg> Ürün ekle</button>
+   <section id="receiptDiscountReview" class="receipt-review" hidden><h3>İndirim eşleştirme</h3><p>Satırın hangi ürüne ya da tüm fişe ait olduğunu fişten kontrol et.</p><div id="receiptDiscounts"></div></section>
+   <div id="receiptReview" class="receipt-review" hidden><p id="receiptReviewText"></p><label class="receipt-check-line"><input id="receiptReviewConfirm" type="checkbox"> Okuma uyarılarını fişle karşılaştırdım</label></div>
+   <dl class="receipt-totals"><div><dt>İndirimsiz toplam</dt><dd id="receiptGross">—</dd></div><div><dt>Toplam indirim</dt><dd id="receiptSaved">—</dd></div><div><dt>Tasarruf oranı</dt><dd id="receiptPercent">—</dd></div><div><dt>Ödenen net tutar</dt><dd id="receiptNet">—</dd></div></dl>
+   <p id="receiptCheck" class="receipt-badge" role="status"></p><p id="receiptHelp" class="receipt-help" aria-live="polite"></p>
+   <button type="button" id="receiptCommit" class="primary" disabled>Onayla ve kaydet</button>
+  </section>
+ </div>
+</dialog>
 <dialog id="receiptArchiveDialog"><h2>Fiş fotoğrafları</h2><p>Yalnızca bu cihazda saklanır; tarayıcı verileri temizlenirse kaybolabilir.</p><div id="receiptArchiveList"></div><img id="receiptArchiveImage" hidden style="max-width:100%;max-height:50vh" alt="Fiş fotoğrafı"><button type="button" id="receiptArchiveClose">Kapat</button></dialog>
-<script src="receipts.js?v=8.6.9"></script>
+<script src="receipt-parser.js?v=8.7.3"></script>
+<script src="receipt-image.js?v=8.7.3"></script>
+<script src="receipts.js?v=8.7.3"></script>
 </body></html>

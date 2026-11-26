@@ -1,29 +1,11 @@
-async function receiptImage(file){let bitmap;try{bitmap=await createImageBitmap(file);const scale=Math.min(2,2400/Math.max(bitmap.width,bitmap.height));const canvas=document.createElement("canvas");canvas.width=Math.max(1,Math.round(bitmap.width*scale));canvas.height=Math.max(1,Math.round(bitmap.height*scale));const ctx=canvas.getContext("2d");ctx.filter="grayscale(1) contrast(1.25)";ctx.drawImage(bitmap,0,0,canvas.width,canvas.height);return canvas}catch(e){return file}finally{bitmap?.close()}}
 (()=>{
 "use strict";
 const q=id=>document.getElementById(id);
-let rows=[],busy=false,owner=null;
-function parse(text){
- const out=[];let total=null,store="",date="";
- for(const line of text.split(/\r?\n/)){
- const s=line.trim().replace(/(\d)\s*([,.])\s*(\d{2})(?!\d)/g,"$1$2$3").replace(/−/g,"-");
- if(!store&&/ŞOK MARKET|SOK MARKET/i.test(s))store="ŞOK";
- const d=s.match(/TAR[İI]H\s*:?\s*(\d{2})[./-](\d{2})[./-](\d{4})/i);if(d)date=d[3]+"-"+d[2]+"-"+d[1];
- if(/^\d+[,.]?\d*\s*(?:kg|gr|g|adet)?\s*[x×]\s*\d/i.test(s))continue;
- const m=s.match(/^(.*?)\s+[*₺]?\s*(-?\d{1,6}(?:\.\d{3})*,\d{2}|-?\d{1,6}\.\d{2})\s*(-)?\s*(?:TL|₺)?$/i);if(!m)continue;
- const name=m[1].replace(/\s*%\s*\d{1,2}\s*$/,"").trim(), amount=Number(m[2].includes(",")?m[2].replace(/\./g,"").replace(",","."):m[2])*(m[3]?-1:1);
- if(/^(?:GENEL\s+)?TOPLAM\b|^ÖDENECEK\b/i.test(name)){total=amount;break}
- if(amount<0){const prev=out.at(-1);if(prev&&prev.amount+amount>0){prev.amount=Math.round((prev.amount+amount)*100)/100;prev.name+=" (indirimli)"}else out.push({name:"İndirim kontrolü: "+name,amount,category:"Market"});continue}
- if(!name||!(amount>0)||/KDV|ARA TOPLAM|NAK[İI]T|KRED[İI]|PARA ÜSTÜ|İNDİRİM|ISKONTO|TAR[İI]H|SAAT|F[İI]Ş NO|POS|BANKA|TOPKDV/i.test(name))continue;
- out.push({name,amount,category:category(name)});
- }return {rows:out,total,store,date};
-}
+let products=[],discounts=[],warnings=[],printedDiscount=null,busy=false,owner=null;
+let source=null,rotated=null,corners=[],turns=0,selecting=false,fileVersion=0,nextId=1;
 function learnedKey(n){return n.toLocaleLowerCase('tr-TR').replace(/\s*\(indirimli\)/g,'').replace(/\s+/g,' ').trim()}
 function learned(){const m=new Map();for(const t of state.transactions){if(t.type==='expense'&&String(t.note||'').startsWith('Fiş: ')&&t.description?.includes(' · '))m.set(learnedKey(t.description.split(' · ').slice(1).join(' · ')),t.category)}return m}
-function category(n){const remembered=learned().get(learnedKey(n));if(remembered&&remembered!==TRANSFER_CAT)return remembered;const s=n.toLocaleLowerCase("tr-TR");return /arko|şampuan|sabun|diş macun|deodorant/.test(s)?"Kişisel Bakım":/finish|quantum|deterjan|çamaşır|temizlik|bulaşık/.test(s)?"Temizlik":/ozmo|çikolata|cips|bisküvi/.test(s)?"Atıştırmalık":/namet|dana|piliç|baget|süt|ekmek|yumurta|peynir|yoğurt|et\b|tavuk|pirinç|makarna/.test(s)?"Gıda":"Market"}
-function draw(){const body=q("receiptRows");body.replaceChildren();rows.forEach((r,i)=>{const tr=document.createElement("tr");for(const [key,type] of [["name","text"],["amount","number"],["category","text"]]){const td=document.createElement("td"),input=document.createElement("input");input.type=type;input.value=r[key];input.setAttribute("aria-label",key==="name"?"Ürün":key==="amount"?"Tutar":"Kategori");if(type==="number"){input.min="0.01";input.step="0.01"}input.style.width="100%";input.oninput=()=>{r[key]=type==="number"?Number(input.value):input.value;check()};td.append(input);tr.append(td)}const td=document.createElement("td"),b=document.createElement("button");b.type="button";b.textContent="×";b.setAttribute("aria-label","Satırı kaldır");b.onclick=()=>{rows.splice(i,1);draw()};td.append(b);tr.append(td);body.append(tr)});check()}
-function check(){const sum=rows.reduce((s,r)=>s+Math.round(r.amount*100),0),total=Math.round(Number(q("receiptTotal").value)*100),valid=rows.length>0&&rows.every(r=>r.name.trim()&&r.category.trim()&&r.category!==TRANSFER_CAT&&Number.isFinite(r.amount)&&r.amount>0)&&total>0&&sum===total;q("receiptCheck").textContent="Ürün toplamı: "+money(sum/100)+(total>0?" · Fark: "+money((total-sum)/100):" · Fiş toplamını gir");const issues=[];if(!rows.length)issues.push("Ürünleri net okuyamadık. + Ürün ekle ile elle gir.");if(rows.some(r=>!r.name.trim()||!r.category.trim()||r.category===TRANSFER_CAT||!Number.isFinite(r.amount)||r.amount<=0))issues.push("Eksik veya geçersiz ürün satırlarını düzelt.");if(!(total>0))issues.push("Fiş toplamını net okuyamadık; elle gir.");else if(sum!==total)issues.push("Ürün toplamı fişle uyuşmuyor. Eksik ürünleri, fiyatları ve indirimleri kontrol et.");if(!q("receiptStore").value.trim())issues.push("Market adını gir.");if(!q("receiptAccount").value.trim())issues.push("Hesabı gir.");if(!q("receiptDate").value)issues.push("Tarihi gir.");q("receiptHelp").textContent=issues.join(" ")||"Tutarlar uyumlu. Kaydetmeden önce fişle karşılaştır.";q("receiptCommit").disabled=busy||!valid||issues.length>0;return valid&&issues.length===0}
-
+function category(n,known){const remembered=known.get(learnedKey(n));if(remembered&&remembered!==TRANSFER_CAT)return remembered;const s=n.toLocaleLowerCase("tr-TR");return /arko|şampuan|sabun|diş macun|deodorant/.test(s)?"Kişisel Bakım":/finish|quantum|deterjan|çamaşır|temizlik|bulaşık/.test(s)?"Temizlik":/ozmo|çikolata|cips|bisküvi/.test(s)?"Atıştırmalık":/namet|dana|piliç|baget|süt|ekmek|yumurta|peynir|yoğurt|et\b|tavuk|pirinç|makarna/.test(s)?"Gıda":"Market"}
 function archiveOwner(){return currentUser?.id||"local"}
 function archiveAllowed(){const b=localStorage.getItem("butcem_local_owner_v1");return !b||b===currentUser?.id}
 async function archiveOp(mode,fn){const db=await new Promise((ok,no)=>{const r=indexedDB.open("butcem_receipt_archive",1);r.onupgradeneeded=()=>r.result.createObjectStore("photos",{keyPath:"id"});r.onsuccess=()=>ok(r.result);r.onerror=()=>no(r.error)});try{return await new Promise((ok,no)=>{const t=db.transaction("photos",mode),r=fn(t.objectStore("photos"));t.oncomplete=()=>ok(r.result);t.onabort=t.onerror=()=>no(t.error)})}finally{db.close()}}
@@ -33,12 +15,263 @@ q("receiptArchiveOpen").onclick=async()=>{try{archiveClear();await archiveShow()
 q("receiptArchiveClose").onclick=()=>q("receiptArchiveDialog").close();
 q("receiptArchiveDialog").addEventListener("close",archiveClear);
 
-q("receiptOpen").onclick=()=>{owner=currentUser?.id||null;q("receiptKeepPhoto").checked=false;rows=[];q("receiptFile").value="";q("receiptText").value="";q("receiptTotal").value="";q("receiptDate").value="";q("receiptStore").value="";q("receiptAccount").value="";q("receiptStatus").textContent="Fotoğrafı seç veya fiş metnini yapıştır.";draw();q("receiptDialog").showModal()};
-q("receiptClose").onclick=()=>{if(!busy)q("receiptDialog").close()};
-q("receiptDialog").addEventListener("cancel",e=>{if(busy)e.preventDefault()});
-for(const id of ["receiptTotal","receiptStore","receiptAccount","receiptDate"])q(id).oninput=check;
-q("receiptAdd").onclick=()=>{rows.push({name:"",amount:0,category:"Market"});draw()};
-q("receiptParse").onclick=()=>{const p=parse(q("receiptText").value);rows=p.rows;q("receiptTotal").value=p.total??"";q("receiptStore").value=p.store||"";q("receiptDate").value=p.date||"";draw()};
-q("receiptScan").onclick=async()=>{const f=q("receiptFile").files[0];if(!f||busy)return;if(!/^image\/(jpeg|png|webp)$/.test(f.type)||f.size>15*1024*1024){q("receiptStatus").textContent="JPG, PNG veya WebP (en fazla 15 MB) seç.";return}busy=true;q("receiptScan").disabled=true;q("receiptParse").disabled=true;check();let worker;try{if(!window.Tesseract){await new Promise((resolve,reject)=>{const s=document.createElement("script");s.src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js";s.onload=resolve;s.onerror=reject;document.head.append(s)})}worker=await Tesseract.createWorker("tur+eng",1,{logger:m=>{q("receiptStatus").textContent="OCR: "+m.status+" "+Math.round((m.progress||0)*100)+"%"}});const result=await worker.recognize(await receiptImage(f));q("receiptText").value=result.data.text;const p=parse(q("receiptText").value);rows=p.rows;q("receiptTotal").value=p.total??"";q("receiptStore").value=p.store||"";q("receiptDate").value=p.date||"";draw();q("receiptStatus").textContent="Otomatik okuma tamamlandı (Beta). Okunamayan veya yanlış satırları elle tamamla; fişle karşılaştır."}catch(e){q("receiptStatus").textContent="Fotoğrafı net okuyamadık. Daha net bir fotoğraf dene veya + Ürün ekle ile elle gir."}finally{if(worker)await worker.terminate().catch(()=>{});busy=false;q("receiptScan").disabled=false;q("receiptParse").disabled=false;check()}};
-q("receiptCommit").onclick=async()=>{if(!archiveAllowed()||!check()||busy||owner!==(currentUser?.id||null))return;const date=q("receiptDate").value,store=q("receiptStore").value.trim(),account=q("receiptAccount").value.trim();if(!date||!store||!account){q("receiptStatus").textContent="Tarih, market ve hesap bilgisi gerekli.";return}const signature=rs=>rs.map(r=>learnedKey(r.name)+":"+Math.round(r.amount*100)).sort().join("|");const groups=new Map();for(const t of state.transactions){if(t.date!==date||!String(t.note||"").startsWith("Fiş: ")||!String(t.description||"").startsWith(store+" · "))continue;const g=groups.get(t.note)||[];g.push({name:t.description.slice(store.length+3),amount:t.amount});groups.set(t.note,g)}if([...groups.values()].some(g=>signature(g)===signature(rows))){q("receiptStatus").textContent="Bu fiş daha önce kaydedilmiş görünüyor. Önce mevcut işlemleri kontrol et.";return}if(!confirm(rows.length+" ürün ayrı harcama olarak kaydedilecek. Aynı fiş banka ekstresinde varsa çift kayıt oluşabilir. Devam?"))return;const stamp=new Date().toISOString(),group=crypto.randomUUID();for(const r of rows){if(!state.categories.includes(r.category.trim()))state.categories.push(r.category.trim());state.transactions.push({id:crypto.randomUUID(),type:"expense",amount:Math.round(r.amount*100)/100,category:r.category.trim(),payment:"Diğer",cardName:account,description:store+" · "+r.name.trim(),note:"Fiş: "+group,date,updatedAt:stamp})}state.settingsUpdatedAt=stamp;save();v5Refresh();const count=rows.length,file=q("receiptFile").files[0],who=archiveOwner(),keep=q("receiptKeepPhoto").checked;q("receiptDialog").close();rows=[];if(keep&&file&&["image/jpeg","image/png","image/webp"].includes(file.type)&&file.size<=15*1024*1024){try{await archiveOp("readwrite",s=>s.put({id:who+":"+group,owner:who,date,store,blob:file}));v6Toast(count+" ürün ve fotoğraf kaydedildi")}catch(e){v6Toast("Ürünler kaydedildi; fotoğraf saklanamadı")}}else v6Toast(count+" ürün kaydedildi")};
+
+function allowed(){return archiveAllowed()&&owner===currentUser?.id&&q("receiptDialog").open;}
+function status(text){q("receiptStatus").textContent=text;}
+const displayCents=cents=>money(cents/100);
+const numberInput=cents=>cents===null?"":(cents/100).toFixed(2);
+function control(type,label,value,change){
+ const input=document.createElement("input");
+ input.type=type;input.value=value;input.setAttribute("aria-label",label);
+ if(type==="number"){input.min="0";input.step=label==="Miktar"?"0.001":"0.01";}
+ input.oninput=()=>{change(input.value);check();};
+ return input;
+}
+function draw(){
+ const body=q("receiptRows");
+ body.replaceChildren();
+ for(const product of products){
+  const row=document.createElement("tr");
+  row.dataset.product=product.id;
+  const append=(label,...children)=>{
+   const cell=document.createElement("td");
+   cell.dataset.label=label;cell.append(...children);row.append(cell);
+  };
+  const category=control("text","Kategori",product.category,v=>product.category=v);
+  category.setAttribute("list","stmtCategoryChoices");
+  append("Ürün",control("text","Ürün",product.name,v=>product.name=v),category);
+  const quantity=control("number","Miktar",product.quantity,v=>product.quantity=Number(v));
+  const unit=document.createElement("select");
+  unit.setAttribute("aria-label","Birim");
+  for(const value of ["adet","kg","gr","g","lt","l"])unit.add(new Option(value,value,false,product.unit===value));
+  unit.onchange=()=>product.unit=unit.value;
+  append("Miktar",quantity,unit,control("number","Birim fiyat",numberInput(product.unitPrice),v=>product.unitPrice=receiptCents(v)));
+  const gross=control("number","Normal fiyat",numberInput(product.gross),v=>product.gross=receiptCents(v));
+  const original=document.createElement("span");original.className="receipt-original";
+  append("Normal fiyat",gross,original);
+  const discount=control("number","Ürün indirimi",numberInput(product.discount),v=>product.discount=receiptCents(v));
+  const saving=document.createElement("span");saving.className="receipt-saving";
+  append("İndirim",discount,saving);
+  const net=document.createElement("strong");net.className="receipt-product-net";
+  append("Net fiyat",net);
+  const del=document.createElement("button");
+  del.type="button";del.className="ghost icon-action";del.setAttribute("aria-label","Ürünü kaldır");
+  del.innerHTML='<svg aria-hidden="true"><use href="#icon-trash"/></svg>';
+  del.onclick=()=>{
+   products=products.filter(p=>p.id!==product.id);
+   for(const adjustment of discounts){
+    if(adjustment.productId===product.id)delete adjustment.productId;
+    if(adjustment.target===String(product.id))delete adjustment.target;
+   }
+   draw();
+  };
+  append("",del);
+  body.append(row);
+ }
+ const section=q("receiptDiscounts");
+ section.replaceChildren();
+ for(const discount of discounts){
+  if(discount.productId)continue;
+  const label=document.createElement("label");
+  label.textContent=discount.label+" · "+displayCents(discount.cents);
+  const select=document.createElement("select");
+  select.add(new Option("Eşleştirme seç",""));
+  select.add(new Option("Fiş geneline orantılı dağıt","receipt"));
+  for(const product of products)select.add(new Option(product.name||"Adsız ürün",String(product.id)));
+  select.add(new Option("Bilgi satırı olarak işaretle","ignore"));
+  select.value=discount.target||"";
+  select.onchange=()=>{discount.target=select.value;check();};
+  label.append(select);
+  section.append(label);
+ }
+ q("receiptDiscountReview").hidden=!section.children.length;
+ check();
+}
+function check(){
+ const total=receiptCents(q("receiptTotal").value), summary=receiptSummary(products,discounts,total);
+ for(const product of summary.rows){
+  const row=q("receiptRows").querySelector('[data-product="'+product.id+'"]');
+  if(!row)continue;
+  row.querySelector(".receipt-original").textContent=product.discount>0?displayCents(product.gross):"";
+  row.querySelector(".receipt-saving").textContent=product.discount>0?"−"+displayCents(product.discount):"";
+  row.querySelector(".receipt-product-net").textContent=displayCents(product.net);
+ }
+ q("receiptGross").textContent=displayCents(summary.gross);
+ q("receiptSaved").textContent=displayCents(summary.discount);
+ q("receiptNet").textContent=displayCents(summary.net);
+ q("receiptPercent").textContent=new Intl.NumberFormat("tr-TR",{style:"percent",maximumFractionDigits:1}).format(summary.percent/100);
+ const problems=[];
+ if(!products.length)problems.push("Fiş ürünlerini ekle veya fişi yeniden oku.");
+ if(products.some(p=>!p.name.trim()||!p.category.trim()||p.category.trim()===TRANSFER_CAT||
+    !Number.isSafeInteger(p.gross)||p.gross<=0||!Number.isSafeInteger(p.discount)||p.discount<0||p.discount>p.gross||!(p.quantity>0))){
+  problems.push("Ürün adı, tutar, miktar, indirim ve kategori alanlarını kontrol et.");
+ }
+ if(summary.unresolved.length)problems.push("Belirsiz indirimleri ürünlerle eşleştir veya fiş geneline dağıt.");
+ if(total===null||total<=0)problems.push("Fişte yazan ödenecek toplamı gir.");
+ else if(summary.net!==total)problems.push("Fiş ile ürünler arasındaki fark "+displayCents(total-summary.net)+".");
+ const review=[...warnings];
+ if(printedDiscount!==null&&summary.discount!==printedDiscount)review.push("Fişte belirtilen toplam indirim "+displayCents(printedDiscount)+".");
+ if(products.some(p=>p.unitPrice!==null&&Math.round(p.quantity*p.unitPrice)!==p.gross)){
+  review.push("Bazı ürünlerin miktarı ile birim fiyatı satır tutarını vermiyor.");
+ }
+ const reviewText=[...new Set(review)].join(" ");
+ q("receiptReview").hidden=!reviewText;
+ q("receiptReviewText").textContent=reviewText;
+ if(reviewText&&!q("receiptReviewConfirm").checked)problems.push("Okuma uyarılarını fişle karşılaştır ve onayla.");
+ if(!q("receiptStore").value.trim()||!q("receiptDate").value||!q("receiptAccount").value.trim())problems.push("Market, tarih ve hesap bilgilerini tamamla.");
+ q("receiptCheck").textContent=summary.valid?"Toplam eşleşti":summary.unresolved.length?"İndirim onayı gerekli":"Doğrulama bekliyor";
+ q("receiptCheck").dataset.valid=String(summary.valid);
+ q("receiptHelp").textContent=problems.join(" ")||"Tutarlar doğrulandı. Ürünleri kontrol edip kaydedebilirsin.";
+ q("receiptCommit").disabled=busy||!summary.valid||problems.length>0;
+ return q("receiptCommit").disabled?null:summary;
+}
+function applyText(){
+ const known=learned();
+ const parsed=parseReceipt(q("receiptText").value,name=>category(name,known));
+ products=parsed.products;discounts=parsed.discounts;warnings=parsed.issues;printedDiscount=parsed.printedDiscount;
+ nextId=products.length+1;
+ q("receiptTotal").value=numberInput(parsed.total);
+ if(parsed.store)q("receiptStore").value=parsed.store;
+ if(parsed.date)q("receiptDate").value=parsed.date;
+ q("receiptReviewConfirm").checked=false;
+ draw();
+}
+function showPreview(){
+ const canvas=q("receiptPreview"),ctx=canvas.getContext("2d");
+ q("receiptPhotoTools").hidden=!source;
+ if(!source)return;
+ rotated=rotateReceipt(source,turns);
+ const ratio=Math.min(1,850/Math.max(rotated.width,rotated.height));
+ canvas.width=Math.max(1,Math.round(rotated.width*ratio));canvas.height=Math.max(1,Math.round(rotated.height*ratio));
+ ctx.drawImage(rotated,0,0,canvas.width,canvas.height);
+ for(const [index,point] of corners.entries()){
+  ctx.fillStyle="#005c4f";ctx.beginPath();ctx.arc(point.x*canvas.width,point.y*canvas.height,11,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle="white";ctx.font="bold 13px sans-serif";ctx.textAlign="center";ctx.textBaseline="middle";
+  ctx.fillText(String(index+1),point.x*canvas.width,point.y*canvas.height);
+ }
+}
+q("receiptPreview").onclick=event=>{
+ if(!selecting||busy)return;
+ const bounds=event.target.getBoundingClientRect();
+ corners.push({x:(event.clientX-bounds.left)/bounds.width,y:(event.clientY-bounds.top)/bounds.height});
+ if(corners.length===4){
+  selecting=false;
+  status("Belge köşeleri seçildi. Fotoğrafı okuyabilirsin.");
+ }
+ showPreview();
+};
+q("receiptRotate").onclick=()=>{turns++;corners=[];selecting=false;showPreview();};
+q("receiptPerspective").onclick=()=>{
+ corners=[];selecting=true;showPreview();
+ status("Önizlemede köşeleri sol üstten başlayıp saat yönünde sırayla seç.");
+};
+q("receiptResetCorners").onclick=()=>{corners=[];selecting=false;showPreview();status("Köşe düzeltmesi kaldırıldı.");};
+const photoAllowed=f=>f&&/^image\/(jpeg|png|webp)$/.test(f.type)&&f.size<=15*1024*1024;
+q("receiptFile").onchange=async()=>{
+ const version=++fileVersion,file=q("receiptFile").files[0];
+ source=null;corners=[];turns=0;selecting=false;showPreview();
+ if(!photoAllowed(file)){if(file)status("JPG, PNG veya WebP (en fazla 15 MB) seç.");return;}
+ try{
+  const image=await receiptSource(file);
+  if(version!==fileVersion||!allowed())return;
+  source=image;showPreview();
+  status(receiptSharpness(image)<12?"Fotoğraf bulanık olabilir. Kenarları ve satırları yakından kontrol et.":"Fotoğraf hazır. Gerekirse döndür veya köşelerini düzelt.");
+ }catch{status("Fotoğraf açılamadı. Başka bir görsel seç veya metni gir.");}
+};
+function openReceipt(){
+ if(!archiveAllowed())return;
+ owner=currentUser?.id;fileVersion++;
+ products=[];discounts=[];warnings=[];printedDiscount=null;nextId=1;source=null;corners=[];turns=0;selecting=false;
+ for(const id of ["receiptFile","receiptText","receiptTotal","receiptDate","receiptStore","receiptAccount"])q(id).value="";
+ q("receiptKeepPhoto").checked=false;q("receiptReviewConfirm").checked=false;
+ q("receiptTextPanel").open=false;q("receiptMode").value="contrast";
+ status("Fotoğraf seç veya fiş metnini yapıştır.");showPreview();draw();
+ q("receiptDialog").showModal();
+}
+q("receiptOpen").onclick=openReceipt;
+q("receiptScanShortcut").onclick=openReceipt;
+q("receiptClose").onclick=()=>{if(!busy)q("receiptDialog").close();};
+q("receiptDialog").addEventListener("cancel",event=>{if(busy)event.preventDefault();});
+for(const id of ["receiptTotal","receiptStore","receiptAccount","receiptDate","receiptReviewConfirm"])q(id).oninput=check;
+q("receiptAdd").onclick=()=>{
+ products.push({id:nextId++,name:"",gross:null,discount:0,category:"Market",quantity:1,unit:"adet",unitPrice:null});
+ draw();q("receiptRows").lastElementChild.querySelector("input").focus();
+};
+q("receiptParse").onclick=()=>{applyText();status("Metin ayrıştırıldı. Ürünleri ve toplamı kontrol et.");};
+let tesseractScript;
+function loadTesseract(){
+ if(window.Tesseract)return Promise.resolve();
+ return tesseractScript??=new Promise((resolve,reject)=>{
+  const script=document.createElement("script");
+  script.src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js";
+  script.onload=resolve;script.onerror=()=>{tesseractScript=null;reject(Error("OCR indirilemedi"));};
+  document.head.append(script);
+ });
+}
+q("receiptScan").onclick=async()=>{
+ if(!allowed()||busy||!source)return;
+ if(selecting){status("Dört köşeyi seç veya köşe düzeltmesini kaldır.");return;}
+ busy=true;
+ const controls=["receiptScan","receiptClose","receiptParse","receiptRotate","receiptPerspective","receiptResetCorners","receiptFile","receiptMode"];
+ for(const id of controls)q(id).disabled=true;
+ check();
+ let worker;
+ try{
+  status("Türkçe OCR hazırlanıyor…");
+  const image=enhanceReceipt(rectifyReceipt(rotated,corners),q("receiptMode").value);
+  await loadTesseract();
+  worker=await Tesseract.createWorker("tur+eng",1,{logger:data=>{
+   if(allowed()&&data.status==="recognizing text")status("Fiş okunuyor · %"+Math.round(data.progress*100));
+  }});
+  await worker.setParameters({tessedit_pageseg_mode:Tesseract.PSM.SINGLE_BLOCK,preserve_interword_spaces:"1"});
+  const result=await worker.recognize(image);
+  if(!allowed())return;
+  q("receiptText").value=result.data.text;applyText();
+  status(result.data.confidence<65?"Okuma güveni düşük. Orijinal veya gölge azaltma seçeneğini dene ve sonuçları karşılaştır.":"Okuma tamamlandı. Ürünleri fişle karşılaştır.");
+ }catch(error){
+  if(allowed())status(error.message?.startsWith("Dört")||error.message?.startsWith("İşaretlenen")?error.message:
+   "Fotoğraf okunamadı. Bağlantıyı kontrol et, başka bir fotoğraf dene veya metni gir.");
+ }finally{
+  if(worker)await worker.terminate().catch(()=>{});
+  busy=false;for(const id of controls)q(id).disabled=false;check();
+ }
+};
+q("receiptCommit").onclick=async()=>{
+ if(!allowed())return;
+ const summary=check();
+ if(!summary)return;
+ const date=q("receiptDate").value,store=q("receiptStore").value.trim(),account=q("receiptAccount").value.trim();
+ const paid=summary.rows.filter(row=>row.net>0);
+ const signature=rows=>JSON.stringify(rows.map(r=>[learnedKey(r.name),r.net]).sort((a,b)=>a[0].localeCompare(b[0])||a[1]-b[1]));
+ const groups=new Map();
+ for(const transaction of state.transactions){
+  if(transaction.date!==date||!String(transaction.note||"").startsWith("Fiş: ")||!String(transaction.description||"").startsWith(store+" · "))continue;
+  const group=groups.get(transaction.note)||[];
+  group.push({name:transaction.description.slice(store.length+3),net:Math.round(transaction.amount*100)});
+  groups.set(transaction.note,group);
+ }
+ if([...groups.values()].some(g=>signature(g)===signature(paid))){
+  status("Bu fiş daha önce kaydedilmiş görünüyor. Mevcut işlemleri kontrol et.");return;
+ }
+ if(!confirm(displayCents(summary.net)+" tutarında "+paid.length+" harcama kaydedilsin mi? Banka ekstresinde aynı harcama varsa çift kayıt oluşabilir."))return;
+ const stamp=new Date().toISOString(),group=crypto.randomUUID();
+ const note="Fiş: "+group+(summary.discount>0?" · Fiş tasarrufu "+displayCents(summary.discount):"");
+ const file=q("receiptFile").files[0],who=archiveOwner(),keep=q("receiptKeepPhoto").checked;
+ const previousTransactions=state.transactions,previousCategories=state.categories,previousStamp=state.settingsUpdatedAt;
+ state.transactions=[...previousTransactions,...paid.map(row=>({
+  id:crypto.randomUUID(),type:"expense",amount:row.net/100,category:row.category.trim(),
+  payment:"Diğer",cardName:account,description:store+" · "+row.name.trim(),note,date,updatedAt:stamp
+ }))];
+ state.categories=[...new Set([...previousCategories,...paid.map(row=>row.category.trim())])];
+ state.settingsUpdatedAt=stamp;
+ try{save(false);}catch{
+  state.transactions=previousTransactions;state.categories=previousCategories;state.settingsUpdatedAt=previousStamp;
+  status("Fiş kaydedilemedi. Cihaz depolamasını kontrol et ve yeniden dene.");return;
+ }
+ q("receiptDialog").close();render();v5Refresh();
+ if(keep&&photoAllowed(file)){
+  try{await archiveOp("readwrite",s=>s.put({id:who+":"+group,owner:who,date,store,blob:file}));v6Toast("Fiş ve fotoğraf kaydedildi.");}
+  catch{v6Toast("Harcama kaydedildi. Fotoğraf saklanamadı.");}
+ }else v6Toast(displayCents(summary.net)+" harcama kaydedildi.");
+};
 })();
