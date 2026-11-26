@@ -62,6 +62,18 @@ function parseReceipt(text, category=()=>"Market") {
    pendingName="";continue;
   }
   if(/NORMAL FIYAT.*INDIRIM.*NET FIYAT/.test(label)){columnHeader=true;continue;}
+  if(columnHeader){
+   const columns=line.replace(/^\|\s*|\s*\|$/g,"").split(/\s*\|\s*|\t+/);
+   if(columns.length===4&&/\p{L}/u.test(columns[0])){
+    const [name,...amounts]=columns;
+    const [gross,discount,net]=amounts.map(value=>receiptCents(value.replace(/\s*(?:TL|TRY|₺)\s*$/i,"")));
+    if([gross,discount,net].every(Number.isSafeInteger)&&gross>=0&&discount>=0&&net>=0&&gross-discount===net){
+     if(/^(?:GENEL )?TOPLAM$/.test(receiptFold(name))){totals.push({rank:2,cents:net});savings.push(discount);finished=true;}
+     else if(!finished&&gross>0)product(name,gross,1,"adet",gross,discount);
+    }else issues.push("Normal fiyat, indirim ve net fiyat sütunları uyuşmuyor.");
+    pendingName="";continue;
+   }
+  }
   const values=[...line.matchAll(receiptMoney)];
   if(!values.length){
    const whole=/(?<=\s|\*)\d{1,8}(?=\s*(?:TL|TRY|₺)$)/i.exec(line);

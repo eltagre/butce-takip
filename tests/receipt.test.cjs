@@ -75,3 +75,7 @@ test("quantity detail after the item is associated only when its amount is uniqu
  assert.equal(ambiguous.issues.length,1);
  assert.deepEqual(ambiguous.products.map(p=>p.quantity),[1,1]);
 });
+test("the supplied tabular example supports both integer TL and decimal prices",()=>{
+ const [p,v]=read("Ürün\tNormal fiyat\tİndirim\tNet fiyat\nFinish Quantum\t259 TL\t149 TL\t110 TL\nArko\t104,50 TL\t54,50 TL\t50 TL\nOzmo\t13,50 TL\t0 TL\t13,50 TL\nToplam\t377 TL\t203,50 TL\t173,50 TL");
+ assert.deepEqual([v.gross,v.discount,v.net,v.valid,p.printedDiscount],[37700,20350,17350,true,20350]);
+});
