@@ -1,0 +1,62 @@
+:root {
+  --bg: #edf2f4;
+  --surface2: #eaf1f3;
+  --text: #102735;
+  --muted: #4d6471;
+  --line: #d3dfe4;
+  --accent: #006959;
+  --good: #006959;
+  --bad: #b93838;
+  --shadow: none;
+  font-variant-numeric: tabular-nums;
+}
+html[data-theme="dark"] {
+  --bg: #101b23;
+  --card: #172934;
+  --surface2: #102029;
+  --text: #eef7fa;
+  --muted: #b5c8d1;
+  --line: #36515e;
+  --accent: #7de4cd;
+  --good: #7de4cd;
+  --bad: #ffa092;
+}
+body .v5-summary, body .app, body .v8-shell { max-width: 70rem; }
+body .v5-hero {
+  background: #12313f;
+  border: 0;
+  border-radius: 8px;
+  color: #f5fffd;
+}
+.v5-hero :is(.v5-kicker,.v5-sub,.small,.v53-period-tag) { color: #c9e4e6; }
+.v5-hero .v5-hero-value { color: #b1f4de; font-size: clamp(1.9rem,5vw,3.3rem); overflow-wrap: anywhere; }
+.v5-hero .bad { color: #ffb8aa; }
+.v5-hero :is(.ghost,.v53-monthtitle) { color: #f5fffd; background: #224652; border-color: #587985; }
+.v5-hero .primary { background: #a6eed8; color: #102f39; }
+.v5-hero .v51-budget-track { background: #2c4b55; border-color: #587985; }
+.v5-hero .v51-budget-track span { background: #a6eed8; }
+body :is(.card,.v5-mini,.v51-panel,.v7-card,.v8-card,.item) { border-radius: 8px; }
+body .v5-mini { min-width: 0; border-top: 3px solid var(--accent); }
+.v5-mini strong { overflow-wrap: anywhere; }
+body .v6-page-head h1 { letter-spacing: -.045em; }
+body .v5-nav { border-radius: 8px 8px 0 0; box-shadow: 0 -4px 18px #10273512; }
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: 3px solid #2b9b8d;
+  outline-offset: 2px;
+}
+html[data-theme="dark"] .primary { color: #122b36; }
+dialog { max-height: 90dvh; }
+#receiptRows input { min-width: 0; }
+@media (min-width: 760px) {
+  body .v5-mini-grid { grid-template-columns: repeat(4,minmax(0,1fr)); }
+}
+@media (max-width: 480px) {
+  body .v5-hero .row { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  #receiptDialog :is(th,td) { padding-inline: 2px; }
+  #receiptRows input { padding-inline: 5px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}
+html { overflow-x: clip; }
+body { max-width: 100vw; overflow-x: clip; }
