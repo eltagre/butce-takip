@@ -160,3 +160,39 @@ body .v51-donut-center strong { white-space:nowrap; font-size:clamp(.75rem,2.9vw
 @media (min-width:980px) { body .v5-nav { border-radius:0; } }
 .v8-rank .flag svg { width:1.15em; height:1.15em; fill:none; stroke:currentColor; stroke-width:1.5; }
 .v5-choice svg { width:1.2em; height:1.2em; fill:none; stroke:currentColor; stroke-width:1.6; vertical-align:middle; }
+.overview-services {
+ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin-top:14px;
+}
+.overview-service {
+ display:flex; align-items:flex-start; gap:12px; text-align:left;
+ padding:14px 16px; background:var(--card); color:var(--text); border:1px solid var(--line); border-radius:8px;
+}
+.overview-service:hover { border-color:var(--accent); }
+.overview-service svg { color:var(--accent); }
+.overview-service span { min-width:0; }
+.overview-service strong,.overview-service small { display:block; }
+.overview-service small { color:var(--muted); font-size:.82rem; line-height:1.4; margin-top:3px; }
+.auth-privacy,.usage-guide { background:var(--card); color:var(--text); }
+.auth-privacy { margin-top:16px; padding:12px; border:1px solid var(--line); border-radius:6px; }
+.auth-privacy h4 { display:flex; align-items:center; gap:7px; margin:0; font-size:.95rem; }
+.auth-privacy h4 svg { width:18px; height:18px; flex:none; fill:none; stroke:var(--accent); stroke-width:1.65; stroke-linecap:round; }
+.auth-privacy :is(p,summary,dt,dd) { font-size:.875rem; line-height:1.45; }
+.auth-privacy p,.auth-privacy dd,.usage-guide p { color:var(--muted); }
+.auth-privacy summary { cursor:pointer; font-weight:650; }
+.auth-privacy dt { margin-top:10px; font-weight:700; }
+.auth-privacy dd { margin:3px 0 0; }
+#authDialog,.usage-guide { max-height:90dvh; overflow:auto; }
+.usage-guide { width:min(94vw,720px); padding:0; }
+.usage-guide header { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:14px 18px; border-bottom:1px solid var(--line); }
+.usage-guide h2 { margin:0; font-size:1.125rem; }
+#v86GuideTopics { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:0 16px; padding:0 18px 12px; }
+#v86GuideTopics section { display:flex; flex-direction:column; align-items:start; border-bottom:1px solid var(--line); padding:13px 0; }
+#v86GuideTopics h3 { margin:0; font-size:.95rem; }
+#v86GuideTopics p { margin:5px 0 8px; font-size:.875rem; line-height:1.45; }
+#v86GuideTopics button { margin-top:auto; padding:7px 9px; font-size:.875rem; }
+@media(max-width:520px) {
+ .overview-services { gap:7px; }
+ .overview-service { gap:6px; padding:10px 8px; font-size:.85rem; }
+ .overview-service small { font-size:.75rem; }
+ #v86GuideTopics { grid-template-columns:1fr; }
+}

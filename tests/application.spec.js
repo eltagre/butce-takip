@@ -49,7 +49,7 @@ test("image preview rotates, rectifies and sends selected treatment to OCR",asyn
      setParameters:async params=>{window.testOcrParams=params;},
      recognize:async canvas=>{
       window.testOcrSize=[canvas.width,canvas.height];
-      return {data:{text:"A101\n26.11.2026\nSÜT 20,00\nTOPLAM 20,00",confidence:92}};
+      return {data:{text:"A101\n26.11.2026\nSÜT 20,00\nTOPLAM 20,00",confidence:62}};
      },
      terminate:async()=>{}
     };
@@ -77,6 +77,11 @@ test("image preview rotates, rectifies and sends selected treatment to OCR",asyn
  await expect(page.locator("#receiptStore")).toHaveValue("A101");
  expect(await page.evaluate(()=>window.testOcrSize[0])).toBeLessThan(150);
  expect(await page.evaluate(()=>window.testOcrParams.tessedit_pageseg_mode)).toBe("6");
+ await page.locator("#receiptAccount").fill("Nakit");
+ await expect(page.locator("#receiptReviewText")).toContainText("düşük güvenle");
+ await expect(page.locator("#receiptCommit")).toBeDisabled();
+ await page.locator("#receiptReviewConfirm").check();
+ await expect(page.locator("#receiptCommit")).toBeEnabled();
 });
 
 test("navigation, accessible charts, themes and module preferences",async({page})=>{
@@ -145,4 +150,51 @@ test("existing budget and portfolio calculations retain their results",async({pa
   "2025-01-01","2025-02-03",1000,100,"monthly","monthly"));
  expect(result.invested).toBe(1100);
  expect(result.final).toBeCloseTo(1300);
+});
+
+test("summary privacy and guide work with disabled modules and dark theme",async({page})=>{
+ await page.goto("./");
+ const guide=page.locator("#summaryGuide"),cloud=page.locator("#summaryCloud");
+ await expect(guide).toBeVisible();
+ expect((await guide.boundingBox()).x).toBeLessThan((await cloud.boundingBox()).x);
+ await page.locator("#v5Theme").click();
+ await cloud.click();
+ const auth=page.locator("#authDialog"), details=page.locator("#authPrivacyDetails");
+ await expect(auth.getByText("Verilerim güvende mi?")).toBeVisible();
+ await expect(details).toHaveJSProperty("open",false);
+ await details.locator("summary").click();
+ await expect(details.getByText(/fiş fotoğrafı buluta yüklenmez/)).toBeVisible();
+ await expect(details.getByText(/şifreleme koruması sağlamaz/)).toBeVisible();
+ await page.locator("#authCancel").click();
+ await guide.click();
+ const topics=page.locator("#v86GuideTopics");
+ await expect(topics.locator("section")).toHaveCount(12);
+ await topics.getByRole("button",{name:"Ekstreyi içe aktar"}).click();
+ await expect(page.locator("#stmtDialog")).toBeVisible();
+ await page.locator("#stmtClose").click();
+ await guide.click();
+ await topics.getByRole("button",{name:"Hedefleri aç"}).click();
+ await expect(page.locator("#v7GoalsPanel")).toBeVisible();
+ await page.evaluate(()=>{const prefs=v5GetPrefs();prefs.modules=["budget"];v5SetPrefs(prefs);v86Apply();});
+ await page.locator('#v5Nav [data-view="summary"]').click();
+ await guide.click();
+ const portfolio=topics.locator("section").filter({hasText:"Yatırım ve portföy"});
+ await expect(portfolio).toContainText("Bu modül şu anda kapalı.");
+ await portfolio.getByRole("button",{name:"Modül ayarlarını aç"}).click();
+ await expect(page.locator("#v86Menu")).toBeVisible();
+ await expect(page.locator('#v86Menu input[data-module="investments"]')).not.toBeChecked();
+});
+
+test("account-bound local records stay locked without matching session",async({page})=>{
+ await page.addInitScript(()=>{
+  localStorage.setItem("butcem_local_owner_v1","test-owner");
+  localStorage.setItem("butcem_v1",JSON.stringify({monthlyBudget:1234,transactions:[]}));
+ });
+ await page.goto("./");
+ await expect(page.locator("body")).toHaveClass(/v865-account-locked/);
+ await expect(page.locator("#authDialog")).toBeVisible();
+ await expect(page.locator("#v5Summary")).toBeHidden();
+ await page.locator("#authPrivacyDetails summary").click();
+ await expect(page.locator("#authPrivacyDetails")).toHaveJSProperty("open",true);
+ expect(await page.evaluate(()=>JSON.parse(localStorage.getItem("butcem_account:test-owner:butcem_v1")).monthlyBudget)).toBe(1234);
 });

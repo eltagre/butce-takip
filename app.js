@@ -199,6 +199,7 @@ function initCloudClient(){
 function setCloudUI(main,detail){
   if($("#cloudStatus"))$("#cloudStatus").textContent=main;
   if($("#cloudDetail"))$("#cloudDetail").textContent=detail||"";
+  if($("#summaryCloudStatus"))$("#summaryCloudStatus").textContent=main;
   if($("#accountSyncInfo"))$("#accountSyncInfo").textContent=detail||main;
 }
 function updateAuthDialog(){
@@ -213,6 +214,8 @@ function updateAuthDialog(){
   if(logged)$("#accountEmail").textContent=currentUser.email||"Hesabım";
 }
 function openAuth(){updateAuthDialog();if(!$("#authDialog").open)$("#authDialog").showModal()}
+$("#summaryCloud").onclick=openAuth;
+$("#cloudPrivacyBtn").onclick=()=>{openAuth();$("#authPrivacyDetails").open=true;$("#authPrivacyDetails").querySelector("summary").focus();};
 $("#cloudBtn").onclick=openAuth;$("#cloudCardBtn").onclick=openAuth;
 $("#authCancel").onclick=()=>{if(!document.body.classList.contains("v865-account-locked"))$("#authDialog").close()};$("#authCancel2").onclick=$("#authCancel").onclick;$("#authDialog").addEventListener("cancel",e=>{if(document.body.classList.contains("v865-account-locked"))e.preventDefault()});
 
@@ -477,7 +480,7 @@ function render(){
  filtered.forEach(t=>{let r=document.createElement("div");r.className="item v52-item v6-tappable";r.onclick=e=>{if(!e.target.closest("button"))openTxn(t.type,t)};let l=document.createElement("div");l.className="v52-item-main";let title=document.createElement("div"),meta=document.createElement("div");title.className="v52-item-title";title.textContent=t.description||t.category;meta.className="meta";meta.textContent=`${t.category} • ${t.date} • ${t.payment}`;l.append(title,meta);if(t.cardName){let pill=document.createElement("span");pill.className="v6-account-pill";pill.textContent=t.cardName;l.appendChild(pill)}let side=document.createElement("div");side.className="v52-item-side";let a=document.createElement("div");a.className="amount "+(budgetType(t)==="transfer"?"":t.type==="income"?"good":"bad");a.textContent=(t.type==="income"?"+":"-")+money(t.amount);let acts=document.createElement("div");acts.className="v52-actions";let edit=document.createElement("button");edit.className="ghost";edit.type="button";edit.textContent="Düzenle";edit.onclick=()=>openTxn(t.type,t);let del=document.createElement("button");del.className="ghost v52-delete";del.type="button";del.textContent="Sil";del.onclick=()=>deleteTransaction(t.id);acts.append(edit,del);side.append(a,acts);r.append(l,side);list.appendChild(r)});
 }
 if("serviceWorker"in navigator){
-  navigator.serviceWorker.register("sw.js?v=8.7.3").then(reg=>{
+  navigator.serviceWorker.register("sw.js?v=8.7.4").then(reg=>{
     reg.update().catch(()=>{});
     if(reg.waiting) reg.waiting.postMessage("SKIP_WAITING");
     reg.addEventListener("updatefound",()=>{
@@ -1127,8 +1130,39 @@ setTimeout(v5Init,0);
 function v86Modules(){const p=v5GetPrefs()||{};return p.modules||["budget"]}
 function v86AllowedTabs(){const m=v86Modules(),p=v5GetPrefs()||{},tabs=[];if(m.includes("networth"))tabs.push("overview");if(m.includes("investments"))tabs.push("portfolio");if(m.includes("compare"))tabs.push("performance","backtest","compare");if(p.wealthOptIn&&m.includes("networth"))tabs.push("wealth");return tabs}
 function v86Apply(){const m=v86Modules(),p=v5GetPrefs()||{},tabs=v86AllowedTabs();document.querySelectorAll('#v5Nav [data-view="assets"]').forEach(e=>e.hidden=!tabs.length);document.querySelectorAll("[data-v8tab]").forEach(e=>e.hidden=!tabs.includes(e.dataset.v8tab));document.querySelectorAll('#v86Menu input[data-module]').forEach(e=>e.checked=m.includes(e.dataset.module));$("#v86Wealth").checked=!!p.wealthOptIn;$("#v86Wealth").disabled=!m.includes("networth");$("#v86Finance").textContent=m.includes("goals")?"Finans ve hedefler":"Finans";const goal=$("#v7GoalsList")?.closest(".v7-card");if(goal)goal.hidden=!m.includes("goals");if(!tabs.length&&document.body.dataset.view==="assets")v5Show("summary");const active=document.querySelector("[data-v8tab].active")?.dataset.v8tab;if(tabs.length&&!tabs.includes(active))v8OpenTab(tabs[0]);}
-function v86Guide(){const m=v86Modules(),steps=[["İlk işlemini ekle","Özet ekranında + Harcama veya + Gelir düğmesine bas. Tutar, kategori ve hesabı seç."],["Bütçeni belirle","Ayarlar bölümünden aylık limitini gir. Özet ekranında kalan tutarı ve bütçe uyarılarını gör."],["İşlemlerini yönet","İşlemler ekranında kayıtlarını filtrele, düzenle veya sil. Etiketlerle notlarını gruplandır."],["Fiş ve ekstre","Ayarlar bölümünden banka ekstresi veya BETA fiş tarayıcısını aç. Okunan bilgileri kontrol et ve onayla."],["Bulut ve gizlilik","Bulut hesabını bağlamadan önce veri gizliliği kartını oku."]];if(m.some(x=>["investments","networth","compare"].includes(x)))steps.push(["Varlıklar","Varlıklar ekranında yatırımlarını ekle ve fiyatlarını güncelle."]);if(m.includes("goals"))steps.push(["Hedefler","Yan menüden Finans ve hedefler bölümünü aç."]);steps.push(["Kişiselleştir","Sol üst menüden modülleri açıp kapat. Kapatmak kayıtlarını silmez."]);let i=0;const render=()=>{$("#v86GuideTitle").textContent=steps[i][0];$("#v86GuideText").textContent=steps[i][1];$("#v86GuideCount").textContent=(i+1)+" / "+steps.length;$("#v86GuidePrev").disabled=i===0;$("#v86GuideNext").textContent=i===steps.length-1?"Bitir":"İleri"};$("#v86GuidePrev").onclick=()=>{if(i>0)i--;render()};$("#v86GuideNext").onclick=()=>{if(i===steps.length-1)$("#v86Guide").close();else{i++;render()}};render();$("#v86Guide").showModal()}
-function v86Init(){ $("#v86Open").onclick=()=>$("#v86Menu").showModal();$("#v86Close").onclick=()=>$("#v86Menu").close();$("#v86Help").onclick=()=>{$("#v86Menu").close();v86Guide()};$("#v86Finance").onclick=()=>{$("#v86Menu").close();v5Show("finance")};$("#v86Settings").onclick=()=>{$("#v86Menu").close();$("#settingsBtn").click()};$("#v86Menu").querySelectorAll("input").forEach(e=>e.onchange=()=>{const p=v5GetPrefs()||{};p.modules=["budget",...Array.from($("#v86Menu").querySelectorAll("input[data-module]:checked"),x=>x.dataset.module)];p.wealthOptIn=$("#v86Wealth").checked;v5SetPrefs(p);v86Apply()});v86Apply();}
+function v86Guide(){
+ const modules=v86Modules(), dialog=$("#v86Guide"), list=$("#v86GuideTopics");
+ const finance=tab=>{v5Show("finance");v7OpenTab(tab);};
+ const asset=tab=>{v5Show("assets");document.querySelector('[data-v8tab="'+tab+'"]').click();};
+ const steps=[
+  ["İlk gelir veya gider","Özette Gelir ya da Harcama düğmesine bas. Tarih, tutar, kategori ve hesabı girip kaydet.","Yeni işlem",()=>$("#fab").click()],
+  ["Banka ve nakit hesapları","Hesaplar sekmesinde hesap ekle. Hesap türünü ve varsa başlangıç bakiyesini gir.","Hesapları aç",()=>finance("accounts")],
+  ["Aylık bütçe ve harcama limitleri","Ayarlar’dan aylık bütçeyi belirle. Kategori limitleri için Hesaplar’daki kategori bütçelerini kullan.","Aylık bütçeyi aç",()=>$("#settingsBtn").click()],
+  ["Banka ekstresi aktarımı","PDF, Excel veya CSV dosyanı seç. Önizlemede yönü, kategoriyi ve olası tekrarları kontrol edip aktar.","Ekstreyi içe aktar",()=>$("#stmtOpen").click()],
+  ["Fiş fotoğrafından harcama","Fişi seç ve okut. Ürünleri, hesabı ve fişte yazan toplamı doğrulayıp kaydet.","Fiş tarayıcıyı aç",()=>$("#receiptScanShortcut").click()],
+  ["İndirimler ve tasarruf","Önizlemede normal fiyatı, indirimi ve net tutarı karşılaştır. Belirsiz indirimleri eşleştir. Bütçeye net tutar yazılır, fiş tasarrufu işlem notunda görünür.","Fiş tarayıcıyı aç",()=>$("#receiptScanShortcut").click()],
+  ["Finansal hedef","Hesaplar’daki Hedefler sekmesinde hedef tutarını ve tarihi gir. Birikim yaptıkça ilerlemeyi güncelle.","Hedefleri aç",()=>finance("goals"),"goals"],
+  ["Yatırım ve portföy","Portföy sekmesinde varlık, adet ve maliyet bilgilerini gir. Fiyatları güncelleyerek dağılımı izle.","Portföyü aç",()=>asset("portfolio"),"investments"],
+  ["Altın ve dolar bazında servet","Varlıklar’ın genel bakışında TL, USD veya gram altın görünümünü seç.","Servet görünümünü aç",()=>asset("overview"),"networth"],
+  ["Backtest ve reel getiri","Backtest’te tarih aralığı, varlıklar ve ağırlıklarla geçmiş senaryoyu hesapla. Performans sekmesinde TÜFE’ye göre reel getiriyi incele.","Backtest’i aç",()=>asset("backtest"),"compare"],
+  ["Bulut hesabı ve eşitleme","E-posta adresinle hesap oluştur. Diğer cihazda aynı hesapla giriş yap ve eşitleme durumunu kontrol et.","Bulut hesabını aç",openAuth],
+  ["Yedekleme ve dışa aktarma","Ayarlar’dan JSON yedeği indir. Tablo olarak incelemek için CSV veya Excel dışa aktarmayı kullan.","Yedekleme ayarlarını aç",()=>$("#settingsBtn").click()]
+ ];
+ list.replaceChildren();
+ for(const [title,description,label,action,module] of steps){
+  const item=document.createElement("section"),heading=document.createElement("h3");
+  const text=document.createElement("p"),button=document.createElement("button");
+  const enabled=!module||modules.includes(module);
+  heading.textContent=title;text.textContent=description;
+  button.type="button";button.className="ghost";
+  button.textContent=enabled?label:"Modül ayarlarını aç";
+  if(!enabled)text.append(" Bu modül şu anda kapalı.");
+  button.onclick=()=>{dialog.close();if(enabled)action();else $("#v86Open").click();};
+  item.append(heading,text,button);list.append(item);
+ }
+ dialog.showModal();
+}
+function v86Init(){ $("#summaryGuide").onclick=v86Guide; $("#v86GuideClose").onclick=()=>$("#v86Guide").close(); $("#v86Open").onclick=()=>$("#v86Menu").showModal();$("#v86Close").onclick=()=>$("#v86Menu").close();$("#v86Help").onclick=()=>{$("#v86Menu").close();v86Guide()};$("#v86Finance").onclick=()=>{$("#v86Menu").close();v5Show("finance")};$("#v86Settings").onclick=()=>{$("#v86Menu").close();$("#settingsBtn").click()};$("#v86Menu").querySelectorAll("input").forEach(e=>e.onchange=()=>{const p=v5GetPrefs()||{};p.modules=["budget",...Array.from($("#v86Menu").querySelectorAll("input[data-module]:checked"),x=>x.dataset.module)];p.wealthOptIn=$("#v86Wealth").checked;v5SetPrefs(p);v86Apply()});v86Apply();}
 
 function v87TemplateKey(){return "butcem_templates_"+(currentUser?.id||"local")}
 function v87MergeRecords(...lists){const m=new Map();for(const list of lists)for(const t of Array.isArray(list)?list:[]){if(!t||typeof t.id!=="string")continue;const old=m.get(t.id);if(!old||String(t.updatedAt||"")>String(old.updatedAt||"")||(String(t.updatedAt||"")===String(old.updatedAt||"")&&t.deleted))m.set(t.id,t)}return [...m.values()]}

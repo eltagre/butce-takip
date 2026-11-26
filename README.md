@@ -1,6 +1,6 @@
 # Bütçem – Finans Merkezi
 
-V8.7.3, V8.7.2 (dc01b1a) üzerinde fiş tarayıcı ve arayüz güncellemesidir. Uygulama HTML, CSS ve JavaScript ile GitHub Pages üzerinde çalışır. Bu dal Supabase şema geçişi gerektirmez.
+V8.7.4, V8.7.2 (dc01b1a) üzerinde fiş tarayıcı ve arayüz güncellemesidir. Uygulama HTML, CSS ve JavaScript ile GitHub Pages üzerinde çalışır. Bu dal Supabase şema geçişi gerektirmez.
 
 ## Fiş tarayıcı
 
@@ -33,3 +33,9 @@ npm run test:browser
 ```
 
 GitHub Actions aynı komutları çalıştırır. Tarayıcı projeleri masaüstü Chromium, Android profilli Chromium ve iPhone profilli WebKit’i kapsar. Bütçe, backtest, fiş kaydı, modül tercihleri, tema ve çevrimdışı uygulama kabuğu test edilir. Fiziksel telefonlar ve anonimleştirilmiş gerçek market fotoğrafları ayrı bir doğrulama kapsamıdır.
+
+## Bulut gizliliği ve kullanım rehberi
+
+Bulut hesabındaki genişletilebilir kart, hangi verilerin eşitlendiğini ve tarayıcıda kalan ekstre, fotoğraf ve yedeklerin sınırlarını açıklar. Üretimde işlem, ayar, finans, servet ve analiz tablolarında sahiplik esaslı Supabase satır erişimi, veri okumadan katalog üzerinden doğrulandı. Yerel kayıtlar cihazda kalabildiğinden, aynı tarayıcı profiline teknik erişim ayrı bir risk olarak anlatılır.
+
+Finansal özetteki rehber, ilgili ekranları doğrudan açar. Kapalı modüller için kullanıcı modül ayarlarına yönlendirilir ve mevcut tercihler korunur.

@@ -227,6 +227,10 @@ q("receiptScan").onclick=async()=>{
   const result=await worker.recognize(image);
   if(!allowed())return;
   q("receiptText").value=result.data.text;applyText();
+  if(result.data.confidence<65){
+   warnings.push("Fotoğraftaki metin düşük güvenle okundu. Fişi ve eşleşen indirimleri kontrol et.");
+   check();
+  }
   status(result.data.confidence<65?"Okuma güveni düşük. Orijinal veya gölge azaltma seçeneğini dene ve sonuçları karşılaştır.":"Okuma tamamlandı. Ürünleri fişle karşılaştır.");
  }catch(error){
   if(allowed())status(error.message?.startsWith("Dört")||error.message?.startsWith("İşaretlenen")?error.message:
