@@ -1,0 +1,12 @@
+{
+  "name": "butce-takip",
+  "version": "8.7.4",
+  "private": true,
+  "scripts": {
+    "test": "node --test tests/*.test.cjs",
+    "test:browser": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.65.1"
+  }
+}
