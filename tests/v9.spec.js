@@ -16,3 +16,12 @@ test("simulation-only configuration displays a keyboard-accessible projection",a
  await range.focus();await range.press("Home");
  await expect(panel.locator("figcaption")).toContainText("0. yıl");
 });
+test("health and analysis display missing inputs without inventing results",async({page})=>{
+ await page.goto("./");
+ await page.evaluate(()=>{const prefs=v5GetPrefs();prefs.modules.push("health","analysis");v5SetPrefs(prefs);v86Apply();});
+ await page.locator("#financeHealthBadge").click();
+ await page.locator("#v8HealthPanel").getByRole("button",{name:"Hesapla"}).click();
+ await expect(page.locator("#v8HealthPanel")).toContainText("Kesin puan için veri eksik");
+ await page.locator('[data-v8tab="analysis"]').click();
+ await expect(page.locator("#v8AnalysisPanel")).toContainText("En az iki tarihli servet kaydı gerekiyor.");
+});

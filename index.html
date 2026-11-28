@@ -330,7 +330,7 @@ body[data-view="budget"] .v6-budget-only{display:block}
  <symbol id="icon-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5m0-8h.01"/></symbol>
  <symbol id="icon-book" viewBox="0 0 24 24"><path d="M12 6c-2-2-5-2-9-1v13c4-1 7-1 9 1 2-2 5-2 9-1V5c-4-1-7-1-9 1Zm0 0v13"/></symbol>
 </svg>
-<script>if(document.documentElement.classList.contains("v870-check-session"))document.body.classList.add("v870-session-pending")</script><style>#v86Open{position:fixed;top:8px;left:8px;z-index:90}#v86Menu{margin:0 auto 0 0;height:100dvh;max-height:100dvh;width:min(320px,88vw);border-radius:0;overflow:auto;animation:v86slide .2s ease-out}#v86Menu label{display:flex;align-items:center;gap:10px;margin:12px 0}#v86Menu input{width:auto}#v5Nav [hidden],[data-v8tab][hidden]{display:none!important}@keyframes v86slide{from{transform:translateX(-100%)}to{transform:translateX(0)}} </style><button id="v86Open" class="ghost" type="button" aria-label="Modüller ve menü"><svg aria-hidden="true"><use href="#icon-menu"/></svg></button><dialog id="v86Menu"><button id="v86Close" class="ghost" type="button">Kapat ×</button><h2>Modüllerim</h2><p>Gelir ve harcama takibi her zaman açık.</p><label><input type="checkbox" data-module="investments"> Yatırım ve portföy</label><label><input type="checkbox" data-module="networth"> Net servet</label><label><input type="checkbox" data-module="compare"> Portföy analizi</label><label><input type="checkbox" data-module="goals"> Birikim hedefleri</label><label><input type="checkbox" data-module="simulation"> Simülasyon</label><label><input type="checkbox" id="v86Wealth"> Servet Konumum (Net servet ile)</label><p>Modülleri kapatmak kayıtlarını silmez.</p><button id="v86Finance" type="button" class="ghost">Finans ve hedefler</button><button id="v86Settings" type="button" class="ghost">Ayarlar</button><button id="v86Help" type="button" class="ghost">Nasıl kullanılır?</button><details><summary>Uygulama hakkında</summary><p>Bütçem · Sürüm 8.7.4</p></details></dialog><dialog id="v87TemplateDialog"><h2>Harcama şablonları</h2><p>Bir harcama seç, bilgileri kontrol et ve kaydet.</p><div id="v87TemplateList" style="display:grid;gap:8px"></div><button type="button" class="ghost" onclick="this.closest('dialog').close()">Kapat</button></dialog><dialog id="v86Guide" aria-labelledby="v86GuideTitle" class="usage-guide">
+<script>if(document.documentElement.classList.contains("v870-check-session"))document.body.classList.add("v870-session-pending")</script><style>#v86Open{position:fixed;top:8px;left:8px;z-index:90}#v86Menu{margin:0 auto 0 0;height:100dvh;max-height:100dvh;width:min(320px,88vw);border-radius:0;overflow:auto;animation:v86slide .2s ease-out}#v86Menu label{display:flex;align-items:center;gap:10px;margin:12px 0}#v86Menu input{width:auto}#v5Nav [hidden],[data-v8tab][hidden]{display:none!important}@keyframes v86slide{from{transform:translateX(-100%)}to{transform:translateX(0)}} </style><button id="v86Open" class="ghost" type="button" aria-label="Modüller ve menü"><svg aria-hidden="true"><use href="#icon-menu"/></svg></button><dialog id="v86Menu"><button id="v86Close" class="ghost" type="button">Kapat ×</button><h2>Modüllerim</h2><p>Gelir ve harcama takibi her zaman açık.</p><label><input type="checkbox" data-module="investments"> Yatırım ve portföy</label><label><input type="checkbox" data-module="networth"> Net servet</label><label><input type="checkbox" data-module="compare"> Portföy analizi</label><label><input type="checkbox" data-module="goals"> Birikim hedefleri</label><label><input type="checkbox" data-module="simulation"> Simülasyon</label><label><input type="checkbox" data-module="health"> Finansal sağlık</label><label><input type="checkbox" data-module="analysis"> Finansal analiz</label><label><input type="checkbox" id="v86Wealth"> Servet Konumum (Net servet ile)</label><p>Modülleri kapatmak kayıtlarını silmez.</p><button id="v86Finance" type="button" class="ghost">Finans ve hedefler</button><button id="v86Settings" type="button" class="ghost">Ayarlar</button><button id="v86Help" type="button" class="ghost">Nasıl kullanılır?</button><details><summary>Uygulama hakkında</summary><p>Bütçem · Sürüm 8.7.4</p></details></dialog><dialog id="v87TemplateDialog"><h2>Harcama şablonları</h2><p>Bir harcama seç, bilgileri kontrol et ve kaydet.</p><div id="v87TemplateList" style="display:grid;gap:8px"></div><button type="button" class="ghost" onclick="this.closest('dialog').close()">Kapat</button></dialog><dialog id="v86Guide" aria-labelledby="v86GuideTitle" class="usage-guide">
  <header><h2 id="v86GuideTitle">Nasıl kullanılır?</h2><button id="v86GuideClose" type="button" class="ghost icon-action" aria-label="Rehberi kapat"><svg aria-hidden="true"><use href="#icon-close"/></svg></button></header>
  <div id="v86GuideTopics"></div>
 </dialog>
@@ -497,6 +497,7 @@ body[data-view="budget"] .v6-budget-only{display:block}
   <button type="button" class="overview-service" id="summaryGuide"><svg aria-hidden="true"><use href="#icon-book"/></svg><span><strong>Nasıl kullanılır?</strong><small>Bütçem’i keşfet, finansını kendi yöntemlerinle yönet.</small></span></button>
   <button type="button" class="overview-service" id="summaryCloud"><svg aria-hidden="true"><use href="#icon-cloud"/></svg><span><strong>Bulut hesabı</strong><small id="summaryCloudStatus">Kayıtlarına farklı cihazlardan eriş.</small></span></button>
  </section>
+ <button id="financeHealthBadge" type="button" class="overview-service" hidden><span class="fi-score">—</span><div><strong>Finansal sağlık</strong><small>Veri bekleniyor</small></div></button>
  <div class="overview-panels">
 
  <div class="v51-panel">
@@ -585,10 +586,14 @@ body[data-view="budget"] .v6-budget-only{display:block}
   <button class="ghost" data-v8tab="backtest">Backtest</button>
   <button class="ghost" data-v8tab="compare">Karşılaştır</button>
   <button class="ghost" data-v8tab="simulation">Simülasyon</button>
+  <button class="ghost" data-v8tab="health">Finansal Sağlık</button>
+  <button class="ghost" data-v8tab="analysis">Analiz</button>
   <button class="ghost" data-v8tab="wealth">Servet Konumum</button>
 
  </div>
 
+ <div id="v8HealthPanel" class="v8-panel"></div>
+ <div id="v8AnalysisPanel" class="v8-panel"></div>
  <div id="v8SimulationPanel" class="v8-panel"></div>
  <div id="v8OverviewPanel" class="v8-panel active">
   <div class="v8-card v8-hero">
@@ -698,7 +703,7 @@ body[data-view="budget"] .v6-budget-only{display:block}
 <script src="vendor/supabase-2.119.2.js" integrity="sha384-A97u3Qnt9GZHURO9YJZRe7VQgGUeFzcv6I1oIGnUTxQrCxnpQMwR0/G8F2zt9abZ"></script>
 <script src="supabase-config.js?v=8.2"></script>
 
-<datalist id="stmtCategoryChoices"><option value="Hesaplar Arası Transfer"></option></datalist><script src="finance-math.js?v=9"></script><script src="finance-ui.js?v=9"></script><script src="app.js?v=9"></script>
+<datalist id="stmtCategoryChoices"><option value="Hesaplar Arası Transfer"></option></datalist><script src="finance-math.js?v=9"></script><script src="finance-ui.js?v=9"></script><script src="finance-analysis.js?v=9"></script><script src="finance-insights.js?v=9"></script><script src="app.js?v=9"></script>
 <script src="statements.js?v=8.6.1"></script>
 <dialog id="receiptDialog" class="receipt-dialog" aria-labelledby="receiptTitle">
  <header class="receipt-head"><div><h2 id="receiptTitle">Fiş tarayıcı</h2><p>Fotoğrafı tara, ürünleri ve indirimleri doğrula.</p></div><button type="button" id="receiptClose" class="ghost icon-action" aria-label="Kapat"><svg aria-hidden="true"><use href="#icon-close"/></svg></button></header>

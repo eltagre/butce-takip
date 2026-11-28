@@ -21,3 +21,17 @@ test("goal and freedom distinguish unattained from zero months",()=>{
  assert.deepEqual(target({principal:0,contribution:0,annual:0,target:1200,months:12}),{required:100,reached:null,progress:0,gap:1200});
  assert.equal(freedom({expenses:10000,passive:10000,principal:0,contribution:0,annual:0,withdrawal:.04}).reached,0);
 });
+const {months,distribution,health,wealth}=require("../finance-analysis");
+test("health does not treat unknown debt or short history as a score",()=>{
+ const periods=[{income:10000,expense:7000},{income:10000,expense:7000},{income:10000,expense:7000}];
+ const portfolio=distribution([{value:50,type:"gold"},{value:50,type:"stock"}]);
+ assert.equal(health({periods,debt:null,liquid:0,budget:7000,portfolio}).score,null);
+ assert.equal(health({periods:periods.slice(0,2),debt:0,liquid:0,budget:7000,portfolio}).score,null);
+ assert.ok(health({periods,debt:0,liquid:42000,budget:7000,portfolio}).score>80);
+});
+test("transfer amounts are excluded and wealth FX gaps stay unknown",()=>{
+ assert.equal(months([{date:"2026-10-01",type:"expense",amount:20,category:"Hesaplar Arası Transfer"}],["2026-10"])[0].expense,0);
+ const r=wealth([{date:"2025-01-01",total:100,usdtry:20},{date:"2025-02-01",total:120,usdtry:30}]);
+ assert.ok(r.try>0&&r.usd<0);
+ assert.equal(r.btc,null);
+});
