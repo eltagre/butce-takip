@@ -29,12 +29,20 @@ const FinanceInsights = (() => {
    const report=FinanceAnalysis.health({periods:FinanceAnalysis.months(state.transactions,completeMonths()),
     debt:cents(v.debt),liquid:cents(v.liquid),budget:FinanceMath.cents(state.monthlyBudget),portfolio:FinanceAnalysis.distribution(assets())});
    badge(report.score);
+   const save=el("button","Bu ayın puanını kaydet");
+   save.className="ghost";save.type="button";save.disabled=report.score===null;
+   save.onclick=()=>{
+    try{FinanceRecords.put("health",{score:report.score}, "health:"+currentMonth());save.textContent="Puan kaydedildi";}
+    catch(error){save.textContent=error.message;}
+   };
+   const history=FinanceRecords.list("health").map(r=>({month:r.id.slice(7),score:r.value.score})).sort((a,b)=>a.month.localeCompare(b.month));
+   const historyView=history.length?chart(history,[{key:"score"}],p=>p.month+" · "+p.score+"/100"):el("p","Kaydedilmiş aylık puan yok.");
    const rows=report.metrics.map(([label,weight,score,reason,action])=>{
     const section=el("section");section.append(el("h4",label+" · %"+weight),
      el("p",score===null?"Yetersiz veri":pct(score)+" kriter puanı"),el("p",reason),el("p",action));return section;
    });
    return [el("h3",report.score===null?"Kesin puan için veri eksik":report.score+" / 100 · "+band(report.score)),
-    el("p","Değerlendirilebilen ağırlık: %"+report.coverage),...rows];
+    el("p","Değerlendirilebilen ağırlık: %"+report.coverage),save,historyView,...rows];
   },"Boş borç alanı borçsuzluk varsayımı yapmaz. Acil durum fonuna ev ve araç ekleme. Bu gösterge resmi kredi notu veya profesyonel risk derecesi değildir.");
   panel.append(card);
  }

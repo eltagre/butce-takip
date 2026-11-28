@@ -45,3 +45,27 @@ test("shopping uses confirmed receipt lines and removes deleted transactions",as
  await page.locator("#financeShoppingOpen").click();
  await expect(page.locator("#financeShoppingDialog")).toContainText("yapılandırılmış fiş bulunamadı");
 });
+test("property, planning records and report work without ledger side effects",async({page})=>{
+ await page.goto("./");
+ await page.locator('#v5Nav [data-view="assets"]').click();
+ const property=page.locator("#v8SimulationPanel section").filter({has:page.getByRole("heading",{name:"Gayrimenkul yatırım analizi"})});
+ await property.locator('[name="price"]').fill("100000");
+ await property.locator('[name="rent"]').fill("1000");
+ await property.getByRole("button",{name:"Hesapla"}).click();
+ await expect(property).toContainText("12.000");
+ await page.locator('#v5Nav [data-view="finance"]').click();
+ await page.locator("#financePlanOpen").click();
+ const passive=page.locator("#financePlanDialog section").filter({has:page.getByRole("heading",{name:"Pasif gelir takvimi"})});
+ await passive.locator('[name="name"]').fill("Kira");
+ await passive.locator('[name="date"]').fill("2027-01-03");
+ await passive.locator('[name="amount"]').fill("350");
+ await passive.getByRole("button",{name:"Planı kaydet"}).click();
+ await expect(passive).toContainText("Tahmini");
+ expect(await page.evaluate(()=>[FinanceRecords.list("passive").length,state.transactions.length])).toEqual([1,0]);
+ await page.locator("#financePlanDialog").getByRole("button",{name:"Kapat"}).click();
+ await page.locator('#v5Nav [data-view="budget"]').click();
+ await page.locator("#financeReportOpen").click();
+ await expect(page.locator("#financeReportPrint")).toContainText("Aylık finans raporu");
+ await page.locator('#financeReportDialog [name="categories"]').uncheck();
+ await expect(page.locator("#financeReportPrint")).not.toContainText("Kategori dağılımı");
+});

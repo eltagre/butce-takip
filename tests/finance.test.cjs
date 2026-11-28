@@ -60,3 +60,25 @@ test("revision merge is deterministic and old backup cannot revive a record",()=
  assert.deepEqual(Records.read(Records.envelope(Records.merge([deleted],[first]))),[deleted]);
  assert.deepEqual(Records.read({version:2,records:[first]}),[]);
 });
+const Planning=require("../finance-planning");
+test("loan schedules round interest, detect negative amortization and support early payments",()=>{
+ const inputs={principal:100000,annual:.12,payment:10000};
+ const regular=Planning.loan(inputs),early=Planning.loan({...inputs,extra:5000});
+ assert.equal(regular.schedule[0].interest,1000);
+ assert.ok(early.settled&&early.total<regular.total);
+ assert.equal(Planning.loan({...inputs,payment:1000}).negative,true);
+ assert.equal(Planning.paymentFor(10000,0,12),834);
+});
+test("property uses equity, annual vacancy and financing cash flows",()=>{
+ const inputs={price:1000000,rent:10000,rentGrowth:0,appreciation:0,vacancy:2,annualCost:20000,closing:0,alternative:0};
+ const empty=Planning.property({...inputs,vacancy:12});
+ assert.equal(empty.years[0].flow,-20000);
+ assert.equal(empty.amortization,null);
+ const r=Planning.property(inputs);
+ assert.equal(r.net,80000);
+ assert.equal(r.years[4].gain,400000);
+ assert.equal(r.years[4].alternative,1000000);
+ const leveraged=Planning.property({...inputs,credit:400000,annual:0,term:12});
+ assert.equal(leveraged.initial,600000);
+ assert.equal(leveraged.years[0].flow,-320000);
+});

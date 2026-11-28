@@ -341,7 +341,7 @@ body[data-view="budget"] .v6-budget-only{display:block}
 <button id="settingsBtn" class="ghost">Ayarlar</button>
 </div></div>
 
-<div class="section v6-budget-only"><button id="financeShoppingOpen" type="button" class="ghost">Alışveriş analizi</button></div>
+<div class="section v6-budget-only"><button id="financeReportOpen" type="button" class="ghost">Aylık finans raporu</button> <button id="financeShoppingOpen" type="button" class="ghost">Alışveriş analizi</button></div>
 <div class="grid v6-budget-only">
 <div class="card"><div class="label">Harcama</div><div id="expenseTotal" class="value bad">₺0</div></div>
 <div class="card"><div class="label">Gelir</div><div id="incomeTotal" class="value good">₺0</div></div>
@@ -541,6 +541,7 @@ body[data-view="budget"] .v6-budget-only{display:block}
 
 
 <section id="v7Finance" class="v7-hub v5-hide">
+ <button id="financePlanOpen" type="button" class="ghost">Borç ve gelir planları</button>
  <div class="v7-pagehead"><div><h1>Bütçem</h1><div class="sub">Finans merkezi</div></div><div class="v6-top-actions"><button id="v7Cloud" class="ghost v6-iconbtn" type="button" title="Hesap ve bulut"><svg aria-hidden="true"><use href="#icon-cloud"/></svg></button><button id="v7Settings" class="ghost v6-iconbtn" type="button" title="Ayarlar"><svg aria-hidden="true"><use href="#icon-settings"/></svg></button><button id="v7Theme" class="ghost v6-iconbtn" type="button" title="Tema"><svg aria-hidden="true"><use href="#icon-theme"/></svg></button></div></div>
  <div class="v7-tabs">
   <button class="ghost active" data-v7tab="accounts">Hesaplar</button>
@@ -642,6 +643,7 @@ body[data-view="budget"] .v6-budget-only{display:block}
  </div>
 
  <div id="v8ComparePanel" class="v8-panel">
+  <div id="financePropertyCompare" class="v8-card" hidden></div>
   <div class="v8-card"><div class="v8-cardhead"><strong>Alternatif evrenler</strong><button id="v8AddCompare" class="ghost v6-compactbtn" type="button">+ Senaryo</button></div><div class="v8-warning">Aynı tarih aralığı ve aynı nakit akışlarıyla “hepsi QQQ olsaydı?”, “hepsi altın olsaydı?” gibi senaryoları karşılaştır. Backtest fiyat verisi burada da kullanılır.</div><div id="v8CompareRows" class="v8-benchmark-list" style="margin-top:12px"></div><div class="actions"><button id="v8RunCompare" class="primary" type="button">Karşılaştır</button></div></div>
   <div class="v8-card"><div class="v8-cardhead"><strong>Karşılaştırma sonucu</strong><span class="v7-chip">Aynı başlangıç / nakit akışı</span></div><div id="v8CompareTable" class="v8-tablewrap"></div></div>
  </div>
@@ -704,8 +706,10 @@ body[data-view="budget"] .v6-budget-only{display:block}
 <script src="vendor/supabase-2.119.2.js" integrity="sha384-A97u3Qnt9GZHURO9YJZRe7VQgGUeFzcv6I1oIGnUTxQrCxnpQMwR0/G8F2zt9abZ"></script>
 <script src="supabase-config.js?v=8.2"></script>
 
-<datalist id="stmtCategoryChoices"><option value="Hesaplar Arası Transfer"></option></datalist><script src="finance-math.js?v=9"></script><script src="finance-ui.js?v=9"></script><script src="finance-analysis.js?v=9"></script><script src="finance-insights.js?v=9"></script><script src="finance-records.js?v=9"></script><script src="finance-shopping.js?v=9"></script><script src="finance-shopping-ui.js?v=9"></script><script src="app.js?v=9"></script>
+<datalist id="stmtCategoryChoices"><option value="Hesaplar Arası Transfer"></option></datalist><script src="finance-math.js?v=9"></script><script src="finance-ui.js?v=9"></script><script src="finance-analysis.js?v=9"></script><script src="finance-insights.js?v=9"></script><script src="finance-records.js?v=9"></script><script src="finance-shopping.js?v=9"></script><script src="finance-shopping-ui.js?v=9"></script><script src="finance-planning.js?v=9"></script><script src="finance-planning-ui.js?v=9"></script><script src="finance-report.js?v=9"></script><script src="app.js?v=9"></script>
 <script src="statements.js?v=8.6.1"></script>
+<dialog id="financePlanDialog" class="fi-dialog"><header><h2>Ödeme ve gelir planı</h2><button type="button" class="ghost" onclick="this.closest('dialog').close()">Kapat</button></header><div id="financePlanContent"></div></dialog>
+<dialog id="financeReportDialog" class="fi-dialog"><header><h2>Aylık finans raporu</h2><button type="button" class="ghost" onclick="this.closest('dialog').close()">Kapat</button></header><div id="financeReportContent"></div></dialog>
 <dialog id="financeShoppingDialog" class="fi-dialog"><header><h2>Alışveriş geçmişi</h2><button type="button" class="ghost" onclick="this.closest('dialog').close()">Kapat</button></header><div id="financeShoppingContent"></div></dialog>
 <dialog id="receiptDialog" class="receipt-dialog" aria-labelledby="receiptTitle">
  <header class="receipt-head"><div><h2 id="receiptTitle">Fiş tarayıcı</h2><p>Fotoğrafı tara, ürünleri ve indirimleri doğrula.</p></div><button type="button" id="receiptClose" class="ghost icon-action" aria-label="Kapat"><svg aria-hidden="true"><use href="#icon-close"/></svg></button></header>

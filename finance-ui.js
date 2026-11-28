@@ -16,6 +16,8 @@ const FinanceUI = (() => {
    input.required=!options.optional;
   }
   input.value=value??"";
+  if(!options.choices)input.defaultValue=input.value;
+  else if(input.selectedIndex>=0)input.options[input.selectedIndex].defaultSelected=true;
   row.append(input);
   return row;
  };
@@ -144,7 +146,7 @@ const FinanceUI = (() => {
     ["Tahmini yaş",v.age!==""&&r.reached!==null?number(+v.age+r.reached/12,1):"—"],
     ...[3,3.5,4].map(rate=>["%"+number(rate,1)+" çekim",money(freedom({...opts,withdrawal:rate/100}).capital)])])];
   },"Bugünün TL alım gücü ve sabit reel katkı kullanılır. Çekim oranları garantili veya risksiz değildir.");
-  panel.append(projection,targetTool,liberty);
+  panel.append(projection,targetTool,liberty,FinancePlanningUI.property());
  }
  function currentPortfolioValue(){
   if(!v8.assets.length)return null;

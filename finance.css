@@ -21,3 +21,18 @@
 .fi-dialog { width:min(94vw,850px); max-height:90dvh; overflow:auto; padding:16px; }
 .fi-dialog header { display:flex; align-items:center; justify-content:space-between; gap:10px; }
 .fi-dialog header h2 { margin:0; font-size:1.2rem; }
+.fi-plan-row { border-top:1px solid var(--line); padding:10px 0; }
+.fi-plan-row h4 { margin:0 0 8px; }
+.fi-plan-row details { margin:8px 0; }
+.fi-plan-row button { margin:4px 8px 0 0; }
+.fi-report-options { display:grid; grid-template-columns:repeat(auto-fit,minmax(145px,1fr)); border:1px solid var(--line); }
+.fi-report-options input { width:auto; }
+@media print {
+ body:has(#financeReportDialog[open]) { padding:0; background:white; color:black; }
+ body:has(#financeReportDialog[open]) > :not(#financeReportDialog) { display:none !important; }
+ #financeReportDialog[open] { position:static; display:block; width:auto; max-height:none; max-width:none; overflow:visible; color:black; background:white; box-shadow:none; padding:0; }
+ #financeReportDialog::backdrop { display:none; }
+ #financeReportDialog header,#financeReportContent > :not(#financeReportPrint) { display:none !important; }
+ #financeReportPrint { print-color-adjust:exact; }
+ #financeReportPrint section { break-inside:avoid; }
+}
