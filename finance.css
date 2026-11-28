@@ -1,0 +1,17 @@
+.fi-tool h3 { margin:0 0 .4rem; }
+.fi-tool p,.fi-output p { color:var(--muted); line-height:1.5; }
+.fi-tool form { padding:0; }
+.fi-tool form>button { margin:10px 8px 0 0; }
+.fi-fields,.fi-metrics { display:grid; gap:10px; grid-template-columns:repeat(auto-fit,minmax(min(100%, 185px),1fr)); }
+.fi-fields label { margin:0; }
+.fi-fields :is(input,select) { display:block; min-width:0; margin-top:4px; }
+.fi-output:not(:empty) { margin-top:14px; border-top:1px solid var(--line); }
+.fi-metrics div { min-width:0; padding:8px; border-bottom:1px solid var(--line); }
+.fi-metrics dt { color:var(--muted); font-size:.82rem; }
+.fi-metrics dd { margin:3px 0 0; font-weight:700; overflow-wrap:anywhere; }
+.fi-chart { margin:16px 0 0; }
+.fi-chart svg { width:100%; display:block; color:var(--muted); touch-action:pan-y; }
+.fi-chart input { margin:0; padding:0; }
+.fi-chart figcaption { color:var(--muted); font-size:.875rem; min-height:2.6em; }
+.v8-tabs { display:flex; max-width:100%; overflow-x:auto; }
+.v8-tabs button { flex:none; }

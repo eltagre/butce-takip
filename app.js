@@ -480,7 +480,7 @@ function render(){
  filtered.forEach(t=>{let r=document.createElement("div");r.className="item v52-item v6-tappable";r.onclick=e=>{if(!e.target.closest("button"))openTxn(t.type,t)};let l=document.createElement("div");l.className="v52-item-main";let title=document.createElement("div"),meta=document.createElement("div");title.className="v52-item-title";title.textContent=t.description||t.category;meta.className="meta";meta.textContent=`${t.category} • ${t.date} • ${t.payment}`;l.append(title,meta);if(t.cardName){let pill=document.createElement("span");pill.className="v6-account-pill";pill.textContent=t.cardName;l.appendChild(pill)}let side=document.createElement("div");side.className="v52-item-side";let a=document.createElement("div");a.className="amount "+(budgetType(t)==="transfer"?"":t.type==="income"?"good":"bad");a.textContent=(t.type==="income"?"+":"-")+money(t.amount);let acts=document.createElement("div");acts.className="v52-actions";let edit=document.createElement("button");edit.className="ghost";edit.type="button";edit.textContent="Düzenle";edit.onclick=()=>openTxn(t.type,t);let del=document.createElement("button");del.className="ghost v52-delete";del.type="button";del.textContent="Sil";del.onclick=()=>deleteTransaction(t.id);acts.append(edit,del);side.append(a,acts);r.append(l,side);list.appendChild(r)});
 }
 if("serviceWorker"in navigator){
-  navigator.serviceWorker.register("sw.js?v=8.7.4").then(reg=>{
+  navigator.serviceWorker.register("sw.js?v=9").then(reg=>{
     reg.update().catch(()=>{});
     if(reg.waiting) reg.waiting.postMessage("SKIP_WAITING");
     reg.addEventListener("updatefound",()=>{
@@ -535,7 +535,7 @@ function v8FormatTryValue(val,measure=v8.measure){
  if(measure==="GOLD")return new Intl.NumberFormat("tr-TR",{maximumFractionDigits:1}).format(val/Math.max(.0001,Number(v8.rates.gramGold||1)))+" gr";
  return money(val);
 }
-function v8OpenTab(tab){const allowed=v86AllowedTabs();if(!allowed.includes(tab))tab=allowed[0];if(!tab)return;document.querySelectorAll("[data-v8tab]").forEach(b=>b.classList.toggle("active",b.dataset.v8tab===tab));document.querySelectorAll(".v8-panel").forEach(p=>p.classList.remove("active"));$("#v8"+tab.charAt(0).toUpperCase()+tab.slice(1)+"Panel")?.classList.add("active");}
+function v8OpenTab(tab){const allowed=v86AllowedTabs();if(!allowed.includes(tab))tab=allowed[0];if(!tab)return;document.querySelectorAll("[data-v8tab]").forEach(b=>b.classList.toggle("active",b.dataset.v8tab===tab));document.querySelectorAll(".v8-panel").forEach(p=>p.classList.remove("active"));$("#v8"+tab.charAt(0).toUpperCase()+tab.slice(1)+"Panel")?.classList.add("active");if(tab==="simulation")FinanceUI.simulation();}
 function v8OpenAsset(id=""){v81PickedMarket=null;if($("#v81AssetSearch"))$("#v81AssetSearch").value="";if($("#v81SearchResults"))$("#v81SearchResults").style.display="none";if($("#v81AssetQuoteStatus"))$("#v81AssetQuoteStatus").textContent="";const a=v8.assets.find(x=>x.id===id);$("#v8AssetId").value=a?.id||"";$("#v8AssetTitle").textContent=a?"Varlığı düzenle":"Varlık ekle";$("#v8AssetName").value=a?.name||"";$("#v8AssetType").value=a?.type||"stock";$("#v8AssetSymbol").value=a?.symbol||"";$("#v8AssetQty").value=a?.qty??1;$("#v8AssetPrice").value=a?.price??"";$("#v8AssetCurrency").value=a?.currency||"TRY";$("#v8AssetCost").value=a?.cost??"";$("#v8AssetPrev").value=a?.prev??"";$("#v8AssetNote").value=a?.note||"";$("#v8DeleteAsset").style.display=a?"inline-block":"none";$("#v8AssetDialog").showModal()}
 function v8Color(i){return `hsl(${(210+i*53)%360} 65% 55%)`}
 function v8WealthEstimateUSD(usd,scope){
@@ -952,7 +952,7 @@ function v5Refresh(){
  q("#v51Recent").querySelectorAll("[data-id]").forEach(row=>row.onclick=()=>{const t=findTxn(row.dataset.id);if(t)openTxn(t.type,t)});
 }
 function v5Show(view){
- if(view==="assets"&&!v86Modules().some(x=>["networth","investments","compare"].includes(x)))view="summary";
+ if(view==="assets"&&!v86AllowedTabs().length)view="summary";
  let sum=$("#v5Summary"),app=document.querySelector(".app"),assets=$("#v6Assets"),finance=$("#v7Finance");
  document.body.dataset.view=view;
  sum.classList.toggle("v5-hide",view!=="summary");
@@ -1128,7 +1128,7 @@ function v5Init(){
 setTimeout(v5Init,0);
 
 function v86Modules(){const p=v5GetPrefs()||{};return p.modules||["budget"]}
-function v86AllowedTabs(){const m=v86Modules(),p=v5GetPrefs()||{},tabs=[];if(m.includes("networth"))tabs.push("overview");if(m.includes("investments"))tabs.push("portfolio");if(m.includes("compare"))tabs.push("performance","backtest","compare");if(p.wealthOptIn&&m.includes("networth"))tabs.push("wealth");return tabs}
+function v86AllowedTabs(){const m=v86Modules(),p=v5GetPrefs()||{},tabs=[];if(m.includes("networth"))tabs.push("overview");if(m.includes("investments"))tabs.push("portfolio");if(m.includes("compare"))tabs.push("performance","backtest","compare");if(m.includes("simulation"))tabs.push("simulation");if(p.wealthOptIn&&m.includes("networth"))tabs.push("wealth");return tabs}
 function v86Apply(){const m=v86Modules(),p=v5GetPrefs()||{},tabs=v86AllowedTabs();document.querySelectorAll('#v5Nav [data-view="assets"]').forEach(e=>e.hidden=!tabs.length);document.querySelectorAll("[data-v8tab]").forEach(e=>e.hidden=!tabs.includes(e.dataset.v8tab));document.querySelectorAll('#v86Menu input[data-module]').forEach(e=>e.checked=m.includes(e.dataset.module));$("#v86Wealth").checked=!!p.wealthOptIn;$("#v86Wealth").disabled=!m.includes("networth");$("#v86Finance").textContent=m.includes("goals")?"Finans ve hedefler":"Finans";const goal=$("#v7GoalsList")?.closest(".v7-card");if(goal)goal.hidden=!m.includes("goals");if(!tabs.length&&document.body.dataset.view==="assets")v5Show("summary");const active=document.querySelector("[data-v8tab].active")?.dataset.v8tab;if(tabs.length&&!tabs.includes(active))v8OpenTab(tabs[0]);}
 function v86Guide(){
  const modules=v86Modules(), dialog=$("#v86Guide"), list=$("#v86GuideTopics");
