@@ -1,0 +1,38 @@
+.fi-tool h3 { margin:0 0 .4rem; }
+.fi-tool p,.fi-output p { color:var(--muted); line-height:1.5; }
+.fi-tool form { padding:0; }
+.fi-tool form>button { margin:10px 8px 0 0; }
+.fi-fields,.fi-metrics { display:grid; gap:10px; grid-template-columns:repeat(auto-fit,minmax(min(100%, 185px),1fr)); }
+.fi-fields label { margin:0; }
+.fi-fields :is(input,select) { display:block; min-width:0; margin-top:4px; }
+.fi-output:not(:empty) { margin-top:14px; border-top:1px solid var(--line); }
+.fi-metrics div { min-width:0; padding:8px; border-bottom:1px solid var(--line); }
+.fi-metrics dt { color:var(--muted); font-size:.82rem; }
+.fi-metrics dd { margin:3px 0 0; font-weight:700; overflow-wrap:anywhere; }
+.fi-chart { margin:16px 0 0; }
+.fi-chart svg { width:100%; display:block; color:var(--muted); touch-action:pan-y; }
+.fi-chart input { margin:0; padding:0; }
+.fi-chart figcaption { color:var(--muted); font-size:.875rem; min-height:2.6em; }
+.v8-tabs { display:flex; max-width:100%; overflow-x:auto; }
+.v8-tabs button { flex:none; }
+#financeHealthBadge { margin-top:12px; align-items:center; }
+#financeHealthBadge[hidden] { display:none; }
+.fi-score { width:48px; height:48px; display:grid!important; place-items:center; border-radius:50%; background:radial-gradient(circle,var(--card) 58%,transparent 60%),conic-gradient(var(--accent) var(--score,0%),var(--line) 0); font-weight:700; }
+.fi-dialog { width:min(94vw,850px); max-height:90dvh; overflow:auto; padding:16px; }
+.fi-dialog header { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.fi-dialog header h2 { margin:0; font-size:1.2rem; }
+.fi-plan-row { border-top:1px solid var(--line); padding:10px 0; }
+.fi-plan-row h4 { margin:0 0 8px; }
+.fi-plan-row details { margin:8px 0; }
+.fi-plan-row button { margin:4px 8px 0 0; }
+.fi-report-options { display:grid; grid-template-columns:repeat(auto-fit,minmax(145px,1fr)); border:1px solid var(--line); }
+.fi-report-options input { width:auto; }
+@media print {
+ body:has(#financeReportDialog[open]) { padding:0; background:white; color:black; }
+ body:has(#financeReportDialog[open]) > :not(#financeReportDialog) { display:none !important; }
+ #financeReportDialog[open] { position:static; display:block; width:auto; max-height:none; max-width:none; overflow:visible; color:black; background:white; box-shadow:none; padding:0; }
+ #financeReportDialog::backdrop { display:none; }
+ #financeReportDialog header,#financeReportContent > :not(#financeReportPrint) { display:none !important; }
+ #financeReportPrint { print-color-adjust:exact; }
+ #financeReportPrint section { break-inside:avoid; }
+}

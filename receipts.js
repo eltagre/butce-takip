@@ -1,7 +1,7 @@
 (()=>{
 "use strict";
 const q=id=>document.getElementById(id);
-let products=[],discounts=[],warnings=[],printedDiscount=null,busy=false,owner=null;
+let products=[],discounts=[],warnings=[],printedDiscount=null,busy=false,owner=null,ocrConfidence=null;
 let source=null,rotated=null,corners=[],turns=0,selecting=false,fileVersion=0,nextId=1;
 function learnedKey(n){return n.toLocaleLowerCase('tr-TR').replace(/\s*\(indirimli\)/g,'').replace(/\s+/g,' ').trim()}
 function learned(){const m=new Map();for(const t of state.transactions){if(t.type==='expense'&&String(t.note||'').startsWith('Fiş: ')&&t.description?.includes(' · '))m.set(learnedKey(t.description.split(' · ').slice(1).join(' · ')),t.category)}return m}
@@ -39,7 +39,11 @@ function draw(){
   };
   const category=control("text","Kategori",product.category,v=>product.category=v);
   category.setAttribute("list","stmtCategoryChoices");
-  append("Ürün",control("text","Ürün",product.name,v=>product.name=v),category);
+  const identity=control("text","Karşılaştırma adı",product.catalogName||"",v=>product.catalogName=v);
+  identity.setAttribute("list","receiptKnownProducts");
+  identity.placeholder="Karşılaştırma adı (isteğe bağlı)";
+  append("Ürün",control("text","Ürün",product.name,v=>product.name=v),category,control("text","Marka",product.brand||"",v=>product.brand=v),identity);
+  row.querySelector('[aria-label="Marka"]').placeholder="Marka (isteğe bağlı)";
   const quantity=control("number","Miktar",product.quantity,v=>product.quantity=Number(v));
   const unit=document.createElement("select");
   unit.setAttribute("aria-label","Birim");
@@ -180,7 +184,9 @@ q("receiptFile").onchange=async()=>{
 };
 function openReceipt(){
  if(!archiveAllowed())return;
- owner=currentUser?.id;fileVersion++;
+ owner=currentUser?.id;fileVersion++;ocrConfidence=null;
+ const knownNames=new Set(FinanceRecords.list("receipt").flatMap(r=>r.value.lines.map(line=>line.catalogName||line.name)));
+ q("receiptKnownProducts").replaceChildren(...[...knownNames].slice(-250).map(name=>new Option(name)));
  products=[];discounts=[];warnings=[];printedDiscount=null;nextId=1;source=null;corners=[];turns=0;selecting=false;
  for(const id of ["receiptFile","receiptText","receiptTotal","receiptDate","receiptStore","receiptAccount"])q(id).value="";
  q("receiptKeepPhoto").checked=false;q("receiptReviewConfirm").checked=false;
@@ -197,7 +203,7 @@ q("receiptAdd").onclick=()=>{
  products.push({id:nextId++,name:"",gross:null,discount:0,category:"Market",quantity:1,unit:"adet",unitPrice:null});
  draw();q("receiptRows").lastElementChild.querySelector("input").focus();
 };
-q("receiptParse").onclick=()=>{applyText();status("Metin ayrıştırıldı. Ürünleri ve toplamı kontrol et.");};
+q("receiptParse").onclick=()=>{ocrConfidence=null;applyText();status("Metin ayrıştırıldı. Ürünleri ve toplamı kontrol et.");};
 let tesseractScript;
 function loadTesseract(){
  if(window.Tesseract)return Promise.resolve();
@@ -226,6 +232,7 @@ q("receiptScan").onclick=async()=>{
   await worker.setParameters({tessedit_pageseg_mode:Tesseract.PSM.SINGLE_BLOCK,preserve_interword_spaces:"1"});
   const result=await worker.recognize(image);
   if(!allowed())return;
+  ocrConfidence=Number.isFinite(result.data.confidence)?result.data.confidence:null;
   q("receiptText").value=result.data.text;applyText();
   if(result.data.confidence<65){
    warnings.push("Fotoğraftaki metin düşük güvenle okundu. Fişi ve eşleşen indirimleri kontrol et.");
@@ -262,8 +269,9 @@ q("receiptCommit").onclick=async()=>{
  const note="Fiş: "+group+(summary.discount>0?" · Fiş tasarrufu "+displayCents(summary.discount):"");
  const file=q("receiptFile").files[0],who=archiveOwner(),keep=q("receiptKeepPhoto").checked;
  const previousTransactions=state.transactions,previousCategories=state.categories,previousStamp=state.settingsUpdatedAt;
+ const transactionIds=new Map(paid.map(row=>[row.id,crypto.randomUUID()]));
  state.transactions=[...previousTransactions,...paid.map(row=>({
-  id:crypto.randomUUID(),type:"expense",amount:row.net/100,category:row.category.trim(),
+  id:transactionIds.get(row.id),type:"expense",amount:row.net/100,category:row.category.trim(),
   payment:"Diğer",cardName:account,description:store+" · "+row.name.trim(),note,date,updatedAt:stamp
  }))];
  state.categories=[...new Set([...previousCategories,...paid.map(row=>row.category.trim())])];
@@ -272,6 +280,12 @@ q("receiptCommit").onclick=async()=>{
   state.transactions=previousTransactions;state.categories=previousCategories;state.settingsUpdatedAt=previousStamp;
   status("Fiş kaydedilemedi. Cihaz depolamasını kontrol et ve yeniden dene.");return;
  }
+ try{
+  const lines=summary.rows.map(({id,name,brand,catalogName,code,quantity,unit,gross,unitPrice,discount,net})=>({
+   id,name:name.trim(),brand:(brand||"").trim(),catalogName:(catalogName||"").trim(),code:code||"",quantity,unit,gross,unitPrice,discount,net,transactionId:transactionIds.get(id)||null
+  }));
+  FinanceRecords.put("receipt",{id:group,store,date,confidence:ocrConfidence,lines},group);
+ }catch{render();v5Refresh();status("Giderler kaydedildi. Fiyat ayrıntıları cihazda saklanamadı.");return;}
  q("receiptDialog").close();render();v5Refresh();
  if(keep&&photoAllowed(file)){
   try{await archiveOp("readwrite",s=>s.put({id:who+":"+group,owner:who,date,store,blob:file}));v6Toast("Fiş ve fotoğraf kaydedildi.");}

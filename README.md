@@ -1,29 +1,31 @@
-# Bütçem – Finans Merkezi
+# Bütçem V9.0 – Finansal Analiz ve Planlama Merkezi
 
-V8.7.4, V8.7.2 (dc01b1a) üzerinde fiş tarayıcı ve arayüz güncellemesidir. Uygulama HTML, CSS ve JavaScript ile GitHub Pages üzerinde çalışır. Bu dal Supabase şema geçişi gerektirmez.
+Bütçem, GitHub Pages üzerinde çalışan HTML/CSS/JavaScript uygulamasıdır. V9.0 dalı, PR #3 aracılığıyla ana dala giren V8.7.4 (`80d59e6`) üzerine kuruldu. Önceki bulut ve izolasyon taslağı PR #2 ana dalda değildi. Geçişin oradaki işlem silme migration kimliği korundu.
 
-## Fiş tarayıcı
+## Modüller
 
-- `receipt-parser.js` market başlıklarını, miktar ve birim fiyatı, indirim satırlarını, vergi ve ödeme özetlerini tanır. Hesaplar kuruş cinsinden tam sayılarla yapılır. Ürün adı veya barkod eşlemesi tekil olduğunda indirim ürüne bağlanır. Diğer indirimler, kullanıcı tarafından ürünle eşleştirilebilir, fişe orantılı dağıtılabilir veya bilgi satırı olarak işaretlenebilir.
-- `receipts.js` fiş üzerindeki toplamı hesaplanan netle karşılaştırır. Belirsiz indirim ve tutar farkı giderilmeden kayıt açılmaz. Sıfır netli ürün, önizlemede görünür ve harcama satırı oluşturmaz. Kayıt grubunun notunda toplam tasarruf gösterilir. Eski fiş kayıtları ve yerel fotoğraf arşivi aynı biçimde okunur.
-- `receipt-image.js` döndürme, dört köşeyle perspektif düzeltme, kontrast ve yerel gölge azaltma sağlar. Bulanıklık uyarısı görüntü keskinliği kestirimidir. Düşük OCR güveninde farklı işleme seçeneğiyle yeniden okumak veya metni düzeltmek mümkündür. Tesseract tarayıcıda çalışır. İlk OCR kullanımı motoru ve dil dosyalarını indirmek için ağ erişimi ister.
+- Varlıklar sekmesindeki Simülasyon aracında servet, hedef, finansal özgürlük ve gayrimenkul senaryoları bulunur. Simülasyon, Sağlık ve Analiz modülleri isteğe bağlıdır. Servet geçmişi ve isteğe bağlı Servet Konumum özelliği korunur.
+- Finansal Sağlık son üç tamamlanmış takvim ayını kullanır. Gelir, gider, borç, likit acil fon, aylık bütçe ve portföy kapsamı tamamlanmadan resmi olmayan kesin puan gösterilmez. İsteğe bağlı kaydedilen aylık puan geçmişi gösterilir.
+- Analiz, tarihli servet ve kur kayıtları, sınıf/para birimi/likidite dağılımı, harcamalar ve hedef hareketlerinden türetilir. İlk ve son snapshot’ta uygun veri varsa TL, USD, altın ve BTC değişimi gösterilir. Reel değişim, aynı döneme ait TÜFE oranıyla hesaplanabilir. Net yeni sermaye kullanıcı tarafından belirtilirse nominal fark ayrıca gösterilir.
+- Alışveriş analizi Bütçe ekranındadır. Onaylanan yeni fişlerden fiyat geçmişi ve market dağılımı oluşturur. Markası veya barkodu bilinmeyen ürünleri eşleştirmek için kullanıcı açıkça bir karşılaştırma adı seçebilir. Belirsiz OCR adları otomatik birleştirilmez.
+- Hesaplar’daki planlama ekranı borç, kart ve tahmini ya da gerçekleşmiş pasif gelir kayıtlarını tutar. Kart ödemesi için mevcut hesaplar arası transfer akışını açar. Planlar işlem defterine otomatik gelir veya gider yazmaz.
+- Bütçe ekranındaki aylık rapor, seçilen bölümlerle yazdırılabilir veya tarayıcıdan PDF olarak kaydedilebilir. Hedefler, seçilen rapor ayından bağımsız olarak mevcut ilerlemeyle etiketlenir.
 
-## Görüntü işleme karşılaştırması
+## Finansal yöntemler
 
-Aynı 173,50 TL tutarlı sentetik fiş, temiz görüntü ve fotoğraf çekiminde karşılaşılabilecek gölge, optik bulanıklık ve perspektif bozulmalarıyla denendi. Uygulamanın Canvas çıktıları Tesseract CLI (`eng`, PSM 6) ile okundu. Başarı, üç ürünün ve net tutarın kuruşuna kadar doğrulanmasıdır.
+- Parasal girdiler ve defter analizleri tam kuruş kullanır. Varsayımsal oranlı sonuçlar ve aylık faiz işlemleri kuruşa yuvarlanır. Aylık bileşik eşdeğer `(1 + yıllık oran)^(1/12) - 1`, reel oran `(1 + nominal oran)/(1 + enflasyon) - 1` ile hesaplanır. Hedef katkısı simülasyon ve ikili aramayla bulunur. Ay başı ve ay sonu katkıları ayrı işlenir.
+- Gelecekteki USD, altın ve BTC gösterimi, kullanıcının girdiği son dönem fiyat varsayımını kullanır. Servet analizindeki tarihli fiyatlar ayrı tutulur. Portföy oynaklığı bugünkü adetlerin ortak ay sonu TL fiyatlarıyla oluşturulan geçmiş senaryonun aylık getirilerinden hesaplanır. En az yedi tamamlanmış ay gereklidir. Bu sonuç gerçekleşen portföy getirisi değildir.
+- Kredi takvimi nominal yıllık oranın 12’ye bölünmesiyle aylık faiz uygular. Gayrimenkul sonucu boş kalma, masraflar, kalan kredi ve net nakit akışını dikkate alır. Alternatif karşılaştırmasında aynı başlangıç öz sermayesi ve yeniden değerlenen yıllık nakit akışları kullanılır.
+- Kişisel sepet, ardışık aylardaki en az üç eşleşen ürün için önceki ayın miktarlarını sabit tutar. Fiyatlar kg, litre veya adet bazına çevrilir. Sonradan düzenlenen tutarlarda önceki indirim kazanımı yeniden varsayılmaz.
 
-| Görüntü | Orijinal | Kontrast | Gölge azaltma |
-| --- | --- | --- | --- |
-| Temiz | Doğrulandı | Doğrulandı | Doğrulandı |
-| Yoğun gölge | Başarısız | Başarısız | Doğrulandı |
-| Bulanıklık | Doğrulandı | 0,60 TL fark | Doğrulandı |
-| Eğik, dört köşe düzeltmesi sonrası | Tutar uyuşmadı | Doğrulandı | Toplam okunamadı |
+## Veri ve yayın sırası
 
-Köşeler düzeltilmeden eğik örnek doğrulanamadı. Bu küçük sentetik küme gerçek market fotoğraflarındaki doğruluk oranını göstermez. Playwright, fotoğraf seçme, döndürme, düzeltme ve OCR bağımsız değişkenlerini sentetik bir worker ile kontrol eder.
+- `financeV9` sürüm 1, mevcut `butcem_intelligence_state.payload` ve kullanıcı kapsamlı yerel analiz kaydı içinde saklanır. Fiş satırları, borç ve kart planları, pasif gelir planları, sağlık geçmişi ve yeni hedef katkı kayıtları ayrı kimlik ve revizyon taşır. JSON yedek sürüm 2 bu alanı içerir. Eski bütçe yedekleri açılabilir. Fotoğraflar yalnızca isteğe bağlı yerel arşivde tutulur.
+- İki Supabase migration, işlem silme işaretleri ile eski işlem yazmalarına karşı koruma ve V9 kayıtlarının sunucu tarafında revizyon bazında birleşmesini sağlar. Yerel üç yönlü birleştirme, finans/servet belgelerinde bağımsız alan değişikliklerini birleştirir. Yazmadan önce bulut revizyonu karşılaştırılır. Plan silmeleri kalıcı işaret olarak eşitlenir.
+- Üretim metadata kontrolünde beş kişisel finans tablosunda RLS etkin ve sahiplik politikaları mevcuttu. Üretime migration veya web dağıtımı yapılmadı. Yeni sürüm, silme şeması hazır değilse eşitlemeyi durdurur ve yerel kayıtları korur. Test ortamında iki gerçek oturumla geçişi doğruladıktan sonra **iki migration’ı GitHub Pages V9.0’dan önce** uygula. PR #2’deki ortak migration daha önce uygulandıysa aynı kimliği ikinci kez çalıştırma.
+- Geçiş öncesi silmeler için güvenilir geçmiş yok. Yükseltme öncesi istemciler finans ve servet için yeni istemci birleştirme yöntemini kullanmaz. Yerel tarayıcı kapsamı uygulama sınırıdır. Ortak tarayıcı profiline erişime karşı disk şifrelemesi sunmaz.
 
-## Arayüz ve doğrulama
-
-Masaüstünde sabit yan menü, mobilde dokunmaya uygun alt gezinme, tutarlı SVG ikonlar ve açık/koyu tema bulunur. Özet ekranı bütçe ile temel göstergeleri bir araya getirir. Hesap, varlık ve yatırım ekranları mevcut veri modelini kullanır. Modül tercihleri aynı yerel ayarlarda saklanır. Grafik ayrıntıları dokunma, fare ve klavyeyle açılır.
+## Test
 
 ```sh
 npm ci
@@ -32,10 +34,4 @@ npx playwright install --with-deps chromium webkit
 npm run test:browser
 ```
 
-GitHub Actions aynı komutları çalıştırır. Tarayıcı projeleri masaüstü Chromium, Android profilli Chromium ve iPhone profilli WebKit’i kapsar. Bütçe, backtest, fiş kaydı, modül tercihleri, tema ve çevrimdışı uygulama kabuğu test edilir. Fiziksel telefonlar ve anonimleştirilmiş gerçek market fotoğrafları ayrı bir doğrulama kapsamıdır.
-
-## Bulut gizliliği ve kullanım rehberi
-
-Bulut hesabındaki genişletilebilir kart, hangi verilerin eşitlendiğini ve tarayıcıda kalan ekstre, fotoğraf ve yedeklerin sınırlarını açıklar. Üretimde işlem, ayar, finans, servet ve analiz tablolarında sahiplik esaslı Supabase satır erişimi, veri okumadan katalog üzerinden doğrulandı. Yerel kayıtlar cihazda kalabildiğinden, aynı tarayıcı profiline teknik erişim ayrı bir risk olarak anlatılır.
-
-Finansal özetteki rehber, ilgili ekranları doğrudan açar. Kapalı modüller için kullanıcı modül ayarlarına yönlendirilir ve mevcut tercihler korunur.
+Testler OCR/para matematiği, iki kullanıcıyla PGlite RLS ve migration davranışı, bütçe/portföy regresyonu, PWA, rehber, mobil ve masaüstüyle birlikte yeni V9 akışlarını kapsar. WebKit profili fiziksel iPhone değildir. Gerçek market fişi koleksiyonu, üretim hesabıyla iki cihazlı eşitleme, fiziksel telefonlar ve canlı piyasa sağlayıcıları ayrıca doğrulanmalıdır.
