@@ -97,11 +97,19 @@ const FinanceUI = (() => {
    field("years","Yıl",10,{min:1,max:100,step:1}),field("age","Başlangıç yaşı","",{optional:true,max:120}),
    field("timing","Katkı zamanı","end",{choices:{end:"Ay sonunda",start:"Ay başında"}}),
    field("unit","Görüntüleme birimi","TRY",{choices:currency}),
-   field("futurePrice","Son yıl birim fiyatı varsayımı (TL)","",{optional:true})
+   field("futurePrice","Son yıl birim fiyatı varsayımı (TL)","",{optional:true}),
+   field("irregular","Farklı katkılar (ay=tutar; ör. 3=1250,50;6=0)","",{type:"text",optional:true})
   ],v=>{
    const price=v.unit==="TRY"?1:Number(v.futurePrice);
    if(!(price>0))throw Error("Seçilen birim için son yıl fiyat varsayımı gerekiyor.");
-   const options={principal:cents(v.principal),contribution:cents(v.contribution),months:Number(v.years)*12,inflation:v.inflation/100,increase:v.raise/100,timing:v.timing};
+   const duration=Number(v.years)*12, irregular={};
+   for(const item of v.irregular.split(";").map(value=>value.trim()).filter(Boolean)){
+    const match=/^(\d+)\s*=\s*(\d+(?:[,.]\d{1,2})?)$/.exec(item);
+    if(!match||Number(match[1])<1||Number(match[1])>duration||Object.hasOwn(irregular,Number(match[1])))
+     throw Error("Farklı katkıları benzersiz ay=tutar çiftleriyle, noktalı virgülle ayır.");
+    irregular[Number(match[1])]=cents(match[2].replace(",","."));
+   }
+   const options={principal:cents(v.principal),contribution:cents(v.contribution),months:duration,inflation:v.inflation/100,increase:v.raise/100,timing:v.timing,irregular};
    const results=Object.entries(scenarios).map(([key,label])=>[label,project({...options,annual:v[key]/100})]);
    const base=results[1][1], points=base.timeline.filter(p=>p.month%12===0);
    const value=cents=>number(cents/100/price,v.unit==="BTC"?8:2)+" "+currency[v.unit];
@@ -112,7 +120,7 @@ const FinanceUI = (() => {
     chart(points,[{key:"balance"},{key:"invested"}],p=>(p.month/12)+". yıl"+(v.age!==""?" · "+(+v.age+p.month/12)+" yaş":"")+" · Servet "+money(p.balance)+" · Anapara "+money(p.invested)+" · Reel "+money(p.real))
    ];
   },"Yıllık oranlar aylık bileşik eşdeğere çevrilir. Katkı artışı her 12 ayda bir uygulanır.",[usePortfolio]);
-  const targetOptions={manual:"Manuel hedef",...Object.fromEntries(v7.goals.map((g,i)=>["g"+i,g.name]))};
+  const targetOptions={manual:"Manuel hedef",...Object.fromEntries(v7.goals.map(g=>["g:"+g.id,g.name]))};
   const targetTool=tool("Finansal hedef",[
    field("goal","Mevcut hedef","manual",{choices:targetOptions}),...investment(),...rates(),
    field("target","Hedef miktarı",1000000),field("unit","Hedef birimi","TRY",{choices:currency}),
@@ -130,12 +138,12 @@ const FinanceUI = (() => {
   },"Katkılar ay sonunda yapılır. Mevcut hedef seçimi, kayıt oluşturmadan tutar ve tarihi bu hesaba taşır.");
   const goalForm=targetTool.querySelector("form");
   goalForm.elements.goal.onchange=()=>{
-   const selected=v7.goals[Number(goalForm.elements.goal.value.slice(1))];if(!selected)return;
+   const selected=v7.goals.find(goal=>"g:"+goal.id===goalForm.elements.goal.value);if(!selected)return;
    goalForm.elements.target.value=selected.target;goalForm.elements.principal.value=selected.current||0;
    goalForm.elements.date.value=selected.date||"";goalForm.elements.unit.value="TRY";
   };
   const liberty=tool("Finansal özgürlük",[
-   ...investment(),field("expenses","Aylık yaşam gideri",0),field("passive","Düzenli aylık pasif gelir",0),
+   ...investment(),field("expenses","Aylık yaşam gideri",""),field("passive","Düzenli aylık pasif gelir",0),
    percentField("annual","Beklenen yıllık reel getiri (%)"),
    field("withdrawal","Çekim oranı (%)",3.5,{min:.1,max:100}),field("age","Mevcut yaş","",{optional:true,max:120})
   ],v=>{
@@ -151,8 +159,8 @@ const FinanceUI = (() => {
  function currentPortfolioValue(){
   if(!v8.assets.length)return null;
   const requiresFx=v8.assets.some(a=>a.currency==="USD");
-  if(requiresFx&&(!(v8.rates.usdtry>0)||!v8.market?.fxUpdatedAt||Math.abs(Date.now()-Date.parse(v8.market.fxUpdatedAt))>7*86400000))return null;
-  if(v8.assets.some(a=>!(a.qty>0&&a.price>0)||!["USD","TRY"].includes(a.currency||"TRY")))return null;
+  if(requiresFx&&(!(v8.rates.usdtry>0)||!v8.market?.fxUpdatedAt||!(Math.abs(Date.now()-Date.parse(v8.market.fxUpdatedAt))<=7*86400000)))return null;
+  if(v8.assets.some(a=>!(a.qty>0&&a.price>0)||!["USD","TRY"].includes(a.currency||"TRY")||a.marketUpdatedAt&&!(Math.abs(Date.now()-Date.parse(a.marketUpdatedAt))<=7*86400000)))return null;
   return v8TotalTry();
  }
  return {el,field,metrics,tool,chart,pct,money,number,simulation,currentPortfolioValue,dateAfter};

@@ -61,6 +61,20 @@ const FinanceAnalysis = (() => {
   for(const point of usable){peak=Math.max(peak,+point.total);drawdown=Math.min(drawdown,point.total/peak-1);}
   return {first,last,try:last.total/first.total-1,usd:converted("usdtry"),gold:converted("gramGold"),btc:converted("btcTry"),drawdown};
  }
- return {months,ratio,distribution,health,changes,wealth};
+ function valuesRisk(points){
+  if(points.length<7||points.some(value=>!(value>0)))return null;
+  const returns=points.slice(1).map((value,i)=>value/points[i]-1);
+  const average=sum(returns)/returns.length;
+  const volatility=Math.sqrt(sum(returns.map(r=>(r-average)**2))/(returns.length-1))*Math.sqrt(12);
+  let peak=0,drawdown=0;
+  for(const value of points){peak=Math.max(peak,value);drawdown=Math.min(drawdown,value/peak-1);}
+  return {volatility,drawdown};
+ }
+ function contributionPace(contributions,periodKeys){
+  const valid=contributions.filter(c=>periodKeys.includes(c.date.slice(0,7))&&Number.isSafeInteger(c.amount)&&c.amount>0);
+  if(new Set(valid.map(c=>c.date.slice(0,7))).size<2)return null;
+  return sum(valid.map(c=>c.amount))/periodKeys.length;
+ }
+ return {months,ratio,distribution,health,changes,wealth,valuesRisk,contributionPace};
 })();
 if(typeof module!=="undefined")module.exports=FinanceAnalysis;

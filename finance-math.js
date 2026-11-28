@@ -2,9 +2,15 @@
 
 const FinanceMath = (() => {
  const cents = value => {
-  const result=Math.round(Number(value)*100);
-  if(!Number.isSafeInteger(result))throw RangeError("Tutar geçerli aralıkta olmalı.");
-  return result;
+  if(!Number.isFinite(Number(value))||Math.abs(Number(value))>Number.MAX_SAFE_INTEGER/100)
+   throw RangeError("Tutar geçerli aralıkta olmalı.");
+  const text=String(value).trim();
+  const decimal=/^([+-]?)(\d*)(?:\.(\d*))?$/.exec(text);
+  if(!decimal||(!decimal[2]&&!decimal[3]))return Math.round(Number(value)*100);
+  const [,sign,whole,fraction=""]=decimal;
+  const amount=BigInt(whole||"0")*100n+BigInt(fraction.padEnd(2,"0").slice(0,2))+(Number(fraction[2])>=5?1n:0n);
+  if(amount>BigInt(Number.MAX_SAFE_INTEGER))throw RangeError("Tutar geçerli aralıkta olmalı.");
+  return (sign==="-"?-1:1)*Number(amount);
  };
  const rate = value => {
   if(!Number.isFinite(value)||value<=-1||value>10)throw RangeError("Yıllık oran −%100 ile %1000 arasında olmalı.");
@@ -15,14 +21,14 @@ const FinanceMath = (() => {
   if(!Number.isFinite(value)||Math.abs(value)>Number.MAX_SAFE_INTEGER)throw RangeError("Sonuç hesaplama sınırını aşıyor.");
   return Math.round(value);
  };
- function project({principal=0,contribution=0,annual=0,inflation=0,increase=0,months,timing="end",irregular={}}){
+ function project({principal=0,contribution=0,annual=0,inflation=0,increase=0,months,timing="end",irregular={},stopAt=Infinity}){
   if(![principal,contribution].every(v=>Number.isSafeInteger(v)&&v>=0)||!Number.isInteger(months)||months<0||months>1200)
    throw RangeError("Tutarlar ve süre geçerli aralıkta olmalı.");
   const growth=1+monthly(annual), price=1+monthly(inflation);
   rate(increase);
   let balance=principal, invested=principal;
   const timeline=[{month:0,invested,balance,real:balance}];
-  for(let month=1;month<=months;month++){
+  for(let month=1;month<=months&&balance<stopAt;month++){
    const payment=round(irregular[month]??(contribution*(1+increase)**Math.floor((month-1)/12)));
    if(payment<0)throw RangeError("Katkı negatif olamaz.");
    balance=timing==="start"?round((balance+payment)*growth):round(balance*growth+payment);
@@ -35,7 +41,7 @@ const FinanceMath = (() => {
  function target({principal,contribution,annual,target,months}){
   if(![principal,contribution,target].every(v=>Number.isSafeInteger(v)&&v>=0)||target===0||
      !Number.isInteger(months)||months<1||months>1200)throw RangeError("Hedef tutarını ve süreyi kontrol et.");
-  const path=project({principal,contribution,annual,months:1200}).timeline;
+  const path=project({principal,contribution,annual,months:1200,stopAt:target}).timeline;
   const first=path.find(point=>point.balance>=target);
   const projected=payment=>project({principal,contribution:payment,annual,months}).balance;
   let low=0, high=target;

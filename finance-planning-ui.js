@@ -22,8 +22,8 @@ const FinancePlanningUI = (() => {
    const points=report.years;
    const rows=[5,10,20].flatMap(year=>{
     const row=points[year-1];
-    return [[year+" yıl · Gayrimenkul toplam kazancı",money(row.gain)],
-     [year+" yıl · Alternatif kazanç",money(row.alternative-report.initial)]];
+    return [[year+" yıl · Gayrimenkul toplam kazancı",money(row.gain)+" · "+pct(row.gain/report.initial)],
+     [year+" yıl · Alternatif kazanç",money(row.alternative-report.initial)+" · "+pct(row.alternative/report.initial-1)]];
    });
    return [metrics([["Brüt kira getirisi",pct(report.gross/cents(v.price))],
     ["Net kira getirisi",pct(report.net/(cents(v.price)+cents(v.closing)))],
@@ -89,6 +89,16 @@ const FinancePlanningUI = (() => {
   function draw(){
    const rows=FinanceRecords.list(kind).sort((a,b)=>(a.value.due||a.value.date).localeCompare(b.value.due||b.value.date));
    list.replaceChildren();
+   if(kind==="card"&&rows.length){
+    const liabilities=new Map();
+    for(const {value:v} of rows){
+     for(let i=0;i<=Number(v.months);i++){
+      const month=shiftDate(v.due,i).slice(0,7);
+      liabilities.set(month,(liabilities.get(month)||0)+(i?v.installment:v.balance));
+     }
+    }
+    list.append(el("h4","Aylık kart yükümlülükleri"),metrics([...liabilities].sort().slice(0,12).map(([month,value])=>[month,money(value)])));
+   }
    if(!rows.length)list.append(el("p","Henüz plan bulunmuyor."));
    for(const record of rows){
     const v=record.value, section=el("section");section.className="fi-plan-row";

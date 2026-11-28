@@ -39,7 +39,10 @@ function draw(){
   };
   const category=control("text","Kategori",product.category,v=>product.category=v);
   category.setAttribute("list","stmtCategoryChoices");
-  append("Ürün",control("text","Ürün",product.name,v=>product.name=v),category,control("text","Marka",product.brand||"",v=>product.brand=v));
+  const identity=control("text","Karşılaştırma adı",product.catalogName||"",v=>product.catalogName=v);
+  identity.setAttribute("list","receiptKnownProducts");
+  identity.placeholder="Karşılaştırma adı (isteğe bağlı)";
+  append("Ürün",control("text","Ürün",product.name,v=>product.name=v),category,control("text","Marka",product.brand||"",v=>product.brand=v),identity);
   row.querySelector('[aria-label="Marka"]').placeholder="Marka (isteğe bağlı)";
   const quantity=control("number","Miktar",product.quantity,v=>product.quantity=Number(v));
   const unit=document.createElement("select");
@@ -182,6 +185,8 @@ q("receiptFile").onchange=async()=>{
 function openReceipt(){
  if(!archiveAllowed())return;
  owner=currentUser?.id;fileVersion++;ocrConfidence=null;
+ const knownNames=new Set(FinanceRecords.list("receipt").flatMap(r=>r.value.lines.map(line=>line.catalogName||line.name)));
+ q("receiptKnownProducts").replaceChildren(...[...knownNames].slice(-250).map(name=>new Option(name)));
  products=[];discounts=[];warnings=[];printedDiscount=null;nextId=1;source=null;corners=[];turns=0;selecting=false;
  for(const id of ["receiptFile","receiptText","receiptTotal","receiptDate","receiptStore","receiptAccount"])q(id).value="";
  q("receiptKeepPhoto").checked=false;q("receiptReviewConfirm").checked=false;
@@ -276,11 +281,11 @@ q("receiptCommit").onclick=async()=>{
   status("Fiş kaydedilemedi. Cihaz depolamasını kontrol et ve yeniden dene.");return;
  }
  try{
-  const lines=summary.rows.map(({id,name,brand,quantity,unit,gross,unitPrice,discount,net})=>({
-   id,name:name.trim(),brand:(brand||"").trim(),quantity,unit,gross,unitPrice,discount,net,transactionId:transactionIds.get(id)||null
+  const lines=summary.rows.map(({id,name,brand,catalogName,code,quantity,unit,gross,unitPrice,discount,net})=>({
+   id,name:name.trim(),brand:(brand||"").trim(),catalogName:(catalogName||"").trim(),code:code||"",quantity,unit,gross,unitPrice,discount,net,transactionId:transactionIds.get(id)||null
   }));
   FinanceRecords.put("receipt",{id:group,store,date,confidence:ocrConfidence,lines},group);
- }catch{status("Giderler kaydedildi. Fiyat ayrıntıları cihazda saklanamadı.");return;}
+ }catch{render();v5Refresh();status("Giderler kaydedildi. Fiyat ayrıntıları cihazda saklanamadı.");return;}
  q("receiptDialog").close();render();v5Refresh();
  if(keep&&photoAllowed(file)){
   try{await archiveOp("readwrite",s=>s.put({id:who+":"+group,owner:who,date,store,blob:file}));v6Toast("Fiş ve fotoğraf kaydedildi.");}

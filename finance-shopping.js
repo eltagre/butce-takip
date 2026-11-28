@@ -7,17 +7,18 @@ const FinanceShopping = (() => {
    .replace(/\bkilogram\b/g,"kg").replace(/\s+/g," ").trim();
  }
  function comparable(row){
-  const packageSize=/(\d+(?:[,.]\d+)?)\s*(kg|g|ml|cl|l)\b/.exec(canonical(row.name));
+  const raw=canonical(row.name), identity=canonical(row.catalogName), brand=canonical(row.brand);
+  const packageSize=/(\d+(?:[,.]\d+)?)\s*(kg|g|ml|cl|l)\b/.exec(raw);
   const conversions={kg:[1,"kg"],g:[.001,"kg"],l:[1,"l"],ml:[.001,"l"],cl:[.01,"l"],adet:[1,"adet"]};
   const unit=canonical(row.unit), quantity=Number(row.quantity);
-  let effective=quantity, converted=conversions[unit], name=canonical(row.name);
+  let effective=quantity, converted=conversions[unit], name=raw;
   if(packageSize&&unit==="adet"){
    converted=conversions[packageSize[2]];
    effective*=Number(packageSize[1].replace(",","."));name=name.replace(packageSize[0]," ").trim();
   }
-  if(!converted||!(effective>0)||!name)return null;
+  if(!converted||!(effective>0)||!name||(!identity&&!brand&&!row.code))return null;
   const size=effective*converted[0];
-  return {key:JSON.stringify([name,canonical(row.brand),converted[1]]),size,unit:converted[1],price:row.net/size};
+  return {key:JSON.stringify([identity||(!brand&&row.code?"#"+row.code:name),brand,converted[1]]),size,unit:converted[1],price:row.net/size};
  }
  function activeLines(receipts,transactions){
   const transactionsById=new Map(transactions.filter(t=>t.type==="expense").map(t=>[t.id,t]));
@@ -35,7 +36,7 @@ const FinanceShopping = (() => {
     const updated={...line,date:t.date,store:receipt.store,receiptId:receipt.id,confidence:receipt.confidence,net,
      gross:net!==line.net?null:line.gross,discount:net!==line.net?null:line.discount,
      name:edited?(description.startsWith(prefix)?description.slice(prefix.length):description||line.name):line.name,
-     brand:edited?"":line.brand,quantity:edited?null:line.quantity};
+     brand:edited?"":line.brand,quantity:edited?null:line.quantity,catalogName:edited?"":line.catalogName};
     unique.set(line.transactionId||receipt.id+":"+line.id,updated);
    }
   }

@@ -168,7 +168,7 @@ test("summary privacy and guide work with disabled modules and dark theme",async
  await page.locator("#authCancel").click();
  await guide.click();
  const topics=page.locator("#v86GuideTopics");
- await expect(topics.locator("section")).toHaveCount(12);
+ await expect(topics.locator("section")).toHaveCount(18);
  await topics.getByRole("button",{name:"Ekstreyi içe aktar"}).click();
  await expect(page.locator("#stmtDialog")).toBeVisible();
  await page.locator("#stmtClose").click();

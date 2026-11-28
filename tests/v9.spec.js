@@ -69,3 +69,33 @@ test("property, planning records and report work without ledger side effects",as
  await page.locator('#financeReportDialog [name="categories"]').uncheck();
  await expect(page.locator("#financeReportPrint")).not.toContainText("Kategori dağılımı");
 });
+
+test("backup restore keeps a deleted plan deleted and carries a different plan",async({page})=>{
+ await page.goto("./");
+ await page.evaluate(()=>FinanceRecords.put("debt",{name:"Silinen",date:"2027-01-01",principal:1000,payment:1000,extra:0,annual:0},"debt-1"));
+ const oldBackup=await page.evaluate(()=>backupObject());
+ await page.evaluate(()=>FinanceRecords.put("debt",null,"debt-1",true));
+ oldBackup.financeV9.records.push({
+  id:"passive-1",kind:"passive",updatedAt:"2026-01-01T00:00:00.000Z",deleted:false,
+  value:{name:"Kira",date:"2027-01-01",amount:450,type:"rent",status:"estimate",repeat:"once"}
+ });
+ page.on("dialog",dialog=>dialog.accept());
+ await page.locator("#restoreFile").setInputFiles({name:"butcem-test.json",mimeType:"application/json",buffer:Buffer.from(JSON.stringify(oldBackup))});
+ await expect.poll(()=>page.evaluate(()=>FinanceRecords.list("passive").length)).toBe(1);
+ expect(await page.evaluate(()=>FinanceRecords.list("debt"))).toEqual([]);
+ await page.reload();
+ expect(await page.evaluate(()=>FinanceRecords.list("passive")[0].value.name)).toBe("Kira");
+});
+
+test("monthly report renders a PDF in Chromium",async({page,browserName})=>{
+ test.skip(browserName!=="chromium","Playwright PDF generation only supports Chromium.");
+ await page.goto("./");
+ await page.locator('#v5Nav [data-view="budget"]').click();
+ await page.locator("#financeReportOpen").click();
+ await page.emulateMedia({media:"print"});
+ await expect(page.locator("#financeReportPrint")).toBeVisible();
+ await expect(page.locator("#v5Nav")).toBeHidden();
+ const pdf=await page.pdf({format:"A4"});
+ expect(pdf.subarray(0,5).toString()).toBe("%PDF-");
+ expect(pdf.length).toBeGreaterThan(5000);
+});

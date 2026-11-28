@@ -82,3 +82,16 @@ test("property uses equity, annual vacancy and financing cash flows",()=>{
  assert.equal(leveraged.initial,600000);
  assert.equal(leveraged.years[0].flow,-320000);
 });
+test("decimal lira inputs round to integer cents without binary midpoint errors",()=>{
+ const {cents}=require("../finance-math");
+ assert.deepEqual([cents("1.005"),cents("-1.005"),cents("12345.12"),cents("0.01")],[101,-101,1234512,1]);
+ assert.throws(()=>cents("1e100"),/geçerli aralık/);
+});
+test("risk needs seven aligned months and contribution estimates need two recorded periods",()=>{
+ const {valuesRisk,contributionPace}=require("../finance-analysis");
+ assert.equal(valuesRisk([1,2,3]),null);
+ assert.equal(valuesRisk([100,100,100,100,100,100,100]).volatility,0);
+ const keys=["2026-08","2026-09","2026-10"];
+ assert.equal(contributionPace([{date:"2026-08-01",amount:100}],keys),null);
+ assert.equal(contributionPace([{date:"2026-08-01",amount:100},{date:"2026-09-01",amount:200}],keys),100);
+});
