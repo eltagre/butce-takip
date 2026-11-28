@@ -341,6 +341,7 @@ body[data-view="budget"] .v6-budget-only{display:block}
 <button id="settingsBtn" class="ghost">Ayarlar</button>
 </div></div>
 
+<div class="section v6-budget-only"><button id="financeShoppingOpen" type="button" class="ghost">Alışveriş analizi</button></div>
 <div class="grid v6-budget-only">
 <div class="card"><div class="label">Harcama</div><div id="expenseTotal" class="value bad">₺0</div></div>
 <div class="card"><div class="label">Gelir</div><div id="incomeTotal" class="value good">₺0</div></div>
@@ -703,8 +704,9 @@ body[data-view="budget"] .v6-budget-only{display:block}
 <script src="vendor/supabase-2.119.2.js" integrity="sha384-A97u3Qnt9GZHURO9YJZRe7VQgGUeFzcv6I1oIGnUTxQrCxnpQMwR0/G8F2zt9abZ"></script>
 <script src="supabase-config.js?v=8.2"></script>
 
-<datalist id="stmtCategoryChoices"><option value="Hesaplar Arası Transfer"></option></datalist><script src="finance-math.js?v=9"></script><script src="finance-ui.js?v=9"></script><script src="finance-analysis.js?v=9"></script><script src="finance-insights.js?v=9"></script><script src="app.js?v=9"></script>
+<datalist id="stmtCategoryChoices"><option value="Hesaplar Arası Transfer"></option></datalist><script src="finance-math.js?v=9"></script><script src="finance-ui.js?v=9"></script><script src="finance-analysis.js?v=9"></script><script src="finance-insights.js?v=9"></script><script src="finance-records.js?v=9"></script><script src="finance-shopping.js?v=9"></script><script src="finance-shopping-ui.js?v=9"></script><script src="app.js?v=9"></script>
 <script src="statements.js?v=8.6.1"></script>
+<dialog id="financeShoppingDialog" class="fi-dialog"><header><h2>Alışveriş geçmişi</h2><button type="button" class="ghost" onclick="this.closest('dialog').close()">Kapat</button></header><div id="financeShoppingContent"></div></dialog>
 <dialog id="receiptDialog" class="receipt-dialog" aria-labelledby="receiptTitle">
  <header class="receipt-head"><div><h2 id="receiptTitle">Fiş tarayıcı</h2><p>Fotoğrafı tara, ürünleri ve indirimleri doğrula.</p></div><button type="button" id="receiptClose" class="ghost icon-action" aria-label="Kapat"><svg aria-hidden="true"><use href="#icon-close"/></svg></button></header>
  <div class="receipt-workspace">
@@ -740,5 +742,5 @@ body[data-view="budget"] .v6-budget-only{display:block}
 <dialog id="receiptArchiveDialog"><h2>Fiş fotoğrafları</h2><p>Yalnızca bu cihazda saklanır; tarayıcı verileri temizlenirse kaybolabilir.</p><div id="receiptArchiveList"></div><img id="receiptArchiveImage" hidden style="max-width:100%;max-height:50vh" alt="Fiş fotoğrafı"><button type="button" id="receiptArchiveClose">Kapat</button></dialog>
 <script src="receipt-parser.js?v=8.7.4"></script>
 <script src="receipt-image.js?v=8.7.4"></script>
-<script src="receipts.js?v=8.7.4"></script>
+<script src="receipts.js?v=9"></script>
 </body></html>

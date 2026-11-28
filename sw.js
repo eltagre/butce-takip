@@ -1,10 +1,10 @@
 const SCOPE = self.registration.scope;
-const CACHE = "butcem-shell:" + SCOPE + ":9-stage2";
+const CACHE = "butcem-shell:" + SCOPE + ":9-stage3";
 const INDEX = new URL("index.html", SCOPE).href;
 const ASSETS = [
  "index.html", "manifest.json", "icon.svg", "design.css?v=8.7.4", "vendor/supabase-2.119.2.js",
- "supabase-config.js?v=8.2", "app.js?v=9", "finance-math.js?v=9", "finance-ui.js?v=9", "finance.css?v=9", "finance-analysis.js?v=9", "finance-insights.js?v=9",
- "statements.js?v=8.6.1", "receipt-parser.js?v=8.7.4", "receipt-image.js?v=8.7.4", "receipts.js?v=8.7.4"
+ "supabase-config.js?v=8.2", "app.js?v=9", "finance-math.js?v=9", "finance-ui.js?v=9", "finance.css?v=9", "finance-analysis.js?v=9", "finance-insights.js?v=9", "finance-records.js?v=9", "finance-shopping.js?v=9", "finance-shopping-ui.js?v=9",
+ "statements.js?v=8.6.1", "receipt-parser.js?v=8.7.4", "receipt-image.js?v=8.7.4", "receipts.js?v=9"
 ].map(path => new URL(path,SCOPE).href);
 
 self.addEventListener("install",event=>{

@@ -35,3 +35,28 @@ test("transfer amounts are excluded and wealth FX gaps stay unknown",()=>{
  assert.ok(r.try>0&&r.usd<0);
  assert.equal(r.btc,null);
 });
+const Shopping=require("../finance-shopping");
+const Records=require("../finance-records");
+test("same brand normalizes package price, while free lines vanish after deleting the last expense",()=>{
+ const line={id:1,name:"Süt 500 ml",brand:"Örnek",quantity:2,unit:"adet",net:5000,gross:6000,discount:1000,transactionId:"txn"};
+ assert.equal(Shopping.comparable(line).price,5000);
+ assert.equal(Shopping.comparable(line).key,Shopping.comparable({...line,name:"Süt 1 L",quantity:1}).key);
+ const receipt={id:"receipt",store:"Market",lines:[line,{id:2,name:"Hediye",net:0}]};
+ assert.equal(Shopping.activeLines([receipt,receipt],[{id:"txn",type:"expense",amount:50,description:"Market · Süt 500 ml",date:"2026-11-01"}]).length,2);
+ assert.deepEqual(Shopping.activeLines([receipt],[]),[]);
+ const edited=Shopping.activeLines([receipt],[{id:"txn",type:"expense",amount:45,description:"Market · Süt 500 ml",date:"2026-11-02"}])[0];
+ assert.deepEqual([edited.net,edited.discount],[4500,null]);
+});
+test("fixed basket suppresses small samples and uses previous quantities",()=>{
+ const make=(name,quantity,net)=>({name,quantity,net,unit:"adet",brand:"A"});
+ const prior=[make("Süt",2,200),make("Ekmek",1,100),make("Pirinç",1,100)];
+ const after=[make("Süt",1,200),make("Ekmek",1,100),make("Pirinç",1,100)];
+ assert.equal(Shopping.basket(prior,after).change,.5);
+ assert.equal(Shopping.basket(prior.slice(1),after),null);
+});
+test("revision merge is deterministic and old backup cannot revive a record",()=>{
+ const first={id:"a",kind:"receipt",updatedAt:"2026-11-02T00:00:00Z",value:1};
+ const deleted={...first,deleted:true};
+ assert.deepEqual(Records.read(Records.envelope(Records.merge([deleted],[first]))),[deleted]);
+ assert.deepEqual(Records.read({version:2,records:[first]}),[]);
+});

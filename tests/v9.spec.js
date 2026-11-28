@@ -25,3 +25,23 @@ test("health and analysis display missing inputs without inventing results",asyn
  await page.locator('[data-v8tab="analysis"]').click();
  await expect(page.locator("#v8AnalysisPanel")).toContainText("En az iki tarihli servet kaydı gerekiyor.");
 });
+test("shopping uses confirmed receipt lines and removes deleted transactions",async({page})=>{
+ await page.goto("./");
+ await page.locator("#receiptScanShortcut").click();
+ await page.locator("#receiptTextPanel summary").click();
+ const date=await page.evaluate(()=>today().split("-").reverse().join("."));
+ await page.locator("#receiptText").fill("BİM\n"+date+"\nSÜT 500 ML 40,00\nTOPLAM 40,00");
+ await page.locator("#receiptParse").click();
+ await page.locator("#receiptAccount").fill("Nakit");
+ await page.locator('[aria-label="Marka"]').fill("Örnek");
+ page.once("dialog",dialog=>dialog.accept());
+ await page.locator("#receiptCommit").click();
+ await page.locator('#v5Nav [data-view="budget"]').click();
+ await page.locator("#financeShoppingOpen").click();
+ await expect(page.locator("#financeShoppingDialog")).toContainText("40,00");
+ expect(await page.evaluate(()=>backupObject().financeV9.records[0].value.lines[0].brand)).toBe("Örnek");
+ await page.locator("#financeShoppingDialog").getByRole("button",{name:"Kapat"}).click();
+ await page.evaluate(()=>{state.transactions=[];save();});
+ await page.locator("#financeShoppingOpen").click();
+ await expect(page.locator("#financeShoppingDialog")).toContainText("yapılandırılmış fiş bulunamadı");
+});

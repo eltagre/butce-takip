@@ -90,18 +90,19 @@ $("#prev").onclick=()=>{selectedMonth=shift(selectedMonth,-1);render();if(typeof
 $("#settingsBtn").onclick=()=>{$("#monthlyBudget").value=state.monthlyBudget||"";$("#categoriesText").value=state.categories.join(", ");let p=v5GetPrefs?.()||{};$("#v6StartView").value=p.startView||"summary";$("#v6ThemeSelect").value=p.theme||"light";updateBackupStatus();$("#settingsDialog").showModal()};$("#cancelSettings").onclick=()=>$("#settingsDialog").close();
 $("#settingsForm").onsubmit=e=>{e.preventDefault();state.monthlyBudget=Math.max(0,Number($("#monthlyBudget").value)||0);let c=$("#categoriesText").value.split(",").map(x=>x.trim()).filter(Boolean);state.categories=c.length?[...new Set(c)]:["Diğer"];state.settingsUpdatedAt=new Date().toISOString();let p=v5GetPrefs?.()||{modules:["budget"]};p.startView=$("#v6StartView").value;p.theme=$("#v6ThemeSelect").value;v5SetPrefs?.(p);v5Theme?.(p.theme);save();$("#settingsDialog").close();v6Toast("Ayarlar kaydedildi")};
 
-function backupObject(){return {app:"Butcem",format:"butcem-backup",backupVersion:1,createdAt:new Date().toISOString(),data:normalize(state)}}
+function backupObject(){return {app:"Butcem",format:"butcem-backup",backupVersion:2,financeV9:v83.financeV9,createdAt:new Date().toISOString(),data:normalize(state)}}
 $("#fullBackupBtn").onclick=()=>{let obj=backupObject();state.lastBackupAt=obj.createdAt;localStorage.setItem(KEY,JSON.stringify(state));download(`butcem-tam-yedek-${today()}.json`,JSON.stringify(obj,null,2),"application/json;charset=utf-8");updateBackupStatus()};
 $("#restoreBtn").onclick=()=>$("#restoreFile").click();
 $("#restoreFile").onchange=async e=>{
- const f=e.target.files[0];if(!f)return;
+ const f=e.target.files[0], owner=currentUser?.id;if(!f)return;
  try{
    const parsed=JSON.parse(await f.text());
    if(parsed.format!=="butcem-backup"||!parsed.data||!Array.isArray(parsed.data.transactions))throw new Error();
+   if(currentUser?.id!==owner||(bootOwner&&bootOwner!==owner))throw Error("Hesap değişti");
    const safety=backupObject();
    download(`butcem-geri-yukleme-oncesi-guvenlik-${today()}.json`,JSON.stringify(safety,null,2),"application/json;charset=utf-8");
    if(!confirm(`Yedekte ${parsed.data.transactions.length} işlem bulundu. Mevcut verilerin yerine bu yedek geri yüklensin mi? Önce mevcut verilerin güvenlik kopyası indirildi.`)){e.target.value="";return}
-   state=normalize(parsed.data);save();updateBackupStatus();alert("Yedek başarıyla geri yüklendi.");
+   state=normalize(parsed.data);save();if(parsed.financeV9?.version===1){v83.financeV9=FinanceRecords.envelope(FinanceRecords.merge(FinanceRecords.read(v83.financeV9),FinanceRecords.read(parsed.financeV9)));v83Save();}updateBackupStatus();alert("Yedek başarıyla geri yüklendi.");
  }catch(err){alert("Bu dosya geçerli bir Bütçem tam yedeği değil.");}
  e.target.value="";
 };
@@ -332,9 +333,11 @@ async function pullExtendedCloud(){
  if(wr.data&&chooseRemote(v8,wr.data)){
   const x=wr.data.payload||{};v8={...v8Defaults(),...x,assets:Array.isArray(x.assets)?x.assets:[],rates:{...v8Defaults().rates,...(x.rates||{})},profile:{...v8Defaults().profile,...(x.profile||{})},market:{...v8Defaults().market,...(x.market||{})},snapshots:Array.isArray(x.snapshots)?x.snapshots:[],btRows:Array.isArray(x.btRows)&&x.btRows.length?x.btRows:v8Defaults().btRows,compare:Array.isArray(x.compare)?x.compare:v8Defaults().compare,cloudUpdatedAt:wr.data.updated_at};
  }
+ const financeRecords=FinanceRecords.merge(FinanceRecords.read(v83.financeV9),FinanceRecords.read(ir.data?.payload?.financeV9));
  if(ir.data&&chooseRemote(v83,ir.data)){
   v83={...{period:"1m",customStart:"",customEnd:""},...(ir.data.payload||{}),cloudUpdatedAt:ir.data.updated_at};
  }
+ if(financeRecords.length)v83.financeV9=FinanceRecords.envelope(financeRecords);
  persistExtendedLocal();
 }
 async function pushExtendedCloud(){
@@ -1162,7 +1165,7 @@ function v86Guide(){
  }
  dialog.showModal();
 }
-function v86Init(){ $("#financeHealthBadge").onclick=()=>{v5Show("assets");v8OpenTab("health");}; $("#summaryGuide").onclick=v86Guide; $("#v86GuideClose").onclick=()=>$("#v86Guide").close(); $("#v86Open").onclick=()=>$("#v86Menu").showModal();$("#v86Close").onclick=()=>$("#v86Menu").close();$("#v86Help").onclick=()=>{$("#v86Menu").close();v86Guide()};$("#v86Finance").onclick=()=>{$("#v86Menu").close();v5Show("finance")};$("#v86Settings").onclick=()=>{$("#v86Menu").close();$("#settingsBtn").click()};$("#v86Menu").querySelectorAll("input").forEach(e=>e.onchange=()=>{const p=v5GetPrefs()||{};p.modules=["budget",...Array.from($("#v86Menu").querySelectorAll("input[data-module]:checked"),x=>x.dataset.module)];p.wealthOptIn=$("#v86Wealth").checked;v5SetPrefs(p);v86Apply()});v86Apply();}
+function v86Init(){ $("#financeShoppingOpen").onclick=openShoppingAnalysis; $("#financeHealthBadge").onclick=()=>{v5Show("assets");v8OpenTab("health");}; $("#summaryGuide").onclick=v86Guide; $("#v86GuideClose").onclick=()=>$("#v86Guide").close(); $("#v86Open").onclick=()=>$("#v86Menu").showModal();$("#v86Close").onclick=()=>$("#v86Menu").close();$("#v86Help").onclick=()=>{$("#v86Menu").close();v86Guide()};$("#v86Finance").onclick=()=>{$("#v86Menu").close();v5Show("finance")};$("#v86Settings").onclick=()=>{$("#v86Menu").close();$("#settingsBtn").click()};$("#v86Menu").querySelectorAll("input").forEach(e=>e.onchange=()=>{const p=v5GetPrefs()||{};p.modules=["budget",...Array.from($("#v86Menu").querySelectorAll("input[data-module]:checked"),x=>x.dataset.module)];p.wealthOptIn=$("#v86Wealth").checked;v5SetPrefs(p);v86Apply()});v86Apply();}
 
 function v87TemplateKey(){return "butcem_templates_"+(currentUser?.id||"local")}
 function v87MergeRecords(...lists){const m=new Map();for(const list of lists)for(const t of Array.isArray(list)?list:[]){if(!t||typeof t.id!=="string")continue;const old=m.get(t.id);if(!old||String(t.updatedAt||"")>String(old.updatedAt||"")||(String(t.updatedAt||"")===String(old.updatedAt||"")&&t.deleted))m.set(t.id,t)}return [...m.values()]}

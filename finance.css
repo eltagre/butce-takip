@@ -18,3 +18,6 @@
 #financeHealthBadge { margin-top:12px; align-items:center; }
 #financeHealthBadge[hidden] { display:none; }
 .fi-score { width:48px; height:48px; display:grid!important; place-items:center; border-radius:50%; background:radial-gradient(circle,var(--card) 58%,transparent 60%),conic-gradient(var(--accent) var(--score,0%),var(--line) 0); font-weight:700; }
+.fi-dialog { width:min(94vw,850px); max-height:90dvh; overflow:auto; padding:16px; }
+.fi-dialog header { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.fi-dialog header h2 { margin:0; font-size:1.2rem; }
